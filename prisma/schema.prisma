@@ -1,0 +1,50 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://postgres:27102003@localhost:5432/jewelry"
+}
+model User {
+  id                    String @id @default(uuid())
+  email                 String @unique
+  password              String 
+  username              String?
+  roles                 Role[] @default([USER])
+  profile               Profile? @relation("user_profile")
+  token                 Token? @relation("user_token")
+}
+model Token {
+  id                    Int @id @default(autoincrement())
+  refreshTokenUsed      String[]
+  refreshToken          String
+  accessToken           String
+  user User             @relation(name: "user_token", fields: [userId], references: [id], onDelete: Cascade)
+  userId String         @unique
+   
+}
+model Profile {
+  id Int                @id @default(autoincrement())
+  firstName             String?
+  lastName              String?
+  phoneNumber           String?
+  isActive              Boolean @default(true)
+  createAt              DateTime? @default(now())
+  updatedAt             DateTime?  @updatedAt
+  user User             @relation(name: "user_profile", fields: [userId], references: [id], onDelete: Cascade)
+  userId                String @unique
+  
+}
+
+
+enum Role {
+  ADMIN
+  USER
+}
