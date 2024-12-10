@@ -1,19 +1,20 @@
 import * as dotenv from 'dotenv';
 
-dotenv.config({ path: '.env' });
+dotenv.config({ path: '.env.development' });
 
 const dev = {
   app: {
-    port:  3055,
+    port: process.env.DEV_APP_PORT || 3055,
   },
   postgres: {
-    HOST: 'localhost',
-    PORT: 5432,
-    USERNAME:  'postgres',
-    PASSWORD:  '27102003',
-    DATABASE: 'jewelry',
+    HOST: process.env.DEV_DB_HOST || 'localhost',
+    PORT: process.env.DEV_DB_PORT || 5432,
+    USERNAME: process.env.DEV_DB_USERNAME || '',
+    PASSWORD: process.env.DEV_DB_PASSWORD || '',
+    DATABASE: process.env.DEV_DB_DATABASE || 'todo',
   },
 };
+
 
 const pro = {
   app: {

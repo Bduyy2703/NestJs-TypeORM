@@ -17,5 +17,7 @@ export default class UserSeeder implements Seeder {
       email: 'Duy@gmail.com',
       password: '123',
     });
+
+    console.log("Users seeded successfully!");
   }
 }

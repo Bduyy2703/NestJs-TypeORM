@@ -1,26 +1,82 @@
-import { Controller, Get, HttpCode, Param, Post, Query, Redirect } from "@nestjs/common";
-
-@Controller('user')
-export class UserController {
-    @Post()
-
-    CreateUser() {
-        return "create new user "
+import {
+    Controller,
+    Get,
+    Body,
+    Patch,
+    Param,
+    Delete,
+    Req,
+  } from '@nestjs/common';
+  import { UsersService } from './user.service';
+  import { ApiOkResponse, ApiSecurity, ApiTags } from '@nestjs/swagger';
+  import { Role } from '../../common/enums/env.enum';
+  import { Roles } from '../../cores/decorators/roles.decorator';
+  import { Request } from 'express';
+  import { UpdatePasswordDto } from '../users/dto/update-password.dto';
+  import { ResetPasswordDto } from './dto/reset-password.dto';
+  
+  @Controller('users')
+  @ApiTags('Users')
+  @ApiSecurity('JWT-auth')
+  export class UsersController {
+    constructor(private readonly usersService: UsersService) {}
+  
+    /**
+     * [ADMIN] Get all users
+     */
+    @Get()
+    @Roles(Role.ADMIN)
+    async findAll() {
+      return await this.usersService.findAll();
     }
-
-    @Get('docs')
-    @Redirect('https://docs.nestjs.com', 302)
-    getDocs(@Query('version') version) {
-        if (version && version === '5') {
-            return { url: 'https://docs.nestjs.com/v5/' };
-        }
+  
+    /**
+     * [ADMIN] Get user by user id
+     */
+    @Get(':id')
+    @Roles(Role.ADMIN)
+    async findOneById(@Param('id') id: string) {
+      return await this.usersService.findOneById(id);
     }
-    @Get('docs')
-    findOne(@Param() params: any): string {
-        console.log(params.id);
-        return `This action returns a #${params.id} cat`;
+  
+    /**
+     * [USER] can change own password
+     */
+    @Patch('me/password')
+    @Roles(Role.USER)
+    @ApiOkResponse({
+      schema: {
+        example: {
+          message: 'Password successfully updated',
+        },
+      },
+    })
+    updatePassword(
+      @Body() updatePasswordDto: UpdatePasswordDto,
+      @Req() req: Request,
+    ) {
+      const { userId } = req.user as any;
+  
+      return this.usersService.updatePassword(userId, updatePasswordDto);
     }
-    GetUser() {
-        return 'user 1';
+  
+    /**
+     * [ADMIN] can reset password of user
+     */
+    @Patch(':id/password')
+    @Roles(Role.ADMIN)
+    @ApiOkResponse({ type: ResetPasswordDto })
+    changePassword(@Param('id') id: string) {
+      return this.usersService.resetPassword(id);
     }
-}
+  
+    /**
+     * [ADMIN] can delete user
+     */
+    @Delete(':id')
+    @Roles(Role.ADMIN)
+    delete(@Param('id') id: string) {
+      return this.usersService.deleteById(id);
+    }
+  }
+  
