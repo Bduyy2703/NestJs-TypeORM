@@ -3,31 +3,36 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { MailService } from './mail.service';
 import { join } from 'path';
-
+import { ConfigModule, ConfigService } from '@nestjs/config';
 @Module({
   imports: [
-    MailerModule.forRoot({
-      transport: {
-        host: process.env.MAIL_HOST,
-        secure: false,
-        tls: {
-          rejectUnauthorized: false,
+    ConfigModule.forRoot(), // Load config file và môi trường
+    MailerModule.forRootAsync({
+      imports: [ConfigModule], // Import ConfigModule vào MailerModule
+      useFactory: async (configService: ConfigService) => ({
+        transport: {
+          host: configService.get('MAIL_HOST'), // Lấy giá trị từ .env
+          secure: false,
+          tls: {
+            rejectUnauthorized: false,
+          },
+          auth: {
+            user: configService.get('MAIL_USER'),
+            pass: configService.get('MAIL_PASSWORD'),
+          },
         },
-        auth: {
-          user: process.env.MAIL_USER,
-          pass: process.env.MAIL_PASSWORD,
+        defaults: {
+          from: `"No Reply" <${configService.get('MAIL_FROM')}>`, // Lấy từ .env
         },
-      },
-      defaults: {
-        from: `"No Reply" ${process.env.MAIL_FROM}`,
-      },
-      template: {
-        dir: join(__dirname, 'templates'),
-        adapter: new HandlebarsAdapter(),
-        options: {
-          strict: false,
+        template: {
+          dir: join(__dirname, './template'),
+          adapter: new HandlebarsAdapter(),
+          options: {
+            strict: false,
+          },
         },
-      },
+      }),
+      inject: [ConfigService], // Inject ConfigService để lấy biến môi trường
     }),
   ],
   providers: [MailService],

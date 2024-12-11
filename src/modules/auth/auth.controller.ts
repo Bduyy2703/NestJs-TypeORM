@@ -44,6 +44,25 @@ import {
      * Create a new user (done)
      */
     @Public()
+    @ApiBody({
+      schema: {
+        type: 'object',
+        properties: {
+          email: {
+            type: 'string',
+          },
+          username: {
+            type: 'string',
+          },
+          password: {
+            type: 'string',
+          },
+          phoneNumber: {
+            type: 'string',
+          },
+        },
+      },
+    })
     @Post('signup')
     @HttpCode(201)
     @ApiCreatedResponse({
@@ -61,9 +80,21 @@ import {
      * Client do action login (done)
      */
     @Public()
+    @ApiBody({
+      schema: {
+        type: 'object',
+        properties: {
+          email: {
+            type: 'string',
+          },
+          password: {
+            type: 'string',
+          },
+        },
+      },
+    })
     @UseGuards(LocalAuthGuard)
     @Post('login')
-    @ApiBody({ type: LoginDto })
     @ApiOkResponse({
       description:
         "Return token pair access token, refresh token with expired time of AT and user'roles",
@@ -73,8 +104,7 @@ import {
     @ApiNotFoundResponse({ description: 'User not found' })
     @ApiUnauthorizedResponse({ description: 'invalid credentials' })
     async login(@Req() req: Request, @Res() res: Response) {
-      console.log(req.user);
-  
+      console.log(req.user,'req.user');
       return new SuccessResponse({
         message: 'Login success',
         metadata: await this.authService.login(req.user as User),

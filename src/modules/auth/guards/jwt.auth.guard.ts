@@ -15,7 +15,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     private readonly authService: AuthService,
     private reflector: Reflector,
   ) {
-    super();
+    super();  
   }
 
   async canActivate(context: ExecutionContext): Promise<any> {

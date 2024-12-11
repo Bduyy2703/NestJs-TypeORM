@@ -23,7 +23,7 @@ import {
       if (isPublicRoute) {
         return true;
       }
-  
+      
       const requireRoles = this.reflector.getAllAndOverride<Role[]>('roles', [
         context.getHandler(),
         context.getClass(),

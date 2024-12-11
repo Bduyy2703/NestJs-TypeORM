@@ -9,6 +9,7 @@
     "target": "ES6",
     "sourceMap": true,
     "outDir": "./dist",
+    // "rootDir": "./src",
     "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
@@ -17,5 +18,9 @@
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false
-  }
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.hbs" // Thêm dòng này
+  ]
 }

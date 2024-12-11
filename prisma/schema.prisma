@@ -27,8 +27,7 @@ model Token {
   refreshToken          String
   accessToken           String
   user User             @relation(name: "user_token", fields: [userId], references: [id], onDelete: Cascade)
-  userId String         @unique
-   
+  userId String         @unique 
 }
 model Profile {
   id Int                @id @default(autoincrement())
@@ -42,7 +41,6 @@ model Profile {
   userId                String @unique
   
 }
-
 
 enum Role {
   ADMIN

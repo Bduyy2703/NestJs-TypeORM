@@ -8,11 +8,17 @@ import { LocalStrategy } from './strategies/local.strategy';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { TokenModule } from '../token/token.module';
-
+import { ConfigModule, ConfigService } from '@nestjs/config';
 @Module({
   imports: [
-    JwtModule.register({
-      secret: process.env.SECRET_KEY,
+    ConfigModule.forRoot(), // Import ConfigModule để đọc file .env
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'), // Lấy giá trị từ biến môi trường
+        signOptions: { expiresIn: '30m' },
+      }),
     }),
     MailModule,
     UsersModule,
@@ -23,4 +29,4 @@ import { TokenModule } from '../token/token.module';
   providers: [AuthService, LocalStrategy, JwtStrategy],
   exports: [AuthService],
 })
-export class AuthModule {}
+export class AuthModule { }

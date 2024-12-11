@@ -8,12 +8,12 @@ import * as dotenv from 'dotenv';
 dotenv.config({ path: '.env' });
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.setGlobalPrefix('/api/v1');
+  app.setGlobalPrefix('/api-docs/v1');
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
 
   // Config Swagger
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup('api-docs/v1', app, document);
 
   await app.listen(process.env.PORT ?? 3000);
 }

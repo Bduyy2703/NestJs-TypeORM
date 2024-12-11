@@ -9,7 +9,7 @@ const dev = {
   postgres: {
     HOST: process.env.DEV_DB_HOST || 'localhost',
     PORT: process.env.DEV_DB_PORT || 5432,
-    USERNAME: process.env.DEV_DB_USERNAME || '',
+    USERNAME: process.env.DEV_DB_USERNAME || 'postgres',
     PASSWORD: process.env.DEV_DB_PASSWORD || '',
     DATABASE: process.env.DEV_DB_DATABASE || 'todo',
   },

@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsPhoneNumber, isPhoneNumber, MinLength } from 'class-validator';
 import { Role } from '../../../common/enums/env.enum';
 
 export class RegisterDto {
@@ -21,4 +21,7 @@ export class RegisterDto {
    * User of the user
    */
   username?: string;
+
+  @IsPhoneNumber('VN')
+  phoneNumber: string;
 }

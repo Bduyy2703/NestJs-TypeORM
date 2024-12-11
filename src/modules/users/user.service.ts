@@ -7,21 +7,28 @@ import * as bcrypt from 'bcrypt';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 @Injectable()
 export class UsersService {
-  constructor(private prismaService: PrismaService) {}
+  constructor(private prismaService: PrismaService) { }
 
   async create(registerDto: RegisterDto): Promise<User> {
+
+    const [firstname, lastname] = registerDto.username.split(' ');
     const user = await this.prismaService.user.create({
       data: {
-        ...registerDto,
+        email: registerDto.email,
+        password: registerDto.password,
+        username: registerDto.username,
         profile: {
-          create: {},
+          create: {
+            phoneNumber: registerDto.phoneNumber,
+            firstName: firstname,
+            lastName: lastname,
+          },
         },
       },
       include: {
         profile: true,
       },
     });
-
     return user;
   }
 
@@ -34,8 +41,8 @@ export class UsersService {
   }
 
   async findOneByEmail(email: string): Promise<User> {
-    const user = await this.prismaService.user.findUnique({ where: { email } });
 
+    const user = await this.prismaService.user.findUnique({ where: { email } });
     return user;
   }
 
