@@ -1,15 +1,16 @@
-import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { RegisterDto } from '../auth/dto/register.dto';
 import { PrismaService } from 'prisma/prisma.service';
 import { Role, User } from '@prisma/client';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import * as bcrypt from 'bcrypt';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { Token } from '../token/entities/token.entity';
 @Injectable()
 export class UsersService {
   constructor(private prismaService: PrismaService) { }
 
-  async create(registerDto: RegisterDto): Promise<User> {
+  async create(registerDto: RegisterDto,tokenOTP: string): Promise<User> {
 
     const [firstname, lastname] = registerDto.username.split(' ');
     const user = await this.prismaService.user.create({
@@ -17,6 +18,8 @@ export class UsersService {
         email: registerDto.email,
         password: registerDto.password,
         username: registerDto.username,
+        isVerified : false,
+        tokenOTP : tokenOTP,
         profile: {
           create: {
             phoneNumber: registerDto.phoneNumber,
@@ -43,6 +46,12 @@ export class UsersService {
   async findOneByEmail(email: string): Promise<User> {
 
     const user = await this.prismaService.user.findUnique({ where: { email } });
+    return user;
+  }
+
+  async findUserByToken(tokenOTP: string): Promise<User> {
+
+    const user = await this.prismaService.user.findFirst({ where: { tokenOTP } });
     return user;
   }
 
@@ -77,6 +86,25 @@ export class UsersService {
     return res;
   }
 
+  async updateUser(user: User): Promise<User> {
+    // Kiểm tra xem người dùng có tồn tại trong DB hay không
+    const existingUser = await this.prismaService.user.findUnique({
+      where: { id: user.id },
+    });
+
+    if (!existingUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Thực hiện cập nhật
+    return await this.prismaService.user.update({
+      where: { id: user.id },
+      data: {
+        isVerified: user.isVerified, // true
+        tokenOTP: user.tokenOTP,     // null
+      },
+    });
+  }
   async updatePassword(id: string, updatePasswordDto: UpdatePasswordDto) {
     const user = await this.findOneById(id);
 

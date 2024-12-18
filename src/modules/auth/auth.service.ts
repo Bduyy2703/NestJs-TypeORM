@@ -32,16 +32,18 @@ export class AuthService {
     if (user) {
       throw new ForbiddenException('User is registered !');
     }
-
+    // Send email
+    const tokenOTP = Math.floor(1000 + Math.random() * 9000).toString();
     // 2. hashing password
     registerDto.password = await bcrypt.hash(registerDto.password, 10);
     // 3. create
-    const newUser = await this.usersService.create(registerDto);
+    const newUser = await this.usersService.create(registerDto, tokenOTP);
 
     if (!newUser) {
       throw new BadRequestException("Can't register !");
     }
 
+    await this.mailerService.sendUserConfirmation(newUser, tokenOTP);
     // 4. generate accessToken and refreshToken using JWT
     const payload = {
       userId: newUser.id,
@@ -56,12 +58,6 @@ export class AuthService {
       accessToken,
       refreshToken,
     });
-
-    // Send email
-    const token = Math.floor(1000 + Math.random() * 9000).toString();
-
-    await this.mailerService.sendUserConfirmation(newUser, token);
-
     return {
       accessToken,
       refreshToken,
@@ -69,25 +65,58 @@ export class AuthService {
     };
   }
 
+  //confirm mail
+  async verifyEmailToken(tokenOTP: string) {
+    // 1. Tìm token trong cơ sở dữ liệu
+    const user = await this.usersService.findUserByToken(tokenOTP);
+    if (!user) {
+      throw new BadRequestException('Invalid token');
+    }
+    // 2. Xác nhận email
+    user.isVerified = true;
+    user.tokenOTP = null; // Xóa token sau khi xác nhận
+    await this.usersService.updateUser(user);
+
+    return { message: 'Email verified successfully' };
+  }
+  //login
   async login(user: User) {
+
     // generate access token and refresh token
     const payload = {
       userId: user.id,
       email: user.email,
       roles: user.roles,
     };
-    const { accessToken, refreshToken, expiredInAccessToken } =
-      await this.createTokenPair(payload);
-    await this.tokenService.create(user, {
-      refreshToken: refreshToken,
-      accessToken: accessToken,
-    });
-    console.log('333333')
-    return {
-      accessToken,
-      refreshToken,
-      expiredInAccessToken,
-    };
+    const { accessToken, refreshToken, expiredInAccessToken } = await this.createTokenPair(payload);
+    if (user.isVerified) {
+      await this.tokenService.create(user, {
+        refreshToken: refreshToken,
+        accessToken: accessToken,
+      });
+      return {
+        accessToken,
+        refreshToken,
+        expiredInAccessToken,
+      };
+    }
+    else {
+      // Send email
+      const tokenOTP = Math.floor(1000 + Math.random() * 9000).toString();
+      await this.mailerService.sendUserConfirmation(user, tokenOTP);
+      user.tokenOTP = tokenOTP;
+      await this.usersService.updateUser(user);
+      await this.tokenService.create(user, {
+        refreshToken: refreshToken,
+        accessToken: accessToken,
+      });
+      return {
+         message: 'Email is not verified . Please check Email to verified',
+        accessToken,
+        refreshToken,
+        expiredInAccessToken,
+      };
+    }
   }
 
   async logout(userId: string) {

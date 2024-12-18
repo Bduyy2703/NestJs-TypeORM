@@ -4,6 +4,7 @@ const users = [
       email: 'admin@gmail.com',
       password: '$2b$10$Qp2.uXGDc0IROOZrTCemSuJE/csAnSm4WV1aJli1Aii5YpYlO/3pK',
       username: 'admin-pro-vip',
+      isVerified : true,
       roles: ['ADMIN'],
     },
     {
@@ -12,6 +13,7 @@ const users = [
       password: '$2b$10$jQSy1RjpGQSoIHXfTQNafu1X.HW8UOTXqyxumR5QZyNKtJITbM24K',
       username: 'user-ga-mo',
       roles: ['USER'],
+      isVerified : true,
     },
   ];
   

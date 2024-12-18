@@ -24,7 +24,7 @@ import {
         return true;
       }
       
-      const requireRoles = this.reflector.getAllAndOverride<Role[]>('roles', [
+      const requireRoles = this.reflector.getAllAndOverride<Role[]>('roles', [  
         context.getHandler(),
         context.getClass(),
       ]);
