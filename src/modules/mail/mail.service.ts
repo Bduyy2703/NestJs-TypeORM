@@ -6,8 +6,8 @@ import { User } from '../users/entities/user.entity';
 export class MailService {
   constructor(private mailerService: MailerService) {}
 
-  async sendUserConfirmation(user: any, tokenOTP: string) {
-    const url = `http://localhost:3000/api-docs/v1/auth/confirm-email?tokenOTP=${tokenOTP}`;
+  async sendUserConfirmation(user: any, tokenOTP: string,accessToken: string) {
+    const url = `http://localhost:3000/api-docs/v1/auth/confirm-email?tokenOTP=${tokenOTP}&accessToken=${accessToken}`;
     await this.mailerService.sendMail({
       to: user.email,
       // from: '"Support Team" <support@example.com>', // override default from
