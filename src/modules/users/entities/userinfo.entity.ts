@@ -10,7 +10,7 @@ import {
   } from 'typeorm';
   import { User } from './user.entity';
   import { Role } from '../../../common/enums/env.enum';
-  
+  import { Blog } from '../../blogs/entities/blog.entity';
   @Entity({ name: 'userInfo' })
   export class UserInfo {
     @PrimaryGeneratedColumn()
@@ -20,6 +20,9 @@ import {
     @JoinColumn({ name: 'user_id' })
     user: User;
   
+    @OneToMany(() => Blog, (blog) => blog.userInfo)
+    blogs: Blog[];
+
     @Column({ default: '' })
     fistName: string;
   
