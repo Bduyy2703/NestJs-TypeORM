@@ -14,6 +14,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { BlogsModule } from './modules/blogs/blog.module';
 import { ProfilesModule } from './modules/profile/profile.module';
 import { CommentsModule } from './modules/comment/comment.module';
+import { NotificationModule } from './modules/notification/notification.module';
 
 @Module({
   imports: [
@@ -25,7 +26,7 @@ import { CommentsModule } from './modules/comment/comment.module';
     MailModule,
     ProfilesModule,
     CommentsModule,
-    Notification,
+    NotificationModule,
     EventEmitterModule.forRoot(),
   ],
   controllers: [AppController],

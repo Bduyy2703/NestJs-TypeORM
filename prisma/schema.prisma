@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,17 +8,17 @@ datasource db {
 }
 
 model User {
-  id         String   @id @default(uuid())
-  email      String   @unique
+  id         String    @id @default(uuid())
+  email      String    @unique
   password   String
   username   String?
-  tokenOTP   String?
-  isVerified Boolean
   roles      Role[]    @default([USER])
-  profile    Profile?  @relation("user_profile")
-  token      Token?    @relation("user_token")
+  isVerified Boolean
+  tokenOTP   String?
   blogs      Blog[]    @relation("user_blogs")
   comments   Comment[] @relation("user_comments")
+  profile    Profile?  @relation("user_profile")
+  token      Token?    @relation("user_token")
 }
 
 model Token {
@@ -32,8 +26,8 @@ model Token {
   refreshTokenUsed String[]
   refreshToken     String
   accessToken      String
-  user             User     @relation(name: "user_token", fields: [userId], references: [id], onDelete: Cascade)
   userId           String   @unique
+  user             User     @relation("user_token", fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Profile {
@@ -41,45 +35,41 @@ model Profile {
   firstName   String?
   lastName    String?
   phoneNumber String?
-  socialMedia String?
   isActive    Boolean   @default(true)
   createAt    DateTime? @default(now())
   updatedAt   DateTime? @updatedAt
-  user        User      @relation(name: "user_profile", fields: [userId], references: [id], onDelete: Cascade)
   userId      String    @unique
+  socialMedia String?
+  user        User      @relation("user_profile", fields: [userId], references: [id], onDelete: Cascade)
 }
-
 
 model Blog {
-  id                    Int @id @default(autoincrement())
-  title                 String
-  content               String @db.Text
-  status                Status @default(PENDING_APPROVAL)
-  createAt              DateTime? @default(now())
-  updatedAt             DateTime?  @updatedAt
-  author                User @relation(name: "user_blogs",fields: [authorId], references: [id], onDelete: Cascade)
-  authorId              String 
-  comments              CommentsOnBlogs[] @relation(name: "blog_comment")
+  id        Int               @id @default(autoincrement())
+  title     String
+  content   String
+  status    Status            @default(PENDING_APPROVAL)
+  createAt  DateTime?         @default(now())
+  updatedAt DateTime?         @updatedAt
+  authorId  String
+  author    User              @relation("user_blogs", fields: [authorId], references: [id], onDelete: Cascade)
+  comments  CommentsOnBlogs[] @relation("blog_comment")
 }
 
-
-
-
 model Comment {
-  id                    Int @id @default(autoincrement())
-  parentId              Int 
-  content               String
-  createAt              DateTime? @default(now())
-  author                User @relation(name: "user_comments", fields: [authorId], references: [id], onDelete: Cascade)
-  authorId              String
-  blogs                 CommentsOnBlogs[] 
+  id       Int               @id @default(autoincrement())
+  parentId Int
+  content  String
+  createAt DateTime?         @default(now())
+  authorId String
+  author   User              @relation("user_comments", fields: [authorId], references: [id], onDelete: Cascade)
+  blogs    CommentsOnBlogs[]
 }
 
 model CommentsOnBlogs {
-  blog                  Blog @relation(name: "blog_comment" ,fields: [blogId], references: [id], onDelete: Cascade)
-  blogId                Int
-  comment               Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  commentId             Int
+  blogId    Int
+  commentId Int
+  blog      Blog    @relation("blog_comment", fields: [blogId], references: [id], onDelete: Cascade)
+  comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
 
   @@id([blogId, commentId])
 }
