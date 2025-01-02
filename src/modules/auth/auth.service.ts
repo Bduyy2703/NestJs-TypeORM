@@ -43,7 +43,6 @@ export class AuthService {
       throw new BadRequestException("Can't register !");
     }
 
-    await this.mailerService.sendUserConfirmation(newUser, tokenOTP);
     // 4. generate accessToken and refreshToken using JWT
     const payload = {
       userId: newUser.id,
@@ -58,6 +57,9 @@ export class AuthService {
       accessToken,
       refreshToken,
     });
+    
+    await this.mailerService.sendUserConfirmation(newUser, tokenOTP,accessToken);
+
     return {
       accessToken,
       refreshToken,
@@ -79,37 +81,45 @@ export class AuthService {
 
     return { message: 'Email verified successfully' };
   }
+
   //login
   async login(user: User) {
-
     // generate access token and refresh token
     const payload = {
       userId: user.id,
       email: user.email,
       roles: user.roles,
     };
+
     const { accessToken, refreshToken, expiredInAccessToken } = await this.createTokenPair(payload);
+
     if (user.isVerified) {
       await this.tokenService.create(user, {
         refreshToken: refreshToken,
         accessToken: accessToken,
       });
+
       return {
         accessToken,
         refreshToken,
         expiredInAccessToken,
       };
+
     }
     else {
       // Send email
       const tokenOTP = Math.floor(1000 + Math.random() * 9000).toString();
-      await this.mailerService.sendUserConfirmation(user, tokenOTP);
-      user.tokenOTP = tokenOTP;
-      await this.usersService.updateUser(user);
+
       await this.tokenService.create(user, {
         refreshToken: refreshToken,
         accessToken: accessToken,
       });
+
+      await this.mailerService.sendUserConfirmation(user, tokenOTP,accessToken);
+
+      user.tokenOTP = tokenOTP;
+
+      await this.usersService.updateUser(user);
       return {
          message: 'Email is not verified . Please check Email to verified',
         accessToken,
@@ -139,10 +149,8 @@ export class AuthService {
 
     if (user && (await bcrypt.compare(password, user.password))) {
       const { password, ...remain } = user;
-
       return remain as User;
     }
-
     return null;
   }
 

@@ -24,7 +24,7 @@ import {
     /**
      * [ADMIN] Get all users
      */
-    @Get()
+    @Get('all')
     @Roles(Role.ADMIN)
     async findAll() {
       return await this.usersService.findAll();
@@ -42,7 +42,7 @@ import {
     /**
      * [USER] can change own password
      */
-    @Patch('me/password')
+    @Patch('me/change-password')
     @Roles(Role.USER)
     @ApiOkResponse({
       schema: {
@@ -63,7 +63,7 @@ import {
     /**
      * [ADMIN] can reset password of user
      */
-    @Patch(':id/password')
+    @Patch(':id/reset-password')
     @Roles(Role.ADMIN)
     @ApiOkResponse({ type: ResetPasswordDto })
     changePassword(@Param('id') id: string) {
