@@ -8,7 +8,7 @@ import {
     Req,
   } from '@nestjs/common';
   import { UsersService } from './user.service';
-  import { ApiOkResponse, ApiSecurity, ApiTags } from '@nestjs/swagger';
+  import { ApiBody, ApiOkResponse, ApiSecurity, ApiTags } from '@nestjs/swagger';
   import { Role } from '../../common/enums/env.enum';
   import { Roles } from '../../cores/decorators/roles.decorator';
   import { Request } from 'express';
@@ -44,6 +44,19 @@ import {
      */
     @Patch('me/change-password')
     @Roles(Role.USER)
+    @ApiBody({
+      schema: {
+        type: 'object',
+        properties: {
+          oldpassword: {
+            type: 'string',
+          },
+          newpassword: {
+            type: 'string',
+          },
+        },
+      },
+    })
     @ApiOkResponse({
       schema: {
         example: {

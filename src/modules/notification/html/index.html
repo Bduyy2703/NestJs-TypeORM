@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"
+      integrity="sha512-11t8Q+vY9JlCrr+PveZKTYJq8n7O09Y5X/pk/aMd3vJugSvu4xOunGEUzaADqL3I8cZKE/pBwwCfXzDkRJh2sQ=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+
+    <script>
+      var socket = io.connect('http://localhost:3001/', {
+        extraHeaders: {
+          Authorization:
+            'Bearer ' +
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1ZjEyNmI1My02ZGFhLTQ0YTQtYjFhZS0wOWI5NmVlN2IyOTQiLCJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsInJvbGVzIjpbIkFETUlOIl0sImlhdCI6MTcxMTAxMzIxMCwiZXhwIjoxNzExMDk5NjEwfQ.7l1V3dcBEI-BlW0tTXy35dFMU3l13M3nwtmmg2GHmeU',
+        },
+      });
+
+      socket.on('notification', (socketRes) => {
+        console.log(socketRes);
+      });
+    </script>
+  </body>
+</html>
