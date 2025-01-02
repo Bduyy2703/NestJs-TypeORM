@@ -11,14 +11,21 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './modules/auth/guards/jwt.auth.guard';
 import { RolesGuard } from './modules/auth/guards/role.guard';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { BlogsModule } from './modules/blogs/blog.module';
+import { ProfilesModule } from './modules/profile/profile.module';
+import { CommentsModule } from './modules/comment/comment.module';
 
 @Module({
   imports: [
     AuthModule,
     UsersModule,
+    BlogsModule,
     DatabaseModule,
     TokenModule,
     MailModule,
+    ProfilesModule,
+    CommentsModule,
+    Notification,
     EventEmitterModule.forRoot(),
   ],
   controllers: [AppController],
