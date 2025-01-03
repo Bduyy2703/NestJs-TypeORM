@@ -14,7 +14,7 @@ import { MailService } from '../mail/mail.service';
 import { User } from '@prisma/client';
 import { UsersService } from '../users/user.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-
+import {userExistException} from '../../cores/exceptions/bad-request.exceptions'
 @Injectable()
 export class AuthService {
   constructor(
@@ -30,7 +30,7 @@ export class AuthService {
     const user = await this.usersService.findOneByEmail(registerDto.email);
 
     if (user) {
-      throw new ForbiddenException('User is registered !');
+      throw new userExistException('User is registered !');
     }
     // Send email
     const tokenOTP = Math.floor(1000 + Math.random() * 9000).toString();

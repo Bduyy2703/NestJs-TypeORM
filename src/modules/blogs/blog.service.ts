@@ -98,7 +98,8 @@ import {
     }
   
     async findAllByStatus(status: StatusEnum): Promise<Blog[]> {
-      if (status == StatusEnum.ALL) {
+      console.log(status,"status")
+      if (status == StatusEnum.ALL || status == StatusEnum.PENDING_APPROVAL ||status == StatusEnum.PENDING_DELETION ||status == StatusEnum.APPROVED ||status == StatusEnum.DELETED ) {
         return await this.prismaService.blog.findMany();
       }
   

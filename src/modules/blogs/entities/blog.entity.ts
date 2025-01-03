@@ -13,9 +13,11 @@ import {
 import { Comment } from '../../comment/entities/comment.entity';
 
 enum BlogStatus {
-  APPROVING = 'approving',
-  APPROVED = 'approved',
-  DELETING = 'deleting',
+  PENDING_APPROVAL = 'PENDING_APPROVAL',
+  PENDING_DELETION = 'PENDING_DELETION',
+  APPROVED = 'APPROVED',
+  DELETED = 'DELETED',
+  ALL = 'ALL',
 }
 
 @Entity()
@@ -39,12 +41,12 @@ export class Blog {
   title: string;
 
   @Column()
-  paragraph: string;
+  content: string;
 
   @Column({
     type: 'enum',
     enum: BlogStatus,
-    default: BlogStatus.APPROVING,
+    default: BlogStatus.PENDING_APPROVAL,
   })
   status: BlogStatus;
 

@@ -107,7 +107,6 @@ export class UsersService {
   }
   async updatePassword(id: string, updatePasswordDto: UpdatePasswordDto) {
     const user = await this.findOneById(id);
-
     if (!user) {
       throw new BadRequestException('Invalid user');
     }

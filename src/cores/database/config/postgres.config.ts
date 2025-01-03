@@ -22,6 +22,7 @@ import { User } from '../../../modules/users/entities/user.entity';
         password: configService.get<string>('DEV_DB_PASSWORD'),
         database: configService.get<string>('DEV_DB_DATABASE'),
         entities: [User], // Khai báo các entities (hoặc sử dụng auto-load nếu cần)
+        migrations: ["../migrations/*.ts"],
         synchronize: true, // Tự động đồng bộ cơ sở dữ liệu (chỉ nên dùng cho môi trường phát triển)
         retryAttempts: 5,
         retryDelay: 3000,

@@ -29,7 +29,7 @@ import {
      * [VIEWER] Can see all blogs that is approved (done)
      */
     @Public()
-    @Get('/viewer')
+    @Get('/viewer/all')
     @ApiOkResponse({
       schema: {
         example: {
@@ -56,9 +56,10 @@ import {
     /**
      * [ADMIN] Can find all blogs with query ?status (done)
      */
-    @Get()
+    @Get('admin/all')
     @Roles(Role.ADMIN)
     async findAllByStatus(@Query() query: StatusDto) {
+      console.log("query",query)
       return await this.blogsService.findAllByStatus(query.status);
     }
   
@@ -74,8 +75,18 @@ import {
     /**
      * [ADMIN, USER] Can create blog but ADMIN must approve user'blog (done)
      */
-    @Post()
+    @Post('create')
     @Roles(Role.ADMIN, Role.USER)
+    @ApiBody({
+      schema: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', example: 'A Sample Blog Title' },
+          content: { type: 'string', example: 'This is the content of the blog.' },
+        },
+        required: ['title', 'content'],
+      },
+    })
     async requestCreate(
       @Body() createBlogDto: CreateBlogDto,
       @Req() req: Request,
@@ -119,7 +130,7 @@ import {
     /**
      * [ADMIN] approve or delete blogs (done)
      */
-    @Patch(':id')
+    @Patch(':id/create/approve-blog')
     @Roles(Role.ADMIN)
     async blogActions(@Query() query: BlogActionsDto, @Param('id') id: number) {
       return await this.blogsService.blogActions(id, query.action);
