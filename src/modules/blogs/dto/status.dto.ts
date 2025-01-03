@@ -1,13 +1,9 @@
-import { IsIn } from 'class-validator';
+import { IsEnum } from 'class-validator';
 import { StatusEnum } from 'src/common/enums/blog-status.enum';
 
 export class StatusDto {
-  @IsIn([
-    StatusEnum.PENDING_APPROVAL,
-    StatusEnum.PENDING_DELETION,
-    StatusEnum.APPROVED,
-    StatusEnum.DELETED,
-    StatusEnum.ALL,
-  ])
+  @IsEnum(StatusEnum, {
+    message: `status must be one of the following values: ${Object.values(StatusEnum).join(', ')}`,
+  })
   status: StatusEnum;
 }

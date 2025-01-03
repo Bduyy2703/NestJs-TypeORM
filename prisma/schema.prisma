@@ -7,6 +7,7 @@ datasource db {
   url      = "postgresql://postgres:27102003@localhost:5432/jewelry"
 }
 
+
 model User {
   id         String    @id @default(uuid())
   email      String    @unique
@@ -84,4 +85,5 @@ enum Status {
   APPROVED
   PENDING_DELETION
   DELETED
+  ALL
 }
