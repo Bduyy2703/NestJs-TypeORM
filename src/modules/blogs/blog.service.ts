@@ -79,9 +79,9 @@ import {
       if (!createCommentDto.id) {
         throw new NotFoundException('Blog not found');
       }
-  
+      console.log("ABC")
       const comment = await this.commentService.create(createCommentDto);
-  
+      console.log("ABDDC")
       if (!comment) throw new BadRequestException('Can not on this blog');
   
       this.eventEmitter.emit('comment', {
@@ -98,7 +98,6 @@ import {
     }
   
     async findAllByStatus(status: StatusEnum): Promise<Blog[]> {
-      console.log(status,"status")
       if (status == StatusEnum.ALL || status == StatusEnum.PENDING_APPROVAL ||status == StatusEnum.PENDING_DELETION ||status == StatusEnum.APPROVED ||status == StatusEnum.DELETED ) {
         return await this.prismaService.blog.findMany();
       }

@@ -36,7 +36,6 @@ import {
           content: createCommentDto.content,
           authorId: createCommentDto.authorId,
           parentId: null,
-          
         },
       });
   

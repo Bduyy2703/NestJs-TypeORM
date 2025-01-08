@@ -1,9 +1,15 @@
-import { IsEnum } from 'class-validator';
+
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsEnum, IsOptional } from 'class-validator';
 import { StatusEnum } from 'src/common/enums/blog-status.enum';
 
 export class StatusDto {
-  @IsEnum(StatusEnum, {
-    message: `status must be one of the following values: ${Object.values(StatusEnum).join(', ')}`,
+  @IsOptional()
+  @IsEnum(StatusEnum)
+  @ApiPropertyOptional({
+    required: false,
+    enum: StatusEnum,
+    example: StatusEnum.PENDING_APPROVAL
   })
   status: StatusEnum;
 }
