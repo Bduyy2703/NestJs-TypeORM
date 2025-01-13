@@ -7,19 +7,59 @@ datasource db {
   url      = "postgresql://postgres:27102003@localhost:5432/jewelry"
 }
 
-
 model User {
   id         String    @id @default(uuid())
   email      String    @unique
   password   String
   username   String?
-  roles      Role[]    @default([USER])
+  roleId     Int
+  role       Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
   isVerified Boolean
   tokenOTP   String?
   blogs      Blog[]    @relation("user_blogs")
   comments   Comment[] @relation("user_comments")
   profile    Profile?  @relation("user_profile")
   token      Token?    @relation("user_token")
+}
+
+model Role {
+  id        Int         @id @default(autoincrement())
+  code      String      @unique
+  name      String
+  createdAt DateTime?   @default(now())
+  updatedAt DateTime?   @updatedAt
+  isActive  Boolean     @default(true)
+  users     User[]
+  createdBy String?
+  updatedBy String?
+  RoleRight RoleRight[]
+}
+
+model Right {
+  id          Int           @id @default(autoincrement())
+  code        String?       @db.VarChar(10)
+  name        String?       @db.VarChar(10)
+  createdDate DateTime?     @default(now())
+  createdBy   String?       @db.VarChar(50)
+  updatedDate DateTime?
+  updatedBy   String?       @db.VarChar(50)
+  isActive    Boolean       @default(true)
+  RoleRight   RoleRight[]
+  RightObject RightObject[]
+}
+
+model RoleRight {
+  id          Int       @id @default(autoincrement())
+  roleId      Int
+  rightId     Int
+  createdDate DateTime? @default(now())
+  createdBy   String?   @db.VarChar(50)
+  updatedDate DateTime?
+  updatedBy   String?   @db.VarChar(50)
+  isActive    Boolean   @default(true)
+
+  role  Role  @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  right Right @relation(fields: [rightId], references: [id], onDelete: Cascade)
 }
 
 model Token {
@@ -29,6 +69,40 @@ model Token {
   accessToken      String
   userId           String   @unique
   user             User     @relation("user_token", fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Object {
+  id          Int           @id @default(autoincrement())
+  code        String?       @unique @db.VarChar(10)
+  name        String?       @db.VarChar(10)
+  createdDate DateTime?     @default(now())
+  createdBy   String?       @db.VarChar(50)
+  updatedDate DateTime?
+  updatedBy   String?       @db.VarChar(50)
+  isActive    Boolean       @default(true)
+  RightObject RightObject[]
+}
+
+model RightObject {
+  id          Int       @id @default(autoincrement())
+  rightId     Int
+  objectId    Int
+  createYn    Boolean   @default(false)
+  readYn      Boolean   @default(true)
+  updateYn    Boolean   @default(false)
+  deleteYn    Boolean   @default(false)
+  executeYn   Boolean   @default(true)
+  createdDate DateTime? @default(now())
+  createdBy   String?   @db.VarChar(50)
+  updatedDate DateTime?
+  updatedBy   String?   @db.VarChar(50)
+  isActive    Boolean   @default(true)
+
+  // Quan hệ với bảng Right
+  right Right @relation(fields: [rightId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  // Quan hệ với bảng TObject
+  object Object @relation(fields: [objectId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model Profile {
@@ -73,11 +147,6 @@ model CommentsOnBlogs {
   comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
 
   @@id([blogId, commentId])
-}
-
-enum Role {
-  ADMIN
-  USER
 }
 
 enum Status {

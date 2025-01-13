@@ -1,58 +1,35 @@
-import { UserInfo } from '../../users/entities/userinfo.entity';
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  JoinColumn,
-  JoinTable,
-  ManyToMany,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
-} from 'typeorm';
-import { Comment } from '../../comment/entities/comment.entity';
-
-enum BlogStatus {
-  PENDING_APPROVAL = 'PENDING_APPROVAL',
-  PENDING_DELETION = 'PENDING_DELETION',
-  APPROVED = 'APPROVED',
-  DELETED = 'DELETED',
-  ALL = 'ALL',
-}
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
+import { User } from '../../users/entities/user.entity'; // Import model User
+import { CommentsOnBlogs } from '../../comment-on-blog/entities/commentOnBlog.entity'; // Import model CommentsOnBlogs
+import { StatusEnum } from '../../../common/enums/blog-status.enum'; // Enum Status
 
 @Entity()
 export class Blog {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => UserInfo, (userInfo) => userInfo.blogs)
-  @JoinColumn({ name: 'userInfo_id' })
-  userInfo: UserInfo;
-
-  @ManyToMany(() => Comment)
-  @JoinTable({
-    name: 'blog_comment',
-    joinColumn: { name: 'blog_id', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'comment_id', referencedColumnName: 'id' },
-  })
-  comments: Comment[];
-
-  @Column()
+  @Column({ type: 'varchar' })
   title: string;
 
-  @Column()
+  @Column({ type: 'text' })
   content: string;
 
-  @Column({
-    type: 'enum',
-    enum: BlogStatus,
-    default: BlogStatus.PENDING_APPROVAL,
-  })
-  status: BlogStatus;
+  @Column({ type: 'enum', enum: StatusEnum, default: StatusEnum.PENDING_APPROVAL })
+  status: StatusEnum;
 
-  @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  createAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+  @Column({ type: 'timestamp', nullable: true, onUpdate: 'CURRENT_TIMESTAMP' })
+  updatedAt?: Date;
+
+  @Column({ type: 'varchar' })
+  authorId: string;
+
+  @ManyToOne(() => User, user => user.blogs, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'authorId' })
+  author: User;
+
+  @OneToMany(() => CommentsOnBlogs, commentsOnBlogs => commentsOnBlogs.blog)
+  comments: CommentsOnBlogs[];
 }

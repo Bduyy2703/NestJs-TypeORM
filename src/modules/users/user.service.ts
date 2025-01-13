@@ -6,20 +6,31 @@ import { UpdatePasswordDto } from './dto/update-password.dto';
 import * as bcrypt from 'bcrypt';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { Token } from '../token/entities/token.entity';
+import { RoleService } from '../role/role.service';
 @Injectable()
 export class UsersService {
-  constructor(private prismaService: PrismaService) { }
+  constructor(private prismaService: PrismaService,
+    private roleService: RoleService
+  ) { }
 
-  async create(registerDto: RegisterDto,tokenOTP: string): Promise<User> {
+  async create(registerDto: RegisterDto, tokenOTP: string): Promise<User> {
 
     const [firstname, lastname] = registerDto.username.split(' ');
-    const user = await this.prismaService.user.create({
+
+    // Tìm kiếm role dựa trên tên role
+    const role = await this.roleService.findByName(registerDto.roleName ? registerDto.roleName : 'USER');
+    if (!role) {
+      throw new Error("Role không hợp lệ");  // Kiểm tra nếu không tìm thấy role
+    }
+
+    const newUser = await this.prismaService.user.create({
       data: {
         email: registerDto.email,
         password: registerDto.password,
         username: registerDto.username,
-        isVerified : false,
-        tokenOTP : tokenOTP,
+        isVerified: false,
+        tokenOTP: tokenOTP,
+        roleId: role.id,
         profile: {
           create: {
             phoneNumber: registerDto.phoneNumber,
@@ -29,10 +40,10 @@ export class UsersService {
         },
       },
       include: {
-        profile: true,
+        role: true,
       },
     });
-    return user;
+    return newUser;
   }
 
   async findAll(): Promise<User[]> {
@@ -40,12 +51,20 @@ export class UsersService {
   }
 
   async findOneById(id: string): Promise<User> {
-    return await this.prismaService.user.findUnique({ where: { id } });
+    return await this.prismaService.user.findUnique({
+      where: { id }, include: {
+        role: true,
+      },
+    });
   }
 
   async findOneByEmail(email: string): Promise<User> {
 
-    const user = await this.prismaService.user.findUnique({ where: { email } });
+    const user = await this.prismaService.user.findUnique({
+      where: { email }, include: {
+        role: true, // Tải quan hệ role
+      },
+    });
     return user;
   }
 

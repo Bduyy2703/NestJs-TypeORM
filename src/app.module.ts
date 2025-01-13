@@ -15,6 +15,12 @@ import { BlogsModule } from './modules/blogs/blog.module';
 import { ProfilesModule } from './modules/profile/profile.module';
 import { CommentsModule } from './modules/comment/comment.module';
 import { NotificationModule } from './modules/notification/notification.module';
+import { RoleModule } from './modules/role/role.module';
+import { ObjectModule } from './modules/object/object.module';
+import { RightModule } from './modules/right/right.module';
+import { RightObjectModule } from './modules/right_object/right_object.module';
+import { RoleRightModule } from './modules/role_right/role_right.module';
+import { PermissionModule } from './modules/permission/permission.module';
 
 @Module({
   imports: [
@@ -27,6 +33,12 @@ import { NotificationModule } from './modules/notification/notification.module';
     ProfilesModule,
     CommentsModule,
     NotificationModule,
+    RoleModule,
+    ObjectModule,
+    RightModule,
+    RightObjectModule,
+    RoleRightModule,
+    PermissionModule,
     EventEmitterModule.forRoot(),
   ],
   controllers: [AppController],

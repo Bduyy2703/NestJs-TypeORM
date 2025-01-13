@@ -45,27 +45,7 @@ export class AuthController {
    * Create a new user (done)
    */
   @Public()
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        email: {
-          type: 'string',
-        },
-        username: {
-          type: 'string',
-        },
-        password: {
-          type: 'string',
-        },
-        phoneNumber: {
-          type: 'string',
-        },
-      },
-    },
-  })
   @Post('signup')
-  @HttpCode(201)
   @ApiCreatedResponse({
     description:
       "Return token pair access token, refresh token with expired time of AT and user'roles",
@@ -78,7 +58,7 @@ export class AuthController {
   }
 
   /**
-   * client click confirm email (fix
+   * client click confirm email (fix)
    * 
    */
 
@@ -91,19 +71,6 @@ export class AuthController {
    * Client do action login (done)
    */
   @Public()
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        email: {
-          type: 'string',
-        },
-        password: {
-          type: 'string',
-        },
-      },
-    },
-  })
   @UseGuards(LocalAuthGuard)
   @Post('login')
   @ApiOkResponse({
@@ -114,11 +81,11 @@ export class AuthController {
   @ApiBadRequestResponse({ description: 'Email must be an email' })
   @ApiNotFoundResponse({ description: 'User not found' })
   @ApiUnauthorizedResponse({ description: 'invalid credentials' })
-  async login(@Req() req: Request, @Res() res: Response) {
-    console.log(req.user, 'req.user');
+  async login(@Body() login: LoginDto, @Res() res: Response) {
+    console.log(login, 'req.user');
     return new SuccessResponse({
       message: 'Login success',
-      metadata: await this.authService.login(req.user as User),
+      metadata: await this.authService.login(login as User),
     }).send(res);
   }
 
@@ -151,7 +118,6 @@ export class AuthController {
    * Client do action logout (done)
    */
   @Get('logout')
-  @Roles(Role.ADMIN, Role.USER)
   @ApiOkResponse({ description: 'Logout successfully' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   logout(@Req() req: Request) {

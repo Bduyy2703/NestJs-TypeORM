@@ -14,7 +14,8 @@ import { MailService } from '../mail/mail.service';
 import { User } from '@prisma/client';
 import { UsersService } from '../users/user.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import {userExistException} from '../../cores/exceptions/bad-request.exceptions'
+import { userExistException } from '../../cores/exceptions/bad-request.exceptions'
+import { PrismaService } from 'prisma/prisma.service';
 @Injectable()
 export class AuthService {
   constructor(
@@ -23,33 +24,35 @@ export class AuthService {
     private tokenService: TokenService,
     private mailerService: MailService,
     private eventEmitter2: EventEmitter2,
+    private prismaService: PrismaService
   ) { }
 
   async signUp(registerDto: RegisterDto) {
-    // 1. Checking exist email ?
     const user = await this.usersService.findOneByEmail(registerDto.email);
 
     if (user) {
       throw new userExistException('User is registered !');
     }
-    // Send email
-    const tokenOTP = Math.floor(1000 + Math.random() * 9000).toString();
-    // 2. hashing password
-    registerDto.password = await bcrypt.hash(registerDto.password, 10);
-    // 3. create
-    const newUser = await this.usersService.create(registerDto, tokenOTP);
 
+    const tokenOTP = Math.floor(1000 + Math.random() * 9000).toString();
+
+    registerDto.password = await bcrypt.hash(registerDto.password, 10);
+
+    const newUser = await this.usersService.create(registerDto, tokenOTP);
     if (!newUser) {
       throw new BadRequestException("Can't register !");
     }
 
-    // 4. generate accessToken and refreshToken using JWT
-    const payload = {
-      userId: newUser.id,
-      email: newUser.email,
-      roles: newUser.roles,
-    };
+    const userWithRole = await this.prismaService.user.findUnique({
+      where: { id: newUser.id },
+      include: { role: true },
+    });
 
+    const payload = {
+      userId: userWithRole.id,
+      email: userWithRole.email,
+      roles: userWithRole.role.code,
+    };
     const { accessToken, refreshToken, expiredInAccessToken } =
       await this.createTokenPair(payload);
 
@@ -57,8 +60,8 @@ export class AuthService {
       accessToken,
       refreshToken,
     });
-    
-    await this.mailerService.sendUserConfirmation(newUser, tokenOTP,accessToken);
+
+    await this.mailerService.sendUserConfirmation(newUser, tokenOTP, accessToken);
 
     return {
       accessToken,
@@ -84,17 +87,23 @@ export class AuthService {
 
   //login
   async login(user: User) {
+    
+    const userWithRole = await this.prismaService.user.findUnique({
+      where: { email: user.email },
+      include: { role: true },
+    });
+
     // generate access token and refresh token
     const payload = {
-      userId: user.id,
-      email: user.email,
-      roles: user.roles,
+      userId: userWithRole.id,
+      email: userWithRole.email,
+      roles: userWithRole.role.code,
     };
 
     const { accessToken, refreshToken, expiredInAccessToken } = await this.createTokenPair(payload);
 
-    if (user.isVerified) {
-      await this.tokenService.create(user, {
+    if (userWithRole.isVerified) {
+      await this.tokenService.create(userWithRole, {
         refreshToken: refreshToken,
         accessToken: accessToken,
       });
@@ -110,18 +119,18 @@ export class AuthService {
       // Send email
       const tokenOTP = Math.floor(1000 + Math.random() * 9000).toString();
 
-      await this.tokenService.create(user, {
+      await this.tokenService.create(userWithRole, {
         refreshToken: refreshToken,
         accessToken: accessToken,
       });
 
-      await this.mailerService.sendUserConfirmation(user, tokenOTP,accessToken);
+      await this.mailerService.sendUserConfirmation(userWithRole, tokenOTP, accessToken);
 
-      user.tokenOTP = tokenOTP;
+      userWithRole.tokenOTP = tokenOTP;
 
-      await this.usersService.updateUser(user);
+      await this.usersService.updateUser(userWithRole);
       return {
-         message: 'Email is not verified . Please check Email to verified',
+        message: 'Email is not verified . Please check Email to verified',
         accessToken,
         refreshToken,
         expiredInAccessToken,
@@ -199,15 +208,17 @@ export class AuthService {
       throw new UnauthorizedException('Invalid token or not registered');
     }
 
-    const holderUser = await this.usersService.findOneById(holderToken.userId);
+    const userWithRole = await this.prismaService.user.findUnique({
+      where: { id: holderToken.userId },
+      include: { role: true },
+    });
 
-    // 4. generate new access
+    // generate access token and refresh token
     const payload = {
-      userId: holderUser.id,
-      email: holderUser.email,
-      roles: holderUser.roles,
+      userId: userWithRole.id,
+      email: userWithRole.email,
+      roles: userWithRole.role.code,
     };
-
     const { expiredInAccessToken, ...tokens } =
       await this.createTokenPair(payload);
 

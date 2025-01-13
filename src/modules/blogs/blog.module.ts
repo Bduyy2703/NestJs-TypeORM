@@ -3,7 +3,7 @@ import { BlogsService } from './blog.service';
 import { BlogsController } from './blogs.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Blog } from './entities/blog.entity';
-import { Comment } from './entities/comment.entity';
+import { Comment } from '../comment/entities/comment.entity';
 import { PrismaModule } from 'prisma/prisma.module';
 import { CommentsService } from '../comment/comment.service';
 
