@@ -24,6 +24,7 @@ import { FindRoleRightDto } from "./dto/find-role-right.dto";
 import { Public } from "../../cores/decorators/public.decorator";
 import { Roles } from "../../cores/decorators/roles.decorator";
 import { Actions } from "../../cores/decorators/action.decorator";
+import { Role } from "src/common/enums/env.enum";
 
 @ApiTags("RoleRight")
 @Controller("role-right")
@@ -99,7 +100,7 @@ export class RoleRightController {
   }
 
   @Put(":id")
-  @Roles("ADMIN", "USER", "ABC")
+  @Roles(Role.ADMIN , Role.USER)
   @Actions("update")
   @HttpCode(200)
   @ApiOperation({ summary: "Cập nhật mối quan hệ vai trò-quyền theo ID" })

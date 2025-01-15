@@ -14,6 +14,7 @@ import { Roles } from '../../cores/decorators/roles.decorator';
 import { Request } from 'express';
 import { UpdatePasswordDto } from '../users/dto/update-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { Actions } from 'src/cores/decorators/action.decorator';
 
 @Controller('users')
 @ApiTags('Users')
@@ -25,7 +26,8 @@ export class UsersController {
    * [ADMIN] Get all users
    */
   @Get('all')
-  @Roles(Role.ADMIN)
+  @Actions('read')
+  @Roles(Role.USER)
   async findAll() {
     return await this.usersService.findAll();
   }

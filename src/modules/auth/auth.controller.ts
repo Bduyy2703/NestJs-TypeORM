@@ -34,6 +34,7 @@ import { LoginDto } from './dto/login.dto';
 import { TokenResponse } from './dto/token-respone';
 import { SuccessResponse } from '../../cores/respones/success.respone';
 import { User } from '@prisma/client';
+import { Actions } from 'src/cores/decorators/action.decorator';
 
 @Controller('auth')
 @ApiBearerAuth()
@@ -82,7 +83,6 @@ export class AuthController {
   @ApiNotFoundResponse({ description: 'User not found' })
   @ApiUnauthorizedResponse({ description: 'invalid credentials' })
   async login(@Body() login: LoginDto, @Res() res: Response) {
-    console.log(login, 'req.user');
     return new SuccessResponse({
       message: 'Login success',
       metadata: await this.authService.login(login as User),
@@ -109,6 +109,7 @@ export class AuthController {
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @Post('refresh')
+  @Actions('create')
   @Roles(Role.ADMIN, Role.USER)
   generateAccessToken(@Body('refreshToken') refreshToken: string) {
     return this.authService.requestAccessToken(refreshToken);
@@ -118,6 +119,8 @@ export class AuthController {
    * Client do action logout (done)
    */
   @Get('logout')
+  @Actions('read')
+  @Roles(Role.ADMIN, Role.USER)
   @ApiOkResponse({ description: 'Logout successfully' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   logout(@Req() req: Request) {

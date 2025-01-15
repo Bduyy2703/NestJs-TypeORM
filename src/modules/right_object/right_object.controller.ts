@@ -24,6 +24,7 @@ import { FindRightObjectDto } from "./dto/find-right-object.dto";
 import { Public } from "../../cores/decorators/public.decorator";
 import { Roles } from "../../cores/decorators/roles.decorator";
 import { Actions } from "../../cores/decorators/action.decorator";
+import { Role } from "src/common/enums/env.enum";
 
 @ApiTags("RightObject")
 @Controller("right-object")
@@ -103,7 +104,7 @@ export class RightObjectController {
   }
 
   @Put(":id")
-  @Roles("ADMIN", "USER", "ABC")
+  @Roles(Role.ADMIN , Role.USER)
   @HttpCode(200)
   @Actions("update")
   @ApiOperation({ summary: "Cập nhật mối quan hệ quyền-đối tượng theo ID" })
