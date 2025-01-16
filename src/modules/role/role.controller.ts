@@ -22,7 +22,6 @@ import { RoleService } from "./role.service";
 import { Roles } from "../../cores/decorators/roles.decorator";
 import { Role } from "src/common/enums/env.enum";
 import { Actions } from "src/cores/decorators/action.decorator";
-import { Public } from "src/cores/decorators/public.decorator";
 
 @ApiTags("Role")
 @Controller("role")
@@ -51,6 +50,8 @@ export class RoleController {
   }
 
   @Get(":id")
+  @Roles(Role.ADMIN)
+  @Actions('read')
   @ApiOperation({ summary: "Lấy Role theo ID" })
   @ApiOkResponse({ type: RoleDto })
   async findOne(@Param("id") id: number): Promise<any> {
@@ -70,6 +71,8 @@ export class RoleController {
   }
 
   @Put(":id")
+  @Roles(Role.ADMIN)
+  @Actions('update')
   @ApiOperation({ summary: "Cập nhật Role theo ID" })
   @HttpCode(200)
   @ApiOkResponse({  description: "Cập nhật thành công." })
@@ -94,6 +97,8 @@ export class RoleController {
 
   @Delete(":id")
   @ApiOperation({ summary: "Xóa Role theo ID" })
+  @Roles(Role.ADMIN)
+  @Actions('delete')
   @ApiResponse({ status: 200, description: "Xóa thành công." })
   async remove(@Param("id") id: number): Promise<any> {
     try {

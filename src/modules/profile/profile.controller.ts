@@ -6,6 +6,7 @@ import { Role } from '../../common/enums/env.enum';
 import { Request } from 'express';
 import { Public } from '../../cores/decorators/public.decorator';
 import { ApiSecurity, ApiTags, ApiBody } from '@nestjs/swagger';
+import { Actions } from 'src/cores/decorators/action.decorator';
 
 @Controller('profiles')
 @ApiTags('Profiles')
@@ -17,6 +18,7 @@ export class ProfilesController {
      * [ADMIN] can find all profiles
      */
     @Get('all')
+    @Actions('read')
     @Roles(Role.ADMIN)
     async findAll() {
         return await this.profilesService.findAll();
@@ -26,6 +28,7 @@ export class ProfilesController {
      * [ADMIN, USER] can view it's own profile
      */
     @Get('/me')
+    @Actions('execute')
     @Roles(Role.ADMIN, Role.USER)
     async getMe(@Req() req: Request) {
         const { userId } = req.user as any;
@@ -47,35 +50,14 @@ export class ProfilesController {
      */
     @Patch()
     @Roles(Role.ADMIN, Role.USER)
-    @ApiBody({
-        schema: {
-            type: 'object',
-            properties: {
-                firstName: {
-                    type: 'string',
-                },
-                lastName: {
-                    type: 'string',
-                },
-                isActive: {
-                    type: 'boolean',
-                },
-                phoneNumber: {
-                    type: 'string',
-                },
-                socialMedia: {
-                    type: 'string',
-                },
-            },
-        },
-    })
+    @Actions('execute')
     async updateSome(
         @Body() updateProfileDto: UpdateProfileDto,
         @Req() req: Request,
     ) {
         const { userId } = req.user as any;
 
-        return await this.profilesService.updateSome(userId, updateProfileDto);
+        return await this.profilesService.update(userId, updateProfileDto);
     }
 
     /**
@@ -83,28 +65,7 @@ export class ProfilesController {
      */
     @Put()
     @Roles(Role.ADMIN, Role.USER)
-    @ApiBody({
-        schema: {
-            type: 'object',
-            properties: {
-                firstName: {
-                    type: 'string',
-                },
-                lastName: {
-                    type: 'string',
-                },
-                isActive: {
-                    type: 'string',
-                },
-                phoneNumber: {
-                    type: 'string',
-                },
-                socialMedia: {
-                    type: 'string',
-                },
-            },
-        },
-    })
+    @Actions('execute')
     async update(
         @Body() updateProfileDto: UpdateProfileDto,
         @Req() req: Request,

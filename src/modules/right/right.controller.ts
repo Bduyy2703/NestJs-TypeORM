@@ -20,6 +20,9 @@ import { CreateRightDto } from "./dto/create-right.dto";
 import { UpdateRightDto } from "./dto/update-right.dto";
 import { RightService } from "./right.service";
 import { Public } from "../../cores/decorators/public.decorator";
+import { Roles } from "src/cores/decorators/roles.decorator";
+import { Role } from "src/common/enums/env.enum";
+import { Actions } from "src/cores/decorators/action.decorator";
 
 @ApiTags("Right")
 @Controller("right")
@@ -27,7 +30,8 @@ export class RightController {
   constructor(private readonly rightService: RightService) {}
 
   @Post()
-  @Public()
+  @Roles(Role.ADMIN)
+  @Actions('create')
   @ApiOperation({ summary: "Tạo Right" })
   @ApiOkResponse({ type: RightDto })
   async create(@Body() createRightDto: CreateRightDto): Promise<any> {
@@ -47,6 +51,8 @@ export class RightController {
   }
 
   @Get(":id")
+  @Roles(Role.ADMIN)
+  @Actions('read')
   @ApiOperation({ summary: "Lấy Right theo ID" })
   @ApiOkResponse({ type: RightDto })
   async findOne(@Param("id") id: number): Promise<any> {
@@ -67,6 +73,8 @@ export class RightController {
 
   @Put(":id")
   @HttpCode(200)
+  @Roles(Role.ADMIN)
+  @Actions('update')
   @ApiOperation({ summary: "Cập nhật Right theo ID" })
   @ApiOkResponse({ description: "Cập nhật thành công." })
   async update(
@@ -89,6 +97,8 @@ export class RightController {
   }
 
   @Delete(":id")
+  @Roles(Role.ADMIN)
+  @Actions('delete')
   @ApiOperation({ summary: "Xóa Right theo ID" })
   @ApiResponse({ status: 200, description: "Xóa thành công." })
   async remove(@Param("id") id: number): Promise<any> {

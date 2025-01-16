@@ -18,6 +18,7 @@ export class PermissionService {
       WHERE u.id = $1
       `;
       const rolesResult = await this.dataSource.query(rolesQuery, [userId]); // Tham số truyền dưới dạng mảng
+      console.log("rolesResult",rolesResult)
       if (rolesResult.length > 0) {
         return rolesResult[0].object_code; // Lấy giá trị trả về đầu tiên
       } else {

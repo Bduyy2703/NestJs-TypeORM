@@ -27,7 +27,7 @@ export class UsersController {
    */
   @Get('all')
   @Actions('read')
-  @Roles(Role.USER)
+  @Roles(Role.ADMIN)
   async findAll() {
     return await this.usersService.findAll();
   }
@@ -36,6 +36,7 @@ export class UsersController {
    * [ADMIN] Get user by user id
    */
   @Get(':id')
+  @Actions('read')
   @Roles(Role.ADMIN)
   async findOneById(@Param('id') id: string) {
     return await this.usersService.findOneById(id);
@@ -46,31 +47,11 @@ export class UsersController {
    */
   @Patch('me/change-password')
   @Roles(Role.USER)
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        oldPassword: {
-          type: 'string',
-        },
-        newPassword: {
-          type: 'string',
-        },
-      },
-    },
-  })
-  @ApiOkResponse({
-    schema: {
-      example: {
-        message: 'Password successfully updated',
-      },
-    },
-  })
+  @Actions('execute')
   updatePassword(
     @Body() updatePasswordDto: UpdatePasswordDto,
     @Req() req: Request,
   ) {
-    console.log("updatePasswordDto", updatePasswordDto)
     const { userId } = req.user as any;
     return this.usersService.updatePassword(userId, updatePasswordDto);
   }
@@ -80,6 +61,7 @@ export class UsersController {
    */
   @Patch(':id/reset-password')
   @Roles(Role.ADMIN)
+  @Actions('update')
   @ApiOkResponse({ type: ResetPasswordDto })
   changePassword(@Param('id') id: string) {
     return this.usersService.resetPassword(id);
@@ -90,6 +72,7 @@ export class UsersController {
    */
   @Delete(':id')
   @Roles(Role.ADMIN)
+  @Actions('delete')
   delete(@Param('id') id: string) {
     return this.usersService.deleteById(id);
   }

@@ -32,7 +32,8 @@ export class RoleRightController {
   constructor(private readonly roleRightService: RoleRightService) {}
 
   @Post()
-  @Public()
+  @Roles(Role.ADMIN)
+  @Actions('create')
   @ApiOperation({ summary: "Tạo mối quan hệ giữa vai trò và quyền" })
   @ApiOkResponse({ type: RoleRightDto })
   async create(@Body() createRoleRightDto: CreateRoleRightDto): Promise<any> {
@@ -52,6 +53,8 @@ export class RoleRightController {
   }
 
   @Get()
+  @Roles(Role.ADMIN)
+  @Actions('read')
   @ApiOperation({ summary: "Lọc danh sách RoleRight" })
   @ApiOkResponse({
     type: RoleRightDto,
@@ -81,6 +84,8 @@ export class RoleRightController {
   }
 
   @Get(":id")
+  @Roles(Role.ADMIN)
+  @Actions('read')
   @ApiOperation({ summary: "Lấy mối quan hệ vai trò-quyền theo ID" })
   @ApiOkResponse({ type: RoleRightDto })
   async findOne(@Param("id") id: number): Promise<any> {
@@ -100,7 +105,7 @@ export class RoleRightController {
   }
 
   @Put(":id")
-  @Roles(Role.ADMIN , Role.USER)
+  @Roles(Role.ADMIN)
   @Actions("update")
   @HttpCode(200)
   @ApiOperation({ summary: "Cập nhật mối quan hệ vai trò-quyền theo ID" })
@@ -128,6 +133,8 @@ export class RoleRightController {
   }
 
   @Delete(":id")
+  @Roles(Role.ADMIN)
+  @Actions('delete')
   @ApiOperation({ summary: "Xóa mối quan hệ vai trò-quyền theo ID" })
   @ApiResponse({ status: 200, description: "Xóa thành công." })
   async remove(@Param("id") id: number): Promise<any> {

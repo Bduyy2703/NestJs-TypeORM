@@ -32,7 +32,8 @@ export class RightObjectController {
   constructor(private readonly rightObjectService: RightObjectService) {}
 
   @Post()
-  @Public()
+  @Roles(Role.ADMIN)
+  @Actions('create')
   @ApiOperation({ summary: "Tạo mối quan hệ giữa quyền và đối tượng" })
   @ApiOkResponse({ type: RightObjectDto })
   async create(
@@ -56,6 +57,8 @@ export class RightObjectController {
   }
 
   @Get()
+  @Roles(Role.ADMIN)
+  @Actions('read')
   @ApiOperation({ summary: "Lọc danh sách RightObject" })
   @ApiOkResponse({
     type: RightObjectDto,
@@ -85,6 +88,8 @@ export class RightObjectController {
   }
 
   @Get(":id")
+  @Roles(Role.ADMIN)
+  @Actions('read')
   @ApiOperation({ summary: "Lấy mối quan hệ quyền-đối tượng theo ID" })
   @ApiOkResponse({ type: RightObjectDto })
   async findOne(@Param("id") id: number): Promise<any> {
@@ -104,7 +109,7 @@ export class RightObjectController {
   }
 
   @Put(":id")
-  @Roles(Role.ADMIN , Role.USER)
+  @Roles(Role.ADMIN )
   @HttpCode(200)
   @Actions("update")
   @ApiOperation({ summary: "Cập nhật mối quan hệ quyền-đối tượng theo ID" })
@@ -135,6 +140,8 @@ export class RightObjectController {
   }
 
   @Delete(":id")
+  @Roles(Role.ADMIN)
+  @Actions('delete')
   @ApiOperation({ summary: "Xóa mối quan hệ quyền-đối tượng theo ID" })
   @ApiResponse({ status: 200, description: "Xóa thành công." })
   async remove(@Param("id") id: number): Promise<any> {

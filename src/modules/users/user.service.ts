@@ -90,12 +90,9 @@ export class UsersService {
     }
 
     const newPass = await bcrypt.hash(randomPass, 10);
-
-    user.password = newPass;
-
     await this.prismaService.user.update({
       where: { id },
-      data: { ...user },
+      data: { password: newPass },
     });
 
     let res = new ResetPasswordDto();
@@ -141,18 +138,17 @@ export class UsersService {
 
     const newPass = await bcrypt.hash(updatePasswordDto.newPassword, 10);
 
-    user.password = newPass;
-
     try {
       await this.prismaService.user.update({
         where: { id },
-        data: { ...user },
+        data: { password: newPass },
       });
 
       return {
         message: 'Password successfully updated',
       };
     } catch (err) {
+      console.log('error nè : ', err)
       throw new BadRequestException(err);
     }
   }

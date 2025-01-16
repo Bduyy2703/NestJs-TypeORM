@@ -27,20 +27,21 @@ export class ProfilesService {
   }
 
   async update(userId: string, updateProfileDto: UpdateProfileDto) {
+    const username = `${updateProfileDto.firstName || ''}${updateProfileDto.lastName || ''}`.trim(); // Tạo username từ firstName và lastName
+    
+    console.log('Generated username:', username);
+  
     return await this.prismaService.profile.update({
       where: { userId },
       data: {
-        ...updateProfileDto,
+        ...updateProfileDto, // Cập nhật các trường trong bảng Profile
+        user: {
+          update: {
+            username, // Cập nhật username trong bảng User
+          },
+        },
       },
     });
   }
 
-  async updateSome(userId: string, updateProfileDto: UpdateProfileDto) {
-    return await this.prismaService.profile.update({
-      where: { userId },
-      data: {
-        ...updateProfileDto,
-      },
-    });
-  }
 }

@@ -30,8 +30,7 @@ export class ObjectController {
   constructor(private readonly objectService: ObjectService) {}
 
   @Post()
-  @Public()
-  // @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN)
   @Actions("create")
   @ApiOperation({ summary: "Tạo Object" })
   @ApiOkResponse({ type: ObjectDto })
@@ -53,7 +52,7 @@ export class ObjectController {
 
   @Get(":id")
   @HttpCode(200)
-  @Roles(Role.ADMIN , Role.USER)
+  @Roles(Role.ADMIN)
   @Actions("read")
   @ApiOperation({ summary: "Lấy Object theo ID" })
   @ApiOkResponse({ type: ObjectDto })
@@ -74,7 +73,8 @@ export class ObjectController {
   }
 
   @Put(":id")
-  @Roles(Role.ADMIN , Role.USER)
+  @Roles(Role.ADMIN)
+  @Actions('update')
   @ApiOperation({ summary: "Cập nhật Object theo ID" })
   @ApiOkResponse({ description: "Cập nhật thành công." })
   async update(
@@ -100,7 +100,8 @@ export class ObjectController {
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN , Role.USER)
+  @Roles(Role.ADMIN)
+  @Actions('delete')
   @ApiOperation({ summary: "Xóa Object theo ID" })
   @ApiResponse({ status: 200, description: "Xóa thành công." })
   async remove(@Param("id") id: number): Promise<any> {
