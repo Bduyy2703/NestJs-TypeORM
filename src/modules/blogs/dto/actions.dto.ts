@@ -1,16 +1,16 @@
 import { IsIn } from 'class-validator';
-import { Status } from '@prisma/client';
+import { StatusEnum } from 'src/common/enums/blog-status.enum';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsOptional } from 'class-validator';
 
 
 export class BlogActionsDto {
     @IsOptional()
-    @IsIn([Status.APPROVED, Status.PENDING_APPROVAL])
+    @IsIn([StatusEnum.APPROVED, StatusEnum.PENDING_APPROVAL])
     @ApiPropertyOptional({
         required: false,
-        enum: Status,
-        example: Status.PENDING_APPROVAL
+        enum: StatusEnum,
+        example: StatusEnum.PENDING_APPROVAL
     })
-    action: Status;
+    action: StatusEnum;
 }

@@ -7,53 +7,58 @@ import {
   NotFoundException,
   forwardRef,
 } from '@nestjs/common';
+import { Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
 import { CreateBlogDto } from './dto/create-blog.dto';
-import { PrismaService } from 'prisma/prisma.service';
-import { Blog } from '.prisma/client';
-import { Status as StatusPrisma } from '@prisma/client';
+import { Blog } from '../blogs/entities/blog.entity';
 import { StatusEnum } from 'src/common/enums/blog-status.enum';
 import { CommentsService } from '../comment/comment.service';
 import { CreateCommentDto } from '../comment/dto/create-comment.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Role } from 'src/common/enums/env.enum';
 import { UpdateBlogDto } from './dto/update-blog.dto';
+import { throwError } from 'rxjs';
 
 @Injectable()
 export class BlogsService {
   constructor(
     @Inject(forwardRef(() => CommentsService))
     private commentService: CommentsService,
-    private prismaService: PrismaService,
     private eventEmitter: EventEmitter2,
+    @InjectRepository(Blog)
+    private blogRepository: Repository<Blog>,
   ) { }
 
-  async findById(blogId: number) {
-    return await this.prismaService.blog.findFirst({ where: { id: blogId } });
+  async findById(blogId: number): Promise<Blog> {
+    const blog = await this.blogRepository.findOne({
+      where: { id: blogId },
+    });
+
+    if (!blog) {
+      throw new NotFoundException(`Blog with ID ${blogId} not found`);
+    }
+
+    return blog;
   }
 
   async allCommentsOfBlog(id: number) {
-    const blogComments = await this.prismaService.blog.findUnique({
+    const blogComments = await this.blogRepository.findOne({
       where: { id },
-      include: {
-        comments: {
-          select: {
-            comment: {
-              select: {
-                content: true,
-                createAt: true,
-                author: {
-                  select: { username: true, id: true },
-                },
-              },
-            },
-          },
-        },
-      },
+      relations: ['comments', 'comments.author'], // Load comments and their authors
     });
+
+    if (!blogComments) {
+      throw new NotFoundException(`Blog with ID ${id} not found`);
+    }
 
     const refactorComments = blogComments.comments.map((comment) => {
       return {
-        ...comment.comment,
+        content: comment.comment.content,
+        createAt: comment.comment.createAt,
+        author: {
+          username: comment.comment.author.username,
+          id: comment.comment.author.id,
+        },
       };
     });
 
@@ -67,31 +72,39 @@ export class BlogsService {
     userId: string,
     createBlogDto: CreateBlogDto,
   ): Promise<Blog> {
-    const blog = await this.prismaService.blog.create({
-      data: { ...createBlogDto, authorId: userId },
-    });
-
-    if (!blog) {
-      throw new BadRequestException('Can not create blog');
+    try {
+      const blog = this.blogRepository.create({
+        ...createBlogDto,
+        authorId: userId, // Assuming the Blog entity has an author relation
+      });
+      const savedBlog = await this.blogRepository.save(blog);
+      if (!savedBlog) {
+        throw new BadRequestException('Cannot create blog');
+      }
+      return savedBlog;
+    } catch (error) {
+      console.log('error nè : ', error)
     }
-
-    return blog;
   }
 
   async commentOnBlog(createCommentDto: CreateCommentDto) {
-    if (!createCommentDto.id) {
+    const blog = await this.findById(createCommentDto.id);
+    if (!blog) {
       throw new NotFoundException('Blog not found');
     }
-    console.log("ABC")
-    const comment = await this.commentService.create(createCommentDto);
-    console.log("ABDDC")
-    if (!comment) throw new BadRequestException('Can not on this blog');
+
+    try {
+      let comment = await this.commentService.create(createCommentDto);
+    } catch (error) {
+      console.error('Error creating comment:', error.message);
+      throw new BadRequestException('Cannot comment on this blog');
+    }
 
     this.eventEmitter.emit('comment', {
       authorComment: createCommentDto.authorId,
       content: createCommentDto.content,
       blogId: createCommentDto.id,
-      authorBlog: (await this.findById(createCommentDto.id)).authorId,
+      authorBlog: blog.authorId,
     });
 
     return {
@@ -100,12 +113,13 @@ export class BlogsService {
     };
   }
 
+
   async findAllByStatus(status: StatusEnum): Promise<Blog[]> {
     if (status == StatusEnum.ALL) {
-      return await this.prismaService.blog.findMany();
+      return await this.blogRepository.find();
     }
 
-    return await this.prismaService.blog.findMany({
+    return await this.blogRepository.find({
       where: {
         status,
       },
@@ -113,39 +127,21 @@ export class BlogsService {
   }
   async findAllByUserId(userId: string) {
     // Logic để lấy tất cả bài viết theo ID user
-    return this.prismaService.blog.findMany({
+    return this.blogRepository.find({
       where: { authorId: userId },
     });
   }
 
   async findApprovedBlogs(): Promise<any[]> {
-    const blogs = await this.prismaService.blog.findMany({
+    const blogs = await this.blogRepository.find({
+      relations: ['author', 'comments', 'comments.author'], // Load related entities
+      where: { status: StatusEnum.APPROVED }, // Filter by approved status
       select: {
+        id: true,
         title: true,
         content: true,
         createAt: true,
-        author: {
-          select: {
-            username: true,
-          },
-        },
-        comments: {
-          select: {
-            comment: {
-              select: {
-                author: {
-                  select: {
-                    username: true,
-                  },
-                },
-                createAt: true,
-                content: true,
-              },
-            },
-          },
-        },
       },
-      where: { status: StatusEnum.APPROVED },
     });
 
     return blogs.map((blog) => {
@@ -158,55 +154,74 @@ export class BlogsService {
       });
 
       return {
-        ...blog,
+        id: blog.id,
+        title: blog.title,
+        content: blog.content,
+        createAt: blog.createAt,
+        author: blog.author?.username,
         comments: cmts,
       };
     });
   }
 
-  async blogActions(blogId: number, action: StatusPrisma) {
-    const blog = await this.prismaService.blog.update({
-      where: { id: blogId },
-      data: {
-        status: action,
-      },
-    });
+  async blogActions(blogId: number, action: StatusEnum) {
+    const blog = await this.blogRepository.findOne({ where: { id: blogId } });
 
     if (!blog) {
-      throw new BadRequestException("Can't approve blog");
+      throw new NotFoundException('Blog not found');
+    }
+    blog.status = action;
+
+    try {
+      await this.blogRepository.save(blog);
+    } catch (error) {
+      throw new BadRequestException("Can't update blog status");
     }
 
     return {
-      message: 'Approved !',
+      message: 'Status updated successfully!',
       statusCode: HttpStatus.OK,
     };
   }
 
+
   async requestDelete(blogId: number, userId: string) {
-    return await this.prismaService.blog.update({
+    const blog = await this.blogRepository.findOne({
       where: {
         id: blogId,
         authorId: userId,
       },
-      data: {
-        status: StatusPrisma.PENDING_DELETION,
-      },
     });
+
+    if (!blog) {
+      throw new NotFoundException('Blog not found or you are not the author');
+    }
+
+    blog.status = StatusEnum.PENDING_DELETION;
+
+    try {
+      await this.blogRepository.save(blog);
+    } catch (error) {
+      throw new BadRequestException("Couldn't request blog deletion");
+    }
+
+    return {
+      message: 'Blog deletion requested successfully',
+      statusCode: HttpStatus.OK,
+    };
   }
 
   async delete(blogId: number) {
     try {
-      const blog = await this.prismaService.blog.delete({
-        where: {
-          id: blogId,
-          status: StatusPrisma.PENDING_DELETION,
-        },
+      const blog = await this.blogRepository.findOne({
+        where: { id: blogId, status: StatusEnum.PENDING_DELETION },
       });
 
       if (!blog) {
         throw new BadRequestException('Blog is not in pending deletion');
       }
-
+      // Delete the blog
+      await this.blogRepository.delete(blogId);
       await this.commentService.deleteCommentsNotBelongToBlog();
 
       return {
@@ -218,6 +233,8 @@ export class BlogsService {
       throw new BadRequestException('Something went wrong when delete');
     }
   }
+
+
   async update(
     blogId: number,
     userId: string,
@@ -225,9 +242,7 @@ export class BlogsService {
     data: UpdateBlogDto,
   ) {
     // 1. Kiểm tra bài viết có tồn tại
-    const blog = await this.prismaService.blog.findUnique({
-      where: { id: blogId },
-    });
+    const blog = await this.blogRepository.findOne({ where: { id: blogId } });
 
     if (!blog) {
       throw new NotFoundException('Blog not found');
@@ -240,19 +255,20 @@ export class BlogsService {
       );
     }
 
-    // 3. Cập nhật bài viết với trạng thái mặc định
-    const updatedBlog = await this.prismaService.blog.update({
-      where: { id: blogId },
-      data: {
+    try {
+      const updatedBlog = await this.blogRepository.save({
+        ...blog,
         ...data,
-        status: "PENDING_APPROVAL", // Trạng thái mặc định
-      },
-    });
+        status: StatusEnum.PENDING_APPROVAL, // Trạng thái mặc định
+      });
 
-    return {
-      message: 'Blog successfully updated',
-      updatedBlog,
-    };
+      return {
+        message: 'Blog successfully updated',
+        updatedBlog,
+      };
+    } catch (error) {
+      console.error(error);
+      throw new BadRequestException('Something went wrong while updating the blog');
+    }
   }
-
 }

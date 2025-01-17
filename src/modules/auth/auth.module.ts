@@ -11,7 +11,10 @@ import { TokenModule } from '../token/token.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { RoleModule } from '../role/role.module';
 import { PermissionService } from '../permission/permission.service';
-import { PrismaModule } from 'prisma/prisma.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { User } from '../users/entities/user.entity';
+import { Role } from '../role/entities/t_role';
+import { Token } from '../token/entities/token.entity';
 @Module({
   imports: [
     ConfigModule.forRoot(), // Import ConfigModule để đọc file .env
@@ -23,15 +26,15 @@ import { PrismaModule } from 'prisma/prisma.module';
         signOptions: { expiresIn: '30m' },
       }),
     }),
+    TypeOrmModule.forFeature([User, Role, Token]),
     MailModule,
     UsersModule,
     TokenModule,
     PassportModule,
     RoleModule,
-    PrismaModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy,PermissionService],
+  providers: [AuthService, LocalStrategy, JwtStrategy, PermissionService],
   exports: [AuthService],
 })
 export class AuthModule { }

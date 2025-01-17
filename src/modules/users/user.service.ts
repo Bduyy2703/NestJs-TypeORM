@@ -1,15 +1,21 @@
 import { BadRequestException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { RegisterDto } from '../auth/dto/register.dto';
-import { PrismaService } from 'prisma/prisma.service';
-import { Role, User } from '@prisma/client';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import * as bcrypt from 'bcrypt';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { Token } from '../token/entities/token.entity';
+import { Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
 import { RoleService } from '../role/role.service';
+import { User } from '../users/entities/user.entity'
+import { Profile } from '../profile/entities/profile.entity';
 @Injectable()
 export class UsersService {
-  constructor(private prismaService: PrismaService,
+  constructor(
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+    @InjectRepository(Profile)
+    private profileRepository: Repository<Profile>,
     private roleService: RoleService
   ) { }
 
@@ -22,57 +28,75 @@ export class UsersService {
     if (!role) {
       throw new Error("Role không hợp lệ");  // Kiểm tra nếu không tìm thấy role
     }
-
-    const newUser = await this.prismaService.user.create({
-      data: {
-        email: registerDto.email,
-        password: registerDto.password,
-        username: registerDto.username,
-        isVerified: false,
-        tokenOTP: tokenOTP,
-        roleId: role.id,
-        profile: {
-          create: {
-            phoneNumber: registerDto.phoneNumber,
-            firstName: firstname,
-            lastName: lastname,
-          },
-        },
-      },
-      include: {
-        role: true,
-      },
+    const newUser = this.userRepository.create({
+      email: registerDto.email,
+      password: registerDto.password,
+      username: registerDto.username,
+      isVerified: false,
+      tokenOTP: tokenOTP,
+      role: role,
     });
-    return newUser;
+
+    // Tạo profile gắn với user
+    const profile = this.profileRepository.create({
+      phoneNumber: registerDto.phoneNumber,
+      firstName: firstname,
+      lastName: lastname,
+      user: newUser, // Liên kết profile với user
+    });
+    await this.userRepository.save(newUser);
+    await this.profileRepository.save(profile);
+
+
+    // Trả về user với role (eager-load role)
+    const userWithRole = await this.userRepository.findOne({
+      where: { id: newUser.id },
+      relations: ['role'], // Eager-load role
+    });
+    return userWithRole;
   }
 
   async findAll(): Promise<User[]> {
-    return await this.prismaService.user.findMany();
+    return await this.userRepository.find({ relations: ['role', 'profile'] });
   }
 
+
   async findOneById(id: string): Promise<User> {
-    return await this.prismaService.user.findUnique({
-      where: { id }, include: {
-        role: true,
-      },
+    const user = await this.userRepository.findOne({
+      where: { id },
+      relations: ['role', 'profile'], // Lấy cả quan hệ với Role và Profile
     });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    return user;
   }
 
   async findOneByEmail(email: string): Promise<User> {
-
-    const user = await this.prismaService.user.findUnique({
-      where: { email }, include: {
-        role: true, // Tải quan hệ role
-      },
+    const user = await this.userRepository.findOne({
+      where: { email },
+      relations: ['role'],
     });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
     return user;
   }
 
   async findUserByToken(tokenOTP: string): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { tokenOTP } });
 
-    const user = await this.prismaService.user.findFirst({ where: { tokenOTP } });
+    if (!user) {
+      throw new NotFoundException('User not found with the provided token');
+    }
+
     return user;
   }
+
 
   async resetPassword(id: string): Promise<any> {
     const user = await this.findOneById(id);
@@ -90,10 +114,7 @@ export class UsersService {
     }
 
     const newPass = await bcrypt.hash(randomPass, 10);
-    await this.prismaService.user.update({
-      where: { id },
-      data: { password: newPass },
-    });
+    await this.userRepository.update(id, { password: newPass });
 
     let res = new ResetPasswordDto();
     res.message = 'Password reset successfully';
@@ -104,22 +125,17 @@ export class UsersService {
 
   async updateUser(user: User): Promise<User> {
     // Kiểm tra xem người dùng có tồn tại trong DB hay không
-    const existingUser = await this.prismaService.user.findUnique({
-      where: { id: user.id },
-    });
+    const existingUser = await this.userRepository.findOne({ where: { id: user.id } });
 
     if (!existingUser) {
       throw new NotFoundException('User not found');
     }
 
     // Thực hiện cập nhật
-    return await this.prismaService.user.update({
-      where: { id: user.id },
-      data: {
-        isVerified: user.isVerified, // true
-        tokenOTP: user.tokenOTP,     // null
-      },
-    });
+    existingUser.isVerified = user.isVerified;
+    existingUser.tokenOTP = user.tokenOTP;
+
+    return await this.userRepository.save(existingUser);
   }
   async updatePassword(id: string, updatePasswordDto: UpdatePasswordDto) {
     const user = await this.findOneById(id);
@@ -139,10 +155,7 @@ export class UsersService {
     const newPass = await bcrypt.hash(updatePasswordDto.newPassword, 10);
 
     try {
-      await this.prismaService.user.update({
-        where: { id },
-        data: { password: newPass },
-      });
+      await this.userRepository.update(id, { password: newPass });
 
       return {
         message: 'Password successfully updated',
@@ -153,16 +166,13 @@ export class UsersService {
     }
   }
 
-  async deleteById(id: string) {
-    const deletedUser = await this.prismaService.user.delete({ where: { id } });
+  async deleteById(id: string): Promise<{ message: string; code: number }> {
+    const result = await this.userRepository.delete(id);
 
-    if (!deletedUser) {
-      throw new BadRequestException("Can't delete user");
+    if (result.affected === 0) {
+      throw new BadRequestException("Unable to delete user");
     }
 
-    return {
-      message: 'Delete successful',
-      code: HttpStatus.OK,
-    };
+    return { message: 'Delete successful', code: HttpStatus.OK };
   }
 }

@@ -11,11 +11,16 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { TokenService } from '../token/token.service';
 import { MailService } from '../mail/mail.service';
-import { User } from '@prisma/client';
 import { UsersService } from '../users/user.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { userExistException } from '../../cores/exceptions/bad-request.exceptions'
-import { PrismaService } from 'prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { User } from '../users/entities/user.entity';
+import { Repository } from 'typeorm';
+import { Role } from '../role/entities/t_role';
+import { NotFoundException } from 'src/cores/exceptions/notFound-exception';
+import { LoginDto } from './dto/login.dto';
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -24,34 +29,32 @@ export class AuthService {
     private tokenService: TokenService,
     private mailerService: MailService,
     private eventEmitter2: EventEmitter2,
-    private prismaService: PrismaService
+    @InjectRepository(User) private readonly userRepository: Repository<User>,
+    @InjectRepository(Role) private readonly roleRepository: Repository<Role>,
   ) { }
 
   async signUp(registerDto: RegisterDto) {
-    const user = await this.usersService.findOneByEmail(registerDto.email);
 
-    if (user) {
-      throw new userExistException('User is registered !');
+    const existingUser = await this.userRepository.findOneBy({
+      email: registerDto.email,
+    });
+    if (existingUser) {
+      throw new userExistException('User is registered!');
     }
 
     const tokenOTP = Math.floor(1000 + Math.random() * 9000).toString();
 
     registerDto.password = await bcrypt.hash(registerDto.password, 10);
 
+    // Tạo user mới
     const newUser = await this.usersService.create(registerDto, tokenOTP);
     if (!newUser) {
-      throw new BadRequestException("Can't register !");
+      throw new BadRequestException("Can't register!");
     }
-
-    const userWithRole = await this.prismaService.user.findUnique({
-      where: { id: newUser.id },
-      include: { role: true },
-    });
-
     const payload = {
-      userId: userWithRole.id,
-      email: userWithRole.email,
-      roles: userWithRole.role.code,
+      userId: newUser.id,
+      email: newUser.email,
+      roles: newUser.role.code,
     };
     const { accessToken, refreshToken, expiredInAccessToken } =
       await this.createTokenPair(payload);
@@ -86,13 +89,19 @@ export class AuthService {
   }
 
   //login
-  async login(user: User) {
-    
-    const userWithRole = await this.prismaService.user.findUnique({
-      where: { email: user.email },
-      include: { role: true },
-    });
+  async login(user: LoginDto) {
 
+    const userWithRole = await this.userRepository.findOne({
+      where: { email: user.email },
+      relations: ['role'], // Load the user's role
+    });
+    if (!userWithRole) {
+      throw new NotFoundException('User not found');
+    }
+    const isPasswordValid = await bcrypt.compare(user.password, userWithRole.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
     // generate access token and refresh token
     const payload = {
       userId: userWithRole.id,
@@ -208,9 +217,9 @@ export class AuthService {
       throw new UnauthorizedException('Invalid token or not registered');
     }
 
-    const userWithRole = await this.prismaService.user.findUnique({
-      where: { id: holderToken.userId },
-      include: { role: true },
+    const userWithRole = await this.userRepository.findOne({
+      where: { id: holderToken.user.id },
+      relations: ['role'],
     });
 
     // generate access token and refresh token
