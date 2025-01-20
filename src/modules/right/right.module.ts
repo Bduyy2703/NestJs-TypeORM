@@ -3,10 +3,9 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { RightService } from "./right.service";
 import { RightController } from "./right.controller";
 import { Right } from "../right/entities/t_right";
-import { PrismaModule } from 'prisma/prisma.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Right]),PrismaModule],
+  imports: [TypeOrmModule.forFeature([Right])],
   providers: [RightService],
   controllers: [RightController],
   exports: [RightService],

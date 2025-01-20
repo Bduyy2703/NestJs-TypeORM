@@ -1,19 +1,21 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { PrismaService } from "prisma/prisma.service";
-import { Right } from "@prisma/client";
+import { Right } from "./entities/t_right";
 import { CreateRightDto } from "./dto/create-right.dto";
 import { UpdateRightDto } from "./dto/update-right.dto";
-
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
 @Injectable()
 export class RightService {
-  constructor(private readonly prismaService: PrismaService) { }
+  constructor(
+    @InjectRepository(Right)
+    private readonly rightRepository: Repository<Right>,
+  ) { }
+
   async create(createRightDto: CreateRightDto): Promise<Right> {
     try {
       createRightDto.createdDate = new Date();
-      const right = await this.prismaService.right.create({
-        data: createRightDto,
-      });
-      return right;
+      const newRight = this.rightRepository.create(createRightDto);
+      return await this.rightRepository.save(newRight);
     } catch (error) {
       console.error("Error creating right:", error);
       throw error;
@@ -21,7 +23,8 @@ export class RightService {
   }
 
   async findOne(id: number): Promise<Right> {
-    const right = await this.prismaService.right.findUnique({where  : { id }},);
+    const right = await this.rightRepository.findOne({ where: { id } });
+
     if (!right) {
       throw new NotFoundException("Quyền không tồn tại");
     }
@@ -29,20 +32,15 @@ export class RightService {
   }
 
   async update(id: number, updateRightDto: UpdateRightDto): Promise<Right> {
-    const existingRight = await this.findOne(id);
-    updateRightDto.updateddate = new Date();
-    const updatedRight = await this.prismaService.right.update({
-      where: { id },
-      data: updateRightDto,
-    });
-    return updatedRight;
+    const existingRight = await this.findOne(id); 
+    updateRightDto.updatedDate = new Date();
+    const updatedRight = this.rightRepository.merge(existingRight, updateRightDto); // Gộp dữ liệu mới vào đối tượng hiện có
+    return await this.rightRepository.save(updatedRight); 
   }
 
   async remove(id: number): Promise<boolean> {
-    await this.findOne(id);
-    await this.prismaService.right.delete({
-      where: { id },
-    });
+    const existingRight = await this.findOne(id);
+    await this.rightRepository.remove(existingRight);
     return true;
   }
 }

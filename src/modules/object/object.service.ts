@@ -1,19 +1,23 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { CreateObjectDto } from "./dto/create-object.dto";
 import { UpdateObjectDto } from "./dto/update-object.dto";
-import { PrismaService } from 'prisma/prisma.service'
-import { Object } from "@prisma/client";
+import { Object_entity } from "../object/entities/object.entity";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
 @Injectable()
 export class ObjectService {
-  constructor(private readonly prismaService: PrismaService) { }
+  constructor(
+    @InjectRepository(Object_entity)
+    private readonly objectRepository: Repository<Object_entity>,
+  ) { }
 
-  async create(createObjectDto: CreateObjectDto): Promise<Object> {
+  async create(createObjectDto: CreateObjectDto): Promise<Object_entity> {
     try {
-      createObjectDto.createdDate = new Date();
-      const object = await this.prismaService.object.create({
-        data: createObjectDto,
+      const object = this.objectRepository.create({
+        ...createObjectDto,
+        createdDate: new Date(),
       });
-      return object;
+      return await this.objectRepository.save(object);
     } catch (error) {
       console.error("Error creating object:", error);
       throw error;
@@ -21,32 +25,29 @@ export class ObjectService {
   }
 
   // Lấy thông tin 1 Object
-  async findOne(id: number): Promise<Object> {
-    const object = await this.prismaService.object.findUnique({
-      where: { id },
-    });
+  async findOne(id: number): Promise<Object_entity> {
+    const object = await this.objectRepository.findOneBy({ id });
     if (!object) {
       throw new NotFoundException("Object không tồn tại");
     }
     return object;
   }
+
   // Cập nhật Object
-  async update(id: number, updateObjectDto: UpdateObjectDto): Promise<Object> {
+  async update(id: number, updateObjectDto: UpdateObjectDto): Promise<Object_entity> {
     const existingObject = await this.findOne(id);
-    updateObjectDto.updateddate = new Date(); // Gán ngày cập nhật
-    const updatedObject = await this.prismaService.object.update({
-      where: { id },
-      data: updateObjectDto,
-    });
-    return updatedObject;
+    const updatedObject = {
+      ...existingObject,
+      ...updateObjectDto,
+      updatedDate: new Date(), // Gán ngày cập nhật
+    };
+    return await this.objectRepository.save(updatedObject);
   }
 
   // Xóa Object
   async remove(id: number): Promise<boolean> {
-    await this.findOne(id); // Kiểm tra Object tồn tại
-    await this.prismaService.object.delete({
-      where: { id },
-    });
+    const existingObject = await this.findOne(id); // Kiểm tra Object có tồn tại
+    await this.objectRepository.remove(existingObject);
     return true;
   }
 }

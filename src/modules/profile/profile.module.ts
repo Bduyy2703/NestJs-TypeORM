@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ProfilesService } from './profile.service';
 import { ProfilesController } from './profile.controller';
-import { PrismaModule } from 'prisma/prisma.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Profile } from './entities/profile.entity';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [TypeOrmModule.forFeature([Profile])],
   controllers: [ProfilesController],
   providers: [ProfilesService],
 })

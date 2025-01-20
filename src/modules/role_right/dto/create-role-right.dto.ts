@@ -61,5 +61,5 @@ export class CreateRoleRightDto {
 
   @IsOptional()
   @Expose()
-  createDdate: Date;
+  createdDate: Date;
 }

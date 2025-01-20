@@ -25,7 +25,7 @@ export class UpdateRightDto {
 
   @IsOptional()
   @Expose()
-  updateddate?: Date;
+  updatedDate?: Date;
 
   @ApiProperty({
     example: "admin",
@@ -35,7 +35,7 @@ export class UpdateRightDto {
   @Expose()
   @IsOptional()
   @IsString({ message: "updatedby phải là một chuỗi" })
-  updatedby?: string;
+  updatedBy?: string;
 
   @ApiProperty({
     example: true,
@@ -45,5 +45,5 @@ export class UpdateRightDto {
   @Expose()
   @IsOptional()
   @IsBoolean({ message: "isactive phải là kiểu boolean" })
-  isactive?: boolean;
+  isActive?: boolean;
 }

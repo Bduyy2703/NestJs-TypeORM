@@ -11,7 +11,7 @@ export class UpdateRoleRightDto {
   @Expose()
   @IsOptional()
   @IsInt({ message: "roleid phải là một số nguyên" })
-  roleid?: number;
+  roleId?: number;
 
   @ApiProperty({
     example: 3,
@@ -21,7 +21,7 @@ export class UpdateRoleRightDto {
   @Expose()
   @IsOptional()
   @IsInt({ message: "rightid phải là một số nguyên" })
-  rightid?: number;
+  rightId?: number;
 
   @ApiProperty({
     example: "admin",
@@ -31,7 +31,7 @@ export class UpdateRoleRightDto {
   @IsOptional()
   @Expose()
   @IsString({ message: "updatedby phải là một chuỗi" })
-  updatedby?: string;
+  updatedBy?: string;
 
   @ApiProperty({
     example: true,
@@ -41,9 +41,9 @@ export class UpdateRoleRightDto {
   @IsOptional()
   @Expose()
   @IsBoolean({ message: "isactive phải là kiểu boolean" })
-  isactive?: boolean;
+  isActive?: boolean;
 
   @IsOptional()
   @Expose()
-  updateddate?: Date;
+  updatedDate?: Date;
 }

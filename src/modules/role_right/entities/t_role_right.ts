@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
-import { Role } from '../../role/entities/t_role';  // Import model Role
-import { Right } from '../../right/entities/t_right';  // Import model Right
+import { Role } from '../../role/entities/t_role'; 
+import { Right } from '../../right/entities/t_right';  
 
 @Entity()
 export class RoleRight {

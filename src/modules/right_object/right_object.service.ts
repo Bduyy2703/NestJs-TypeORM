@@ -1,55 +1,80 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { Prisma, RightObject } from "prisma/prisma-client";
+import { RightObject } from "./entities/t_right_object";
+import { Object_entity } from "../object/entities/object.entity";
+import { Right } from "../right/entities/t_right";
 import { CreateRightObjectDto } from "./dto/create-right-object.dto";
 import { UpdateRightObjectDto } from "./dto/update-right-object.dto";
 
 import { FindRightObjectDto } from "./dto/find-right-object.dto";
-import { PrismaService } from "prisma/prisma.service";
+import { InjectRepository } from "@nestjs/typeorm";
+import { FindOptionsWhere, Like, Repository } from "typeorm";
 
 @Injectable()
 export class RightObjectService {
+
   constructor(
-    private readonly prismaService: PrismaService
-  ) {}
+    @InjectRepository(RightObject)
+    private readonly rightObjectRepository: Repository<RightObject>,
+    @InjectRepository(Object_entity)
+    private readonly objectRepository: Repository<Object_entity>,
+    @InjectRepository(Right)
+    private readonly rightRepository: Repository<Right>,
+  ) { }
 
   async create(
     createRightObjectDto: CreateRightObjectDto
   ): Promise<RightObject> {
     try {
-      createRightObjectDto.createdDate = new Date();
-      const rightObject = await this.prismaService.rightObject.create(
-        {
-          data: createRightObjectDto
-        } 
-      );
-      return rightObject;
+
+      const { objectId, rightId } = createRightObjectDto;
+      // Kiểm tra tồn tại Object và Right
+      const object = await this.objectRepository.findOne({ where: { id: objectId } });
+      const right = await this.rightRepository.findOne({ where: { id: rightId } });
+
+      if (!object || !right) {
+        throw new NotFoundException("Đối tượng hoặc quyền không tồn tại");
+      }
+
+      const newRightObject = this.rightObjectRepository.create({
+        ...createRightObjectDto,
+        createdDate: new Date(),
+      });
+      return await this.rightObjectRepository.save(newRightObject);
+
     } catch (error) {
       console.error("Lỗi khi tạo quan hệ quyền-đối tượng:", error);
       throw error;
     }
   }
-
   async findAll(
     findDto: FindRightObjectDto
   ): Promise<{ rows: RightObject[]; count: number }> {
-    const { page = 1, size = 10, ...filter } = findDto;
+    const { page = 1, size = 10, keyword } = findDto;
 
     const skip = (page - 1) * size;
     const take = size !== -1 ? size : undefined;
 
-    const [rows, count] = await this.prismaService.$transaction([
-      this.prismaService.rightObject.findMany({
-        where: filter as Prisma.RightObjectWhereInput,
+    // Tạo điều kiện tìm kiếm
+    const where: FindOptionsWhere<RightObject> = keyword
+      ? {
+        object: { name: Like(`%${keyword}%`) },
+        right: { name: Like(`%${keyword}%`) },
+      }
+      : {};
+
+    const [rows, count] = await Promise.all([
+      this.rightObjectRepository.find({
+        where: [
+          { object: { name: Like(`%${keyword}%`) } },
+          { right: { name: Like(`%${keyword}%`) } },
+        ],
         skip,
         take,
-        orderBy: { createdDate: "desc" },
-        include: {
-          object: { select: { id: true, code: true, name: true } },
-          right: { select: { id: true, code: true, name: true } },
-        },
+        order: { createdDate: "DESC" },
+        relations: ["object", "right"], // Lấy liên kết với bảng Object và Right
       }),
-      this.prismaService.rightObject.count({
-        where: filter as Prisma.RightObjectWhereInput,
+      this.rightObjectRepository.count({
+        where,
       }),
     ]);
 
@@ -57,12 +82,9 @@ export class RightObjectService {
   }
 
   async findOne(id: number): Promise<RightObject> {
-    const rightObject = await this.prismaService.rightObject.findUnique({
+    const rightObject = await this.rightObjectRepository.findOne({
       where: { id },
-      include: {
-        object: { select: { id: true, code: true, name: true } },
-        right: { select: { id: true, code: true, name: true } },
-      },
+      relations: ["object", "right"], // Lấy liên kết với bảng Object và Right
     });
 
     if (!rightObject) {
@@ -70,27 +92,25 @@ export class RightObjectService {
     }
     return rightObject;
   }
+
   async update(
     id: number,
     updateRightObjectDto: UpdateRightObjectDto
   ): Promise<RightObject> {
-    await this.findOne(id); // Kiểm tra tồn tại
 
-    const rightObject = await this.prismaService.rightObject.update({
-      where: { id },
-      data: {
-        ...updateRightObjectDto,
-        updatedDate: new Date(),
-      },
+    const existingRightObject = await this.findOne(id); // Kiểm tra tồn tại
+
+    const updatedRightObject = this.rightObjectRepository.merge(existingRightObject, {
+      ...updateRightObjectDto,
+      updatedDate: new Date(),
     });
 
-    return rightObject;
+    return await this.rightObjectRepository.save(updatedRightObject);
   }
 
   async remove(id: number): Promise<boolean> {
-    await this.findOne(id); // Kiểm tra tồn tại
-
-    await this.prismaService.rightObject.delete({ where: { id } });
+    const existingRightObject = await this.findOne(id); // Kiểm tra tồn tại
+    await this.rightObjectRepository.remove(existingRightObject); // Xóa mối quan hệ
     return true;
   }
 }

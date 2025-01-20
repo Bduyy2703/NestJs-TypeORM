@@ -21,7 +21,7 @@ export class RoleRightDto {
   })
   @Expose()
   @IsInt({ message: "roleid phải là một số nguyên" })
-  roleid: number;
+  roleId: number;
 
   @ApiPropertyOptional({ type: RoleDto })
   @Expose()
@@ -35,7 +35,7 @@ export class RoleRightDto {
   })
   @Expose()
   @IsInt({ message: "rightid phải là một số nguyên" })
-  rightid: number;
+  rightId: number;
 
   @ApiPropertyOptional({ type: RightDto })
   @Expose()
@@ -44,7 +44,7 @@ export class RoleRightDto {
 
   @IsOptional()
   @Expose()
-  createddate: Date;
+  createdDate: Date;
 
   @ApiProperty({
     example: "admin",
@@ -54,11 +54,11 @@ export class RoleRightDto {
   @Expose()
   @IsOptional()
   @IsString({ message: "createdby phải là một chuỗi" })
-  createdby: string;
+  createdBy: string;
 
   @IsOptional()
   @Expose()
-  updateddate: Date;
+  updatedDate: Date;
 
   @ApiProperty({
     example: "admin",
@@ -68,7 +68,7 @@ export class RoleRightDto {
   @Expose()
   @IsOptional()
   @IsString({ message: "updatedby phải là một chuỗi" })
-  updatedby: string;
+  updatedBy: string;
 
   @ApiProperty({
     example: true,
@@ -78,5 +78,5 @@ export class RoleRightDto {
   @Expose()
   @IsOptional()
   @IsBoolean({ message: "isactive phải là kiểu boolean" })
-  isactive: boolean;
+  isActive: boolean;
 }

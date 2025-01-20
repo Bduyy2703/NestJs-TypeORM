@@ -1,23 +1,31 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { PrismaService } from "prisma/prisma.service";
 import { CreateRoleRightDto } from "./dto/create-role-right.dto";
 import { UpdateRoleRightDto } from "./dto/update-role_right.dto";
 import { FindRoleRightDto } from "./dto/find-role-right.dto";
-
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { RoleRight } from "./entities/t_role_right";
+import { Role } from "../role/entities/t_role";
+import { Right } from "../right/entities/t_right";
 @Injectable()
 export class RoleRightService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    @InjectRepository(RoleRight)
+    private readonly roleRightRepository: Repository<RoleRight>,
+    @InjectRepository(Role)
+    private readonly roleRepository: Repository<Role>,
+    @InjectRepository(Right)
+    private readonly rightRepository: Repository<Right>
+  ) { }
 
   // Tạo mới mối quan hệ vai trò - quyền
-  async create(createRoleRightDto: CreateRoleRightDto): Promise<any> {
+  async create(createRoleRightDto: CreateRoleRightDto): Promise<RoleRight> {
     try {
-      const createdRoleRight = await this.prismaService.roleRight.create({
-        data: {
-          ...createRoleRightDto,
-          createdDate: new Date(), // Thêm ngày tạo
-        },
+      const newRoleRight = this.roleRightRepository.create({
+        ...createRoleRightDto,
+        createdDate: new Date(), // Thêm ngày tạo
       });
-      return createdRoleRight;
+      return await this.roleRightRepository.save(newRoleRight);
     } catch (error) {
       console.error("Lỗi khi tạo mối quan hệ vai trò - quyền:", error);
       throw error;
@@ -27,61 +35,28 @@ export class RoleRightService {
   // Lấy tất cả mối quan hệ vai trò - quyền
   async findAllRoleRight(
     findDto: FindRoleRightDto
-  ): Promise<{ rows: any[]; count: number }> {
-    const { page = 1, size = 10, keyword } = findDto;
-  
+  ): Promise<{ rows: RoleRight[]; count: number }> {
+    const { page = 1, size = 10 } = findDto;
+
     const skip = (page - 1) * size;
 
     const [rows, count] = await Promise.all([
-      this.prismaService.roleRight.findMany({
+      this.roleRightRepository.find({
         skip,
         take: size !== -1 ? size : undefined,
-        orderBy: {
-          createdDate: "desc",
-        },
-        include: {
-          role: {
-            select: {
-              id: true,
-              code: true,
-              name: true,
-            },
-          },
-          right: {
-            select: {
-              id: true,
-              code: true,
-              name: true,
-            },
-          },
-        },
+        order: { createdDate: "DESC" },
+        relations: ["role", "right"],
       }),
-      this.prismaService.roleRight.count(),
+      this.roleRightRepository.count(),
     ]);
-
     return { rows, count };
   }
 
   // Lấy một mối quan hệ vai trò - quyền
-  async findOne(id: number): Promise<any> {
-    const roleRight = await this.prismaService.roleRight.findUnique({
+  async findOne(id: number): Promise<RoleRight> {
+    const roleRight = await this.roleRightRepository.findOne({
       where: { id },
-      include: {
-        role: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-          },
-        },
-        right: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-          },
-        },
-      },
+      relations: ["role", "right"],
     });
 
     if (!roleRight) {
@@ -95,22 +70,20 @@ export class RoleRightService {
   async update(
     id: number,
     updateRoleRightDto: UpdateRoleRightDto
-  ): Promise<any> {
+  ): Promise<RoleRight> {
     try {
       const existingRoleRight = await this.findOne(id);
       if (!existingRoleRight) {
         throw new NotFoundException("Mối quan hệ vai trò - quyền không tồn tại");
       }
 
-      const updatedRoleRight = await this.prismaService.roleRight.update({
-        where: { id },
-        data: {
-          ...updateRoleRightDto,
-          updatedDate: new Date(), // Thêm ngày cập nhật
-        },
-      });
+      const updatedRoleRight = await this.roleRightRepository.merge(
+        existingRoleRight,
+        updateRoleRightDto,
+        { updatedDate: new Date() } // Thêm ngày cập nhật
+      );
 
-      return updatedRoleRight;
+      return await this.roleRightRepository.save(updatedRoleRight);
     } catch (error) {
       console.error("Lỗi khi cập nhật mối quan hệ vai trò - quyền:", error);
       throw error;
@@ -120,8 +93,8 @@ export class RoleRightService {
   // Xóa mối quan hệ vai trò - quyền
   async remove(id: number): Promise<boolean> {
     try {
-      await this.findOne(id); // Kiểm tra xem có tồn tại không
-      await this.prismaService.roleRight.delete({ where: { id } });
+      const existingRoleRight = await this.findOne(id);
+      await this.roleRightRepository.remove(existingRoleRight);
       return true;
     } catch (error) {
       console.error("Lỗi khi xóa mối quan hệ vai trò - quyền:", error);
