@@ -9,7 +9,7 @@ export class Blog {
   id: number;
 
   @Column({ type: 'varchar' })
-  title: string;
+  title: string;  
 
   @Column({ type: 'text' })
   content: string;

@@ -45,7 +45,7 @@ export class ObjectController {
     } catch (error) {
       return {
         statusCode: 500,
-        message: `Lỗi khi tạo Object: ${error.message}`,
+        message: `Lỗi khi tạo Object: ${error}`,
       };
     }
   }

@@ -44,7 +44,7 @@ export class RoleController {
     } catch (error) {
       return {
         statusCode: 500,
-        message: `Lỗi khi tạo Role: ${error.message}`,
+        message: `Lỗi khi tạo Role: ${error}`,
       };
     }
   }

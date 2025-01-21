@@ -1,10 +1,9 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, OneToOne, JoinColumn } from 'typeorm';
-import { Role } from '../../role/entities/t_role';  // Import model Role
-import { Blog } from '../../blogs/entities/blog.entity';  // Import model Blog
-import { Comment } from '../../comment/entities/comment.entity';  // Import model Comment
-import { Profile } from '../../profile/entities/profile.entity';  // Import model Profile
-import { Token } from '../../token/entities/token.entity';  // Import model Token
-
+import { Role } from '../../role/entities/t_role'; 
+import { Blog } from '../../blogs/entities/blog.entity';  
+import { Comment } from '../../comment/entities/comment.entity';
+import { Profile } from '../../profile/entities/profile.entity';  
+import { Token } from '../../token/entities/token.entity';  
 @Entity()
 export class User {
   @PrimaryGeneratedColumn('uuid')

@@ -51,7 +51,7 @@ export class RightObjectController {
     } catch (error) {
       return {
         statusCode: 500,
-        message: `Lỗi khi tạo mối quan hệ quyền-đối tượng: ${error.message}`,
+        message: `Lỗi khi tạo mối quan hệ quyền-đối tượng: ${error}`,
       };
     }
   }
@@ -82,7 +82,7 @@ export class RightObjectController {
     } catch (error) {
       return {
         statusCode: 500,
-        message: `${error.message}`,
+        message: `${error}`,
       };
     }
   }

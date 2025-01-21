@@ -45,7 +45,7 @@ export class RightController {
     } catch (error) {
       return {
         statusCode: 500,
-        message: `Lỗi khi tạo Right: ${error.message}`,
+        message: `Lỗi khi tạo Right: ${error}`,
       };
     }
   }

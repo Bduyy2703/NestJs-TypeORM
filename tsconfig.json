@@ -2,11 +2,13 @@
   "compilerOptions": {
     "module": "commonjs",
     "declaration": true,
+    "esModuleInterop": true,
+    "strict": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
-    "target": "ES6",
+    "target": "ES2017",
     "sourceMap": true,
     "outDir": "./dist",
     // "rootDir": "./src",
@@ -22,5 +24,6 @@
   "include": [
     "src/**/*.ts",
     "src/**/*.hbs" // Thêm dòng này
-  ]
+  ],
+  "exclude": ["node_modules"]
 }

@@ -96,7 +96,7 @@ export class BlogsService {
     try {
       let comment = await this.commentService.create(createCommentDto);
     } catch (error) {
-      console.error('Error creating comment:', error.message);
+      console.error('Error creating comment:', error);
       throw new BadRequestException('Cannot comment on this blog');
     }
 

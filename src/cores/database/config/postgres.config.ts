@@ -13,7 +13,6 @@ import { Right } from 'src/modules/right/entities/t_right';
 import { RightObject } from 'src/modules/right_object/entities/t_right_object';
 import { RoleRight } from 'src/modules/role_right/entities/t_role_right';
 import { Token } from 'src/modules/token/entities/token.entity';
-
 @Module({
   imports: [
     // ConfigModule đảm bảo biến môi trường được nạp trước

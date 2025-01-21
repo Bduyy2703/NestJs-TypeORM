@@ -47,7 +47,7 @@ export class RoleRightController {
     } catch (error) {
       return {
         statusCode: 500,
-        message: `Lỗi khi tạo mối quan hệ vai trò-quyền: ${error.message}`,
+        message: `Lỗi khi tạo mối quan hệ vai trò-quyền: ${error}`,
       };
     }
   }
@@ -78,7 +78,7 @@ export class RoleRightController {
     } catch (error) {
       return {
         statusCode: 500,
-        message: `${error.message}`,
+        message: `${error}`,
       };
     }
   }
