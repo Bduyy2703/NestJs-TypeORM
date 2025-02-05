@@ -25,12 +25,14 @@ export class MinioService {
 
 
   async listFiles(bucketName: string): Promise<string[]> {
-    const objectsList: string[] = [];
-    const stream = await this.minioClient.listObjectsV2(bucketName, '', true);
+    const files: string[] = [];
+
+    const stream = this.minioClient.listObjectsV2(bucketName, '', true);
+
     return new Promise((resolve, reject) => {
-      stream.on('data', obj => objectsList.push(obj.name));
+      stream.on('data', obj => files.push(obj.name));
       stream.on('error', reject);
-      stream.on('end', () => resolve(objectsList));
+      stream.on('end', () => resolve(files));
     });
   }
 

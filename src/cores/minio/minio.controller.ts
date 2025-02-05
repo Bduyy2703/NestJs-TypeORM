@@ -52,7 +52,6 @@ export class MinioController {
         @Param('bucketName') bucketName: string,
         @UploadedFiles() files: Express.Multer.File[],
     ) {
-        console.log('file : ' ,files)
         if (!files || files.length === 0) {
             throw new BadRequestException('No files found');
         }
@@ -99,14 +98,19 @@ export class MinioController {
 
     @Get('list/:bucketName')
     @Public()
-    async listFiles(@Param('bucketName') bucketName: string) {
-        try {
-            const fileList = await this.minioService.listFiles(bucketName);
-            return { files: fileList };
-        } catch (err) {
-            console.error('Error listing files', err);
-            throw new HttpException('Error listing files', HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+    async listFiles(
+      @Param('bucketName') bucketName: string,
+    ) {
+      const files = await this.minioService.listFiles(bucketName);
+      const fileLinks = files.map(fileName => ({
+        name: fileName,
+        url: `http://localhost:9000/${bucketName}/${fileName}`
+      }));
+    
+      return {
+        message: 'Files retrieved successfully',
+        files: fileLinks,
+      };
     }
 
     @Delete('delete/:bucketName/:objectName')
