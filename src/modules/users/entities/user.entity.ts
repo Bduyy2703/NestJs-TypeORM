@@ -4,6 +4,7 @@ import { Blog } from '../../blogs/entities/blog.entity';
 import { Comment } from '../../comment/entities/comment.entity';
 import { Profile } from '../../profile/entities/profile.entity';  
 import { Token } from '../../token/entities/token.entity';  
+import 'reflect-metadata';
 @Entity()
 export class User {
   @PrimaryGeneratedColumn('uuid')

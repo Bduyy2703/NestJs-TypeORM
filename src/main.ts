@@ -4,7 +4,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule } from '@nestjs/swagger';
 import { config } from './common/configs/swagger.config';
 import * as dotenv from 'dotenv';
-
+import 'reflect-metadata';
 dotenv.config({ path: '.env' });
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

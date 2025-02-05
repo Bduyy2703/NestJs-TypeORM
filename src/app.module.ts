@@ -21,7 +21,8 @@ import { RightModule } from './modules/right/right.module';
 import { RightObjectModule } from './modules/right_object/right_object.module';
 import { RoleRightModule } from './modules/role_right/role_right.module';
 import { PermissionModule } from './modules/permission/permission.module';
-
+import { MinioModule } from './cores/minio/minio.module';
+import 'reflect-metadata';
 @Module({
   imports: [
     AuthModule,
@@ -40,6 +41,7 @@ import { PermissionModule } from './modules/permission/permission.module';
     RoleRightModule,
     PermissionModule,
     EventEmitterModule.forRoot(),
+    MinioModule
   ],
   controllers: [AppController],
   providers: [
