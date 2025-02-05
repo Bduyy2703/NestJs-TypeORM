@@ -8,10 +8,12 @@ import {
     UseInterceptors,
     HttpException,
     HttpStatus,
+    Delete,
+    UploadedFiles,
 } from '@nestjs/common';
 import { BadRequestException } from '../exceptions/bad-request.exceptions'
 import { MinioService } from './minio.service';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { diskStorage } from 'multer';
 import { Public } from '../decorators/public.decorator';
@@ -20,11 +22,11 @@ import { ApiConsumes, ApiBody } from '@nestjs/swagger';
 export class MinioController {
     constructor(private readonly minioService: MinioService) { }
 
-    @Post('upload/:bucketName')
+    @Post('upload-multiple/:bucketName')
     @Public()
-    @UseInterceptors(FileInterceptor('file', {
+    @UseInterceptors(FilesInterceptor('files', 10, {
         storage: diskStorage({
-            destination: './uploads', // Thư mục lưu file tạm
+            destination: './uploads',
             filename: (req, file, cb) => {
                 const uniqueName = `${Date.now()}-${file.originalname}`;
                 cb(null, uniqueName);
@@ -36,24 +38,39 @@ export class MinioController {
         schema: {
             type: 'object',
             properties: {
-                file: {
-                    type: 'string',
-                    format: 'binary',
+                files: {
+                    type: 'array',
+                    items: {
+                        type: 'string',
+                        format: 'binary',
+                    },
                 },
             },
         },
     })
-    async uploadFile(
+    async uploadMultipleFiles(
         @Param('bucketName') bucketName: string,
-        @UploadedFile() file: Express.Multer.File,
+        @UploadedFiles() files: Express.Multer.File[],
     ) {
-        if (!file) {
-            throw new BadRequestException('File not found');
+        console.log('file : ' ,files)
+        if (!files || files.length === 0) {
+            throw new BadRequestException('No files found');
         }
-        const filePath = file.path;
-        const objectName = file.filename;
-        await this.minioService.uploadFile(bucketName, objectName, filePath);
-        return { message: `File uploaded to bucket "${bucketName}" successfully.` };
+        const uploadResults = [];
+        for (const file of files) {
+            const filePath = file.path;
+            const objectName = file.filename;
+
+            await this.minioService.uploadFile(bucketName, objectName, filePath);
+            uploadResults.push({
+                fileName: objectName,
+                fileUrl: `http://localhost:9000/${bucketName}/${objectName}`,
+            });
+        }
+        return {
+            message: 'Files uploaded successfully',
+            files: uploadResults,
+        };
     }
 
     @Get('download/:bucketName/:objectName')
@@ -71,11 +88,39 @@ export class MinioController {
             });
             stream.pipe(res);
         } catch (err) {
-            console.log('error' , err)
+            console.log('error', err)
             throw new HttpException(
                 'Error downloading file',
                 HttpStatus.INTERNAL_SERVER_ERROR,
             );
         }
     }
+
+
+    @Get('list/:bucketName')
+    @Public()
+    async listFiles(@Param('bucketName') bucketName: string) {
+        try {
+            const fileList = await this.minioService.listFiles(bucketName);
+            return { files: fileList };
+        } catch (err) {
+            console.error('Error listing files', err);
+            throw new HttpException('Error listing files', HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @Delete('delete/:bucketName/:objectName')
+    @Public()
+    async deleteFile(
+        @Param('bucketName') bucketName: string,
+        @Param('objectName') objectName: string,
+    ) {
+        try {
+            await this.minioService.deleteFile(bucketName, objectName);
+            return { message: `File "${objectName}" deleted from bucket "${bucketName}" successfully.` };
+        } catch (err) {
+            throw new HttpException('Error deleting file', HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
 }

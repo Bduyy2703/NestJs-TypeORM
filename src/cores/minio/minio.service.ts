@@ -22,4 +22,19 @@ export class MinioService {
   async downloadFile(bucketName: string, objectName: string) {
     return this.minioClient.getObject(bucketName, objectName);
   }
+
+
+  async listFiles(bucketName: string): Promise<string[]> {
+    const objectsList: string[] = [];
+    const stream = await this.minioClient.listObjectsV2(bucketName, '', true);
+    return new Promise((resolve, reject) => {
+      stream.on('data', obj => objectsList.push(obj.name));
+      stream.on('error', reject);
+      stream.on('end', () => resolve(objectsList));
+    });
+  }
+
+  async deleteFile(bucketName: string, objectName: string) {
+    await this.minioClient.removeObject(bucketName, objectName);
+  }
 }
