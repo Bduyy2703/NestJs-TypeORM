@@ -12,6 +12,7 @@ import { Right } from '../../../modules/right/entities/t_right';
 import { RightObject } from '../../../modules/right_object/entities/t_right_object';
 import { RoleRight } from '../../../modules/role_right/entities/t_role_right';
 import { Token } from '../../../modules/token/entities/token.entity';
+import { File } from 'src/modules/files/file.entity';
 
 dotenv.config({ path: '.env.development' }); 
 
@@ -22,7 +23,7 @@ export const AppDataSource = new DataSource({
     username: process.env.DEV_DB_USERNAME || 'postgres',
     password: process.env.DEV_DB_PASSWORD,
     database: process.env.DEV_DB_DATABASE,
-    entities: [User,Role,Blog,Comment,CommentsOnBlogs,Notification,Object_entity,Profile,Right,RightObject,RoleRight,Token],
+    entities: [User,Role,Blog,Comment,CommentsOnBlogs,Notification,Object_entity,Profile,Right,RightObject,RoleRight,Token,File],
     migrations: ["src/cores/database/migrations/*.ts"], 
     synchronize: false, 
 });

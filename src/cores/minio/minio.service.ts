@@ -15,8 +15,19 @@ export class MinioService {
     });
   }
 
-  async uploadFile(bucketName: string, objectName: string, filePath: string) {
-    return this.minioClient.fPutObject(bucketName, objectName, filePath, {});
+  async uploadFileFromBuffer(
+    bucketName: string,
+    objectName: string,
+    buffer: Buffer,
+    mimeType: string,
+  ) {
+    await this.minioClient.putObject(
+      bucketName,
+      objectName,
+      buffer,
+      buffer.length, // Độ dài của buffer
+      { 'Content-Type': mimeType }, // Metadata của file
+    );
   }
 
   async downloadFile(bucketName: string, objectName: string) {
@@ -38,5 +49,46 @@ export class MinioService {
 
   async deleteFile(bucketName: string, objectName: string) {
     await this.minioClient.removeObject(bucketName, objectName);
+  }
+
+  async getUrlByName(bucketName: string, objectNames: string[]): Promise<string[]> {
+    const urls: string[] = [];
+
+    if (bucketName === 'public') {
+      for (const objectName of objectNames) {
+        let fileExists = await this.checkFileExists(bucketName, objectName);
+        if (fileExists) {
+          const url = `http://localhost:9000/${bucketName}/${objectName}`;
+          urls.push(url);
+        } else {
+          console.warn(`File không tồn tại: ${objectName}`);
+        }
+      }
+      return urls;
+    }
+    else {
+      for (const objectName of objectNames) {
+        let fileExists = await this.checkFileExists(bucketName, objectName);
+        if (fileExists) {
+          const url = await this.minioClient.presignedGetObject(bucketName, objectName);
+          urls.push(url);
+        }
+        else {
+          console.warn(`File không tồn tại: ${objectName}`);
+        }
+        
+      }
+      return urls;
+    }
+  }
+
+  private async checkFileExists(bucketName: string, objectName: string): Promise<boolean> {
+    try {
+      await this.minioClient.statObject(bucketName, objectName);
+      return true;
+    } catch (error) {
+      console.log(`Lỗi kiểm tra file ${objectName}:`, error);
+      return false;
+    }
   }
 }

@@ -13,6 +13,7 @@ import { Right } from 'src/modules/right/entities/t_right';
 import { RightObject } from 'src/modules/right_object/entities/t_right_object';
 import { RoleRight } from 'src/modules/role_right/entities/t_role_right';
 import { Token } from 'src/modules/token/entities/token.entity';
+import { File } from 'src/modules/files/file.entity';
 @Module({
   imports: [
     // ConfigModule đảm bảo biến môi trường được nạp trước
@@ -31,7 +32,7 @@ import { Token } from 'src/modules/token/entities/token.entity';
         username: configService.get<string>('DEV_DB_USERNAME', 'postgres'),
         password: configService.get<string>('DEV_DB_PASSWORD'),
         database: configService.get<string>('DEV_DB_DATABASE'),
-        entities: [User,Role,Blog,Comment,CommentsOnBlogs,Notification,Object_entity,Profile,Right,RightObject,RoleRight,Token], 
+        entities: [User,Role,Blog,Comment,CommentsOnBlogs,Notification,Object_entity,Profile,Right,RightObject,RoleRight,Token,File], 
         migrations: ["../migrations/*.ts"],
         synchronize: true, 
         retryAttempts: 5,

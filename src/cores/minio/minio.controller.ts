@@ -2,7 +2,6 @@ import {
     Controller,
     Post,
     Get,
-    UploadedFile,
     Param,
     Res,
     UseInterceptors,
@@ -13,25 +12,27 @@ import {
 } from '@nestjs/common';
 import { BadRequestException } from '../exceptions/bad-request.exceptions'
 import { MinioService } from './minio.service';
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
-import { diskStorage } from 'multer';
+import multer from 'multer';
 import { Public } from '../decorators/public.decorator';
 import { ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { v4 as uuidv4 } from 'uuid';
+import { FileRepository } from 'src/modules/files/file.repository';
+
 @Controller('minio')
 export class MinioController {
-    constructor(private readonly minioService: MinioService) { }
+    constructor(
+        private readonly minioService: MinioService,
+        private readonly fileRepository: FileRepository
+    ) { }
+
 
     @Post('upload-multiple/:bucketName')
     @Public()
     @UseInterceptors(FilesInterceptor('files', 10, {
-        storage: diskStorage({
-            destination: './uploads',
-            filename: (req, file, cb) => {
-                const uniqueName = `${Date.now()}-${file.originalname}`;
-                cb(null, uniqueName);
-            },
-        }),
+        storage: multer.memoryStorage(), // Chỉ lưu file trong bộ nhớ tạm
+        limits: { fileSize: 100 * 1024 * 1024 }, // Giới hạn file 100MB
     }))
     @ApiConsumes('multipart/form-data')
     @ApiBody({
@@ -57,14 +58,24 @@ export class MinioController {
         }
         const uploadResults = [];
         for (const file of files) {
-            const filePath = file.path;
-            const objectName = file.filename;
+            const uuid = uuidv4();
+            const objectName = `${Date.now()}-${file.originalname}`;
 
-            await this.minioService.uploadFile(bucketName, objectName, filePath);
-            uploadResults.push({
+            // Upload trực tiếp từ buffer thay vì file path
+            await this.minioService.uploadFileFromBuffer(
+                bucketName,
+                objectName,
+                file.buffer,
+                file.mimetype,
+            );
+            // Lưu thông tin file vào DB
+            const fileData = await this.fileRepository.createFile({
+                fileId: uuid,
+                bucketName,
                 fileName: objectName,
                 fileUrl: `http://localhost:9000/${bucketName}/${objectName}`,
             });
+            uploadResults.push(fileData);
         }
         return {
             message: 'Files uploaded successfully',
@@ -72,22 +83,27 @@ export class MinioController {
         };
     }
 
-    @Get('download/:bucketName/:objectName')
+
+
+    @Get('download/:uuid')
     @Public()
     async downloadFile(
-        @Param('bucketName') bucketName: string,
-        @Param('objectName') objectName: string,
+        @Param('uuid') uuid: string,
         @Res() res: Response,
     ) {
         try {
-            const stream = await this.minioService.downloadFile(bucketName, objectName);
+            const fileData = await this.fileRepository.findByFileId(uuid);
+            if (!fileData) {
+                throw new HttpException('File not found', HttpStatus.NOT_FOUND);
+            }
+            const stream = await this.minioService.downloadFile(fileData.bucketName, fileData.fileName);
             res.set({
-                'Content-Disposition': `attachment; filename=${objectName}`,
+                'Content-Disposition': `attachment; filename=${fileData.fileName}`,
                 'Content-Type': 'application/octet-stream',
             });
             stream.pipe(res);
         } catch (err) {
-            console.log('error', err)
+            console.log('error', err);
             throw new HttpException(
                 'Error downloading file',
                 HttpStatus.INTERNAL_SERVER_ERROR,
@@ -99,31 +115,64 @@ export class MinioController {
     @Get('list/:bucketName')
     @Public()
     async listFiles(
-      @Param('bucketName') bucketName: string,
+        @Param('bucketName') bucketName: string,
     ) {
-      const files = await this.minioService.listFiles(bucketName);
-      const fileLinks = files.map(fileName => ({
-        name: fileName,
-        url: `http://localhost:9000/${bucketName}/${fileName}`
-      }));
-    
-      return {
-        message: 'Files retrieved successfully',
-        files: fileLinks,
-      };
+        const files = await this.minioService.listFiles(bucketName);
+        const fileLinks = files.map(fileName => ({
+            name: fileName,
+            url: `http://localhost:9000/${bucketName}/${fileName}`
+        }));
+
+        return {
+            message: 'Files retrieved successfully',
+            files: fileLinks,
+        };
     }
 
-    @Delete('delete/:bucketName/:objectName')
+
+    @Delete('delete/:uuid')
     @Public()
     async deleteFile(
-        @Param('bucketName') bucketName: string,
-        @Param('objectName') objectName: string,
+        @Param('uuid') uuid: string,
     ) {
         try {
-            await this.minioService.deleteFile(bucketName, objectName);
-            return { message: `File "${objectName}" deleted from bucket "${bucketName}" successfully.` };
+
+            const fileData = await this.fileRepository.findByFileId(uuid);
+            if (!fileData) {
+                throw new HttpException('File not found', HttpStatus.NOT_FOUND);
+            }
+
+            await this.minioService.deleteFile(fileData.bucketName, fileData.fileName);
+
+            await this.fileRepository.Delete(fileData.fileId);
+
+            return { message: `File "${fileData.fileName}" deleted from bucket "${fileData.bucketName}" successfully.` };
         } catch (err) {
             throw new HttpException('Error deleting file', HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+    @Get('url/:uuid')
+    @Public()
+    async getUrlByName(
+        @Param('uuid') uuids: string,
+    ) {
+        try {
+            const uuidList = uuids.split(',');
+            const fileUrls = [];
+            for (const uuid of uuidList) {
+                const fileData = await this.fileRepository.findByFileId(uuid);
+                const fileUrl = await this.minioService.getUrlByName(fileData.bucketName, [fileData.fileName]);
+                fileUrls.push({ uuid, url: fileUrl });
+            }
+            return {
+                message: 'Danh sách URL:',
+                urls: fileUrls
+            };
+        } catch (err) {
+            console.log("error", err)
+            throw new HttpException('Error fetching file URLs', HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
