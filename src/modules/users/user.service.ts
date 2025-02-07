@@ -36,17 +36,17 @@ export class UsersService {
       tokenOTP: tokenOTP,
       role: role,
     });
-
+    await this.userRepository.save(newUser);
     // Tạo profile gắn với user
     const profile = this.profileRepository.create({
       phoneNumber: registerDto.phoneNumber,
       firstName: firstname,
       lastName: lastname,
+      userId : newUser.id,
       user: newUser, // Liên kết profile với user
     });
-    await this.userRepository.save(newUser);
-    await this.profileRepository.save(profile);
 
+    await this.profileRepository.save(profile);
 
     // Trả về user với role (eager-load role)
     const userWithRole = await this.userRepository.findOne({

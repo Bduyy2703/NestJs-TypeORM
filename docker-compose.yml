@@ -1,38 +1,13 @@
-version: '3.8'
 
 name: 'jewelry'
 services:
   api:
-    image: hub.bmes.vn/bptn:v1.0.1
+    build: .
     restart: unless-stopped
     ports:
-      - '3034:3001'
-    depends_on:
-      - postgres
+      - '3034:3000'
     environment:
       - DATABASE_URL=postgres://postgres:27102003@postgres:5432/jewelry
-    networks:
-      - Dien Toan Group 
-
-  postgres:
-    image: postgres
-    hostname: jewelry
-    restart: unless-stopped
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=123456
-      - POSTGRES_DB=jewelry
-    ports:
-      - '5432:5432'
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - Dien Toan Group
-
-networks:
-  Dien Toan Group:
-    external: true
-
 
 volumes:
   postgres_data:

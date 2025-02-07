@@ -22,6 +22,7 @@ import { RoleService } from "./role.service";
 import { Roles } from "../../cores/decorators/roles.decorator";
 import { Role } from "src/common/enums/env.enum";
 import { Actions } from "src/cores/decorators/action.decorator";
+import { Public } from "src/cores/decorators/public.decorator";
 
 @ApiTags("Role")
 @Controller("role")
@@ -29,7 +30,8 @@ export class RoleController {
   constructor(private readonly roleService: RoleService) {}
 
   @Post()
-  @Roles(Role.ADMIN)
+  @Public()
+  // @Roles(Role.ADMIN)
   @Actions('create')
   @ApiOperation({ summary: "Tạo Role" })
   @ApiOkResponse({ type: RoleDto })

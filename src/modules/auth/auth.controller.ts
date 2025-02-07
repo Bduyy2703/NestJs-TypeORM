@@ -33,7 +33,7 @@ import {
 import { LoginDto } from './dto/login.dto';
 import { TokenResponse } from './dto/token-respone';
 import { SuccessResponse } from '../../cores/respones/success.respone';
-import { User } from '@prisma/client';
+import { User } from '../users/entities/user.entity';
 import { Actions } from 'src/cores/decorators/action.decorator';
 
 @Controller('auth')
