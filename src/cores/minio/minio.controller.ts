@@ -59,7 +59,7 @@ export class MinioController {
         const uploadResults = [];
         for (const file of files) {
             const uuid = uuidv4();
-            const objectName = `${Date.now()}-${file.originalname}`;
+            const objectName = `${Date.now()}-${uuid}-${file.originalname}`;
 
             // Upload trực tiếp từ buffer thay vì file path
             await this.minioService.uploadFileFromBuffer(
@@ -68,12 +68,13 @@ export class MinioController {
                 file.buffer,
                 file.mimetype,
             );
+            const fileUrlList = await this.minioService.getUrlByName(bucketName, [objectName]);
             // Lưu thông tin file vào DB
             const fileData = await this.fileRepository.createFile({
                 fileId: uuid,
                 bucketName,
                 fileName: objectName,
-                fileUrl: `http://localhost:9000/${bucketName}/${objectName}`,
+                fileUrl: fileUrlList[0]
             });
             uploadResults.push(fileData);
         }
@@ -82,7 +83,6 @@ export class MinioController {
             files: uploadResults,
         };
     }
-
 
 
     @Get('download/:uuid')
@@ -163,8 +163,16 @@ export class MinioController {
             const fileUrls = [];
             for (const uuid of uuidList) {
                 const fileData = await this.fileRepository.findByFileId(uuid);
-                const fileUrl = await this.minioService.getUrlByName(fileData.bucketName, [fileData.fileName]);
-                fileUrls.push({ uuid, url: fileUrl });
+                const fileUrlList = await this.minioService.getUrlByName(fileData.bucketName, [fileData.fileName]);
+
+                if (fileUrlList.length > 0) {
+                    const fileUrl = fileUrlList[0];
+
+                    // Cập nhật URL mới vào database
+                    await this.fileRepository.updateFileUrl(uuid, fileUrl);
+
+                    fileUrls.push({ uuid, url: fileUrl });
+                }
             }
             return {
                 message: 'Danh sách URL:',
