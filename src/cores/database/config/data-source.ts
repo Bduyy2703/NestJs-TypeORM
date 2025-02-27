@@ -16,7 +16,7 @@ import { File } from 'src/modules/files/file.entity';
 
 dotenv.config({ path: '.env.development' }); 
 
-export const AppDataSource = new DataSource({
+ const AppDataSource = new DataSource({
     type: 'postgres',
     host: process.env.DEV_DB_HOST,
     port: parseInt(process.env.DEV_DB_PORT, 10), 
@@ -24,6 +24,14 @@ export const AppDataSource = new DataSource({
     password: process.env.DEV_DB_PASSWORD,
     database: process.env.DEV_DB_DATABASE,
     entities: [User,Role,Blog,Comment,CommentsOnBlogs,Notification,Object_entity,Profile,Right,RightObject,RoleRight,Token,File],
-    migrations: ["src/cores/database/migrations/*.ts"], 
-    synchronize: false, 
+    migrations: ["src/migrations/*.ts"], 
+    synchronize: true,
+    logging: false,
 });
+AppDataSource.initialize()
+    .then(() => console.log("Data Source initialized!"))
+    .catch((err) => console.error("Error during Data Source initialization:", err));
+
+export default AppDataSource;
+
+// ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate src/migrations/InitMigration --dataSource src/cores/database/config/data-source.ts

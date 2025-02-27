@@ -7,10 +7,10 @@ export class Right {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'varchar', length: 10, nullable: true })
+  @Column({ type: 'varchar', length: 30, nullable: true })
   code?: string;
 
-  @Column({ type: 'varchar', length: 10, nullable: true })
+  @Column({ type: 'varchar', length: 30, nullable: true })
   name?: string;
 
   @Column({ type: 'timestamp', nullable: true })

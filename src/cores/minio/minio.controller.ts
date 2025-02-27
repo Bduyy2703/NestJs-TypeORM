@@ -117,16 +117,21 @@ export class MinioController {
     async listFiles(
         @Param('bucketName') bucketName: string,
     ) {
-        const files = await this.minioService.listFiles(bucketName);
-        const fileLinks = files.map(fileName => ({
-            name: fileName,
-            url: `http://localhost:9000/${bucketName}/${fileName}`
-        }));
-
-        return {
+        const files = await this.fileRepository.findFilesByBucketName(bucketName);
+        if (!files || files.length === 0) {
+            throw new HttpException('No files found in the database', HttpStatus.NOT_FOUND);
+          }
+        
+          const fileLinks = files.map(file => ({
+            id: file.fileId,
+            name: file.fileName,
+            url: file.fileUrl, // Lấy URL đã lưu trong DB
+          }));
+        
+          return {
             message: 'Files retrieved successfully',
             files: fileLinks,
-        };
+          };    
     }
 
 
