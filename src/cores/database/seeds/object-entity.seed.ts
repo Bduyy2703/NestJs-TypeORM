@@ -58,6 +58,15 @@ export class ObjectEntitySeeder implements Seeder {
                 updatedBy: 'admin',
                 isActive: true,
             },
+            {
+                code: 'PROFILE01',
+                name: 'Object Profile',
+                createdDate: new Date(),
+                createdBy: 'admin',
+                updatedDate: new Date(),
+                updatedBy: 'admin',
+                isActive: true,
+            },
         ];
 
         await objectRepository.insert(seedData);

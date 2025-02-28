@@ -34,4 +34,7 @@ AppDataSource.initialize()
 
 export default AppDataSource;
 
+// dropDB
+//ts-node -r tsconfig-paths/register node_modules/typeorm/cli.js migration:revert -d src/cores/database/config/data-source.ts
+//run
 // ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate src/migrations/InitMigration --dataSource src/cores/database/config/data-source.ts
