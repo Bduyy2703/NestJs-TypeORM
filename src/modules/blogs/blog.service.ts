@@ -15,7 +15,6 @@ import { StatusEnum } from 'src/common/enums/blog-status.enum';
 import { CommentsService } from '../comment/comment.service';
 import { CreateCommentDto } from '../comment/dto/create-comment.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Role } from 'src/common/enums/env.enum';
 import { UpdateBlogDto } from './dto/update-blog.dto';
 import { throwError } from 'rxjs';
 
@@ -238,7 +237,6 @@ export class BlogsService {
   async update(
     blogId: number,
     userId: string,
-    role: Role,
     data: UpdateBlogDto,
   ) {
     // 1. Kiểm tra bài viết có tồn tại
@@ -246,13 +244,6 @@ export class BlogsService {
 
     if (!blog) {
       throw new NotFoundException('Blog not found');
-    }
-
-    // 2. Kiểm tra quyền truy cập
-    if (role !== Role.ADMIN && blog.authorId !== userId) {
-      throw new ForbiddenException(
-        'You do not have permission to update this blog',
-      );
     }
 
     try {

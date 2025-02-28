@@ -20,9 +20,8 @@ import { CreateRightDto } from "./dto/create-right.dto";
 import { UpdateRightDto } from "./dto/update-right.dto";
 import { RightService } from "./right.service";
 import { Public } from "../../cores/decorators/public.decorator";
-import { Roles } from "src/cores/decorators/roles.decorator";
-import { Role } from "src/common/enums/env.enum";
 import { Actions } from "src/cores/decorators/action.decorator";
+import { Objectcode } from "src/cores/decorators/objectcode.decorator";
 
 @ApiTags("Right")
 @Controller("right")
@@ -30,7 +29,7 @@ export class RightController {
   constructor(private readonly rightService: RightService) {}
 
   @Post()
-  @Roles(Role.ADMIN)
+    @Objectcode('RIGHT01')
   @Actions('create')
   @ApiOperation({ summary: "Tạo Right" })
   @ApiOkResponse({ type: RightDto })
@@ -51,7 +50,7 @@ export class RightController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN)
+  @Objectcode('RIGHT01')
   @Actions('read')
   @ApiOperation({ summary: "Lấy Right theo ID" })
   @ApiOkResponse({ type: RightDto })
@@ -73,7 +72,7 @@ export class RightController {
 
   @Put(":id")
   @HttpCode(200)
-  @Roles(Role.ADMIN)
+  @Objectcode('RIGHT01')
   @Actions('update')
   @ApiOperation({ summary: "Cập nhật Right theo ID" })
   @ApiOkResponse({ description: "Cập nhật thành công." })
@@ -97,7 +96,7 @@ export class RightController {
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN)
+  @Objectcode('RIGHT01')
   @Actions('delete')
   @ApiOperation({ summary: "Xóa Right theo ID" })
   @ApiResponse({ status: 200, description: "Xóa thành công." })

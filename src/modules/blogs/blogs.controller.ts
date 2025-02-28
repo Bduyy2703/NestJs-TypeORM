@@ -15,13 +15,12 @@ import { BlogsService } from './blog.service';
 import { CreateBlogDto } from './dto/create-blog.dto';
 import { Request } from 'express';
 import { ApiBody, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiSecurity, ApiTags } from '@nestjs/swagger';
-import { Roles } from '../../cores/decorators/roles.decorator';
-import { Role } from '../../common/enums/env.enum';
 import { StatusDto } from './dto/status.dto';
 import { Public } from '../../cores/decorators/public.decorator';
 import { BlogActionsDto } from './dto/actions.dto';
 import { Actions } from 'src/cores/decorators/action.decorator';
 import { UpdateBlogDto } from './dto/update-blog.dto';
+import { Objectcode } from 'src/cores/decorators/objectcode.decorator';
 
 @Controller('blogs')
 @ApiTags('Blogs')
@@ -62,7 +61,7 @@ export class BlogsController {
    */
   @Get('admin/all')
   @Actions('read')
-  @Roles(Role.ADMIN)
+  @Objectcode('BLOG01')
   async findAllByStatus(@Query() query: StatusDto) {
     console.log("query", query)
     return await this.blogsService.findAllByStatus(query.status);
@@ -73,7 +72,7 @@ export class BlogsController {
    */
   @Get('user/:id/blogs')
   @Actions('read')
-  @Roles(Role.USER, Role.ADMIN)
+  @Objectcode('BLOG01')
   @ApiOperation({
     summary: 'Find all blogs by user ID',
     description: 'Endpoint để lấy danh sách bài viết của một user cụ thể dựa trên ID.',
@@ -105,7 +104,7 @@ export class BlogsController {
    */
   @Post('create')
   @Actions('execute')
-  @Roles(Role.ADMIN, Role.USER)
+  @Objectcode('BLOG01')
   async requestCreate(
     @Body() createBlogDto: CreateBlogDto,
     @Req() req: Request,
@@ -119,7 +118,7 @@ export class BlogsController {
    * [ADMIN, USER] Can comment a blog (done)
    */
   @Post(':id/comment')
-  @Roles(Role.ADMIN, Role.USER)
+  @Objectcode('BLOG01')
   @ApiBody({
     schema: {
       type: 'object',
@@ -151,7 +150,7 @@ export class BlogsController {
    */
   @Patch(':id/create/approve-blog')
   @Actions('update')
-  @Roles(Role.ADMIN)
+  @Objectcode('BLOG01')
   async blogActions(@Query() query: BlogActionsDto, @Param('id') id: number) {
     return await this.blogsService.blogActions(id, query.action);
   }
@@ -161,7 +160,7 @@ export class BlogsController {
    */
   @Patch(':id/requestDelete')
   @Actions('execute')
-  @Roles(Role.ADMIN, Role.USER)
+  @Objectcode('BLOG01')
   async requestDelete(@Param('id') id: number, @Req() req: Request) {
     const { userId } = req.user as any;
 
@@ -172,7 +171,7 @@ export class BlogsController {
    * [ADMIN , USER ] Can Update Blog and defautl pending_approve (done)
    */
   @Put(':id/blogs')
-  @Roles(Role.ADMIN, Role.USER)
+  @Objectcode('BLOG01')
   @Actions('execute')
   @ApiOperation({
     summary: 'Update a blog',
@@ -184,20 +183,21 @@ export class BlogsController {
     description: 'ID của bài viết cần cập nhật',
     example: 1,
   })
-  async update(
-    @Param('id') id: number,
-    @Req() req: Request,
-    @Body() data: UpdateBlogDto,
-  ) {
-    const { userId, role } = req.user as any; // Lấy thông tin user từ JWT
-    return await this.blogsService.update(id, userId, role, data);
-  }
+  // fix 
+  // async update(
+  //   @Param('id') id: number,
+  //   @Req() req: Request,
+  //   @Body() data: UpdateBlogDto,
+  // ) {
+  //   const { userId, role } = req.user as any; // Lấy thông tin user từ JWT
+  //   return await this.blogsService.update(id, userId, role, data);
+  // }
 
   /**
    * [ADMIN] Approve delete request from user (done)
    */
   @Delete(':id/blogs')
-  @Roles(Role.ADMIN)
+  @Objectcode('BLOG01')
   @Actions('delete')
   async delete(@Param('id') id: number) {
     return await this.blogsService.delete(id);

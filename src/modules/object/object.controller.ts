@@ -19,10 +19,8 @@ import { ObjectDto } from "./dto/object.dto";
 import { CreateObjectDto } from "./dto/create-object.dto";
 import { UpdateObjectDto } from "./dto/update-object.dto";
 import { ObjectService } from "./object.service";
-import { Roles } from "../../cores/decorators/roles.decorator";
-import { Public } from "../../cores/decorators/public.decorator";
 import { Actions } from "../../cores/decorators/action.decorator";
-import { Role } from "src/common/enums/env.enum";
+import { Objectcode } from "src/cores/decorators/objectcode.decorator";
 
 @ApiTags("Object")
 @Controller("object")
@@ -30,7 +28,7 @@ export class ObjectController {
   constructor(private readonly objectService: ObjectService) {}
 
   @Post()
-  @Roles(Role.ADMIN)
+  @Objectcode('OBJECT01')
   @Actions("create")
   @ApiOperation({ summary: "Tạo Object" })
   @ApiOkResponse({ type: ObjectDto })
@@ -52,7 +50,7 @@ export class ObjectController {
 
   @Get(":id")
   @HttpCode(200)
-  @Roles(Role.ADMIN)
+  @Objectcode('OBJECT01')
   @Actions("read")
   @ApiOperation({ summary: "Lấy Object theo ID" })
   @ApiOkResponse({ type: ObjectDto })
@@ -73,7 +71,7 @@ export class ObjectController {
   }
 
   @Put(":id")
-  @Roles(Role.ADMIN)
+  @Objectcode('OBJECT01')
   @Actions('update')
   @ApiOperation({ summary: "Cập nhật Object theo ID" })
   @ApiOkResponse({ description: "Cập nhật thành công." })
@@ -100,7 +98,7 @@ export class ObjectController {
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN)
+  @Objectcode('OBJECT01')
   @Actions('delete')
   @ApiOperation({ summary: "Xóa Object theo ID" })
   @ApiResponse({ status: 200, description: "Xóa thành công." })

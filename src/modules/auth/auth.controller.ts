@@ -6,17 +6,12 @@ import {
   Req,
   Get,
   Query,
-  HttpCode,
-  UnauthorizedException,
-  Delete,
   Res,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { Request, Response } from 'express';
-import { Role } from '../../common/enums/env.enum';
-import { Roles } from '../../cores/decorators/roles.decorator';
 import { Public } from '../../cores/decorators/public.decorator';
 import {
   ApiBadRequestResponse,
@@ -35,6 +30,7 @@ import { TokenResponse } from './dto/token-respone';
 import { SuccessResponse } from '../../cores/respones/success.respone';
 import { User } from '../users/entities/user.entity';
 import { Actions } from 'src/cores/decorators/action.decorator';
+import { Objectcode } from 'src/cores/decorators/objectcode.decorator';
 
 @Controller('auth')
 @ApiBearerAuth()
@@ -110,7 +106,7 @@ export class AuthController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @Post('refresh')
   @Actions('create')
-  @Roles(Role.ADMIN, Role.USER)
+  @Objectcode('AUTH01')
   generateAccessToken(@Body('refreshToken') refreshToken: string) {
     return this.authService.requestAccessToken(refreshToken);
   }
@@ -120,7 +116,7 @@ export class AuthController {
    */
   @Get('logout')
   @Actions('read')
-  @Roles(Role.ADMIN, Role.USER)
+  @Objectcode('AUTH01')
   @ApiOkResponse({ description: 'Logout successfully' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   logout(@Req() req: Request) {

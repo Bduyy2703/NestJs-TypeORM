@@ -1,12 +1,11 @@
 import { Controller, Get, Body, Patch, Param, Put, Req } from '@nestjs/common';
 import { ProfilesService } from './profile.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
-import { Roles } from '../../cores/decorators/roles.decorator';
-import { Role } from '../../common/enums/env.enum';
 import { Request } from 'express';
 import { Public } from '../../cores/decorators/public.decorator';
 import { ApiSecurity, ApiTags, ApiBody } from '@nestjs/swagger';
 import { Actions } from 'src/cores/decorators/action.decorator';
+import { Objectcode } from 'src/cores/decorators/objectcode.decorator';
 
 @Controller('profiles')
 @ApiTags('Profiles')
@@ -19,7 +18,7 @@ export class ProfilesController {
      */
     @Get('all')
     @Actions('read')
-    @Roles(Role.ADMIN)
+  @Objectcode('PROFILE01')
     async findAll() {
         return await this.profilesService.findAll();
     }
@@ -29,7 +28,7 @@ export class ProfilesController {
      */
     @Get('/me')
     @Actions('execute')
-    @Roles(Role.ADMIN, Role.USER)
+    @Objectcode('PROFILE01')
     async getMe(@Req() req: Request) {
         const { userId } = req.user as any;
 
@@ -49,7 +48,7 @@ export class ProfilesController {
      * [ADMIN, USER] update some specific info in profile
      */
     @Patch()
-    @Roles(Role.ADMIN, Role.USER)
+    @Objectcode('PROFILE01')
     @Actions('execute')
     async updateSome(
         @Body() updateProfileDto: UpdateProfileDto,
@@ -64,7 +63,7 @@ export class ProfilesController {
      * [ADMIN, USER] update some specific info in profile
      */
     @Put()
-    @Roles(Role.ADMIN, Role.USER)
+    @Objectcode('PROFILE01')
     @Actions('execute')
     async update(
         @Body() updateProfileDto: UpdateProfileDto,

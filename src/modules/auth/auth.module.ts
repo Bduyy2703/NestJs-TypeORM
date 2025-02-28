@@ -15,6 +15,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../users/entities/user.entity';
 import { Role } from '../role/entities/t_role';
 import { Token } from '../token/entities/token.entity';
+import { PermissionModule } from '../permission/permission.module';
 @Module({
   imports: [
     ConfigModule.forRoot(), // Import ConfigModule để đọc file .env
@@ -32,6 +33,7 @@ import { Token } from '../token/entities/token.entity';
     TokenModule,
     PassportModule,
     RoleModule,
+    PermissionModule
   ],
   controllers: [AuthController],
   providers: [AuthService, LocalStrategy, JwtStrategy, PermissionService],

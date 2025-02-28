@@ -46,7 +46,7 @@ export class RightObject {
   // Quan hệ với bảng Right
   @ManyToOne(() => Right, right => right.RightObject, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   right: Right;
-
+  
   // Quan hệ với bảng Object
   @ManyToOne(() => Object_entity, object => object.RightObject, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   object: Object;

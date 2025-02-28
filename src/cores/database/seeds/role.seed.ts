@@ -14,8 +14,8 @@ export class RoleSeeder implements Seeder {
 
         const roles = [
             {
-                code: 'USER',
-                name: 'User',
+                code: 'ADMIN',
+                name: 'Admin',
                 createdAt: new Date(),
                 updatedAt: new Date(),
                 createdBy: 'system',
@@ -23,8 +23,8 @@ export class RoleSeeder implements Seeder {
                 isActive: true,
             },
             {
-                code: 'ADMIN',
-                name: 'Admin',
+                code: 'USER',
+                name: 'User',
                 createdAt: new Date(),
                 updatedAt: new Date(),
                 createdBy: 'system',

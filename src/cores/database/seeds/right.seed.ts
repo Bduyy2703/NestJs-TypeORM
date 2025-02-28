@@ -14,8 +14,8 @@ export class RightSeeder implements Seeder {
 
         const seedData = [
             {
-                code: 'USER01',
-                name: 'View',
+                code: 'ADMIN01',
+                name: 'Write',
                 createdDate: new Date(),
                 createdBy: 'admin',
                 updatedDate: new Date(),
@@ -23,8 +23,8 @@ export class RightSeeder implements Seeder {
                 isActive: true,
             },
             {
-                code: 'ADMIN01',
-                name: 'Write',
+                code: 'USER01',
+                name: 'View',
                 createdDate: new Date(),
                 createdBy: 'admin',
                 updatedDate: new Date(),

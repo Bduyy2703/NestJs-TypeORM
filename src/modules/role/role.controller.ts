@@ -19,10 +19,9 @@ import { RoleDto } from "./dto/role.dto";
 import { CreateRoleDto } from "./dto/create-role.dto";
 import { UpdateRoleDto } from "./dto/update-role.dto";
 import { RoleService } from "./role.service";
-import { Roles } from "../../cores/decorators/roles.decorator";
-import { Role } from "src/common/enums/env.enum";
 import { Actions } from "src/cores/decorators/action.decorator";
 import { Public } from "src/cores/decorators/public.decorator";
+import { Objectcode } from "src/cores/decorators/objectcode.decorator";
 
 @ApiTags("Role")
 @Controller("role")
@@ -31,7 +30,7 @@ export class RoleController {
 
   @Post()
   @Public()
-  // @Roles(Role.ADMIN)
+  @Objectcode('ROLE01')
   @Actions('create')
   @ApiOperation({ summary: "Tạo Role" })
   @ApiOkResponse({ type: RoleDto })
@@ -52,7 +51,7 @@ export class RoleController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN)
+  @Objectcode('ROLE01')
   @Actions('read')
   @ApiOperation({ summary: "Lấy Role theo ID" })
   @ApiOkResponse({ type: RoleDto })
@@ -73,7 +72,7 @@ export class RoleController {
   }
 
   @Put(":id")
-  @Roles(Role.ADMIN)
+  @Objectcode('ROLE01')
   @Actions('update')
   @ApiOperation({ summary: "Cập nhật Role theo ID" })
   @HttpCode(200)
@@ -99,7 +98,7 @@ export class RoleController {
 
   @Delete(":id")
   @ApiOperation({ summary: "Xóa Role theo ID" })
-  @Roles(Role.ADMIN)
+  @Objectcode('ROLE01')
   @Actions('delete')
   @ApiResponse({ status: 200, description: "Xóa thành công." })
   async remove(@Param("id") id: number): Promise<any> {

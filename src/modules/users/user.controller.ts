@@ -9,12 +9,11 @@ import {
 } from '@nestjs/common';
 import { UsersService } from './user.service';
 import { ApiBody, ApiOkResponse, ApiSecurity, ApiTags } from '@nestjs/swagger';
-import { Role } from '../../common/enums/env.enum';
-import { Roles } from '../../cores/decorators/roles.decorator';
 import { Request } from 'express';
 import { UpdatePasswordDto } from '../users/dto/update-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { Actions } from 'src/cores/decorators/action.decorator';
+import { Objectcode } from 'src/cores/decorators/objectcode.decorator';
 
 @Controller('users')
 @ApiTags('Users')
@@ -27,7 +26,7 @@ export class UsersController {
    */
   @Get('all')
   @Actions('read')
-  @Roles(Role.ADMIN)
+  @Objectcode('USER01')
   async findAll() {
     return await this.usersService.findAll();
   }
@@ -37,7 +36,7 @@ export class UsersController {
    */
   @Get(':id')
   @Actions('read')
-  @Roles(Role.ADMIN)
+  @Objectcode('RR01')
   async findOneById(@Param('id') id: string) {
     return await this.usersService.findOneById(id);
   }
@@ -46,7 +45,7 @@ export class UsersController {
    * [USER] can change own password
    */
   @Patch('me/change-password')
-  @Roles(Role.USER)
+  @Objectcode('RR01')
   @Actions('execute')
   updatePassword(
     @Body() updatePasswordDto: UpdatePasswordDto,
@@ -60,7 +59,7 @@ export class UsersController {
    * [ADMIN] can reset password of user
    */
   @Patch(':id/reset-password')
-  @Roles(Role.ADMIN)
+  @Objectcode('RR01')
   @Actions('update')
   @ApiOkResponse({ type: ResetPasswordDto })
   changePassword(@Param('id') id: string) {
@@ -71,7 +70,7 @@ export class UsersController {
    * [ADMIN] can delete user
    */
   @Delete(':id')
-  @Roles(Role.ADMIN)
+  @Objectcode('RR01')
   @Actions('delete')
   delete(@Param('id') id: string) {
     return this.usersService.deleteById(id);

@@ -14,8 +14,8 @@ export class ObjectEntitySeeder implements Seeder {
 
         const seedData = [
             {
-                code: 'OBJ001',
-                name: 'Object Product',
+                code: 'ROLE01',
+                name: 'Object Role',
                 createdDate: new Date(),
                 createdBy: 'admin',
                 updatedDate: new Date(),
@@ -23,8 +23,35 @@ export class ObjectEntitySeeder implements Seeder {
                 isActive: true,
             },
             {
-                code: 'OBJ002',
-                name: 'Object UserInfo',
+                code: 'RIGHT01',
+                name: 'Object Right',
+                createdDate: new Date(),
+                createdBy: 'admin',
+                updatedDate: new Date(),
+                updatedBy: 'admin',
+                isActive: true,
+            },
+            {
+                code: 'OBJECT01',
+                name: 'Object Oject',
+                createdDate: new Date(),
+                createdBy: 'admin',
+                updatedDate: new Date(),
+                updatedBy: 'admin',
+                isActive: true,
+            },
+            {
+                code: 'RO01',
+                name: 'Object RO',
+                createdDate: new Date(),
+                createdBy: 'admin',
+                updatedDate: new Date(),
+                updatedBy: 'admin',
+                isActive: true,
+            },
+            {
+                code: 'RR01',
+                name: 'Object RR',
                 createdDate: new Date(),
                 createdBy: 'admin',
                 updatedDate: new Date(),

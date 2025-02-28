@@ -22,9 +22,8 @@ import { UpdateRoleRightDto } from "./dto/update-role_right.dto";
 import { RoleRightService } from "./role_right.service";
 import { FindRoleRightDto } from "./dto/find-role-right.dto";
 import { Public } from "../../cores/decorators/public.decorator";
-import { Roles } from "../../cores/decorators/roles.decorator";
 import { Actions } from "../../cores/decorators/action.decorator";
-import { Role } from "src/common/enums/env.enum";
+import { Objectcode } from "src/cores/decorators/objectcode.decorator";
 
 @ApiTags("RoleRight")
 @Controller("role-right")
@@ -32,7 +31,7 @@ export class RoleRightController {
   constructor(private readonly roleRightService: RoleRightService) {}
 
   @Post()
-  @Roles(Role.ADMIN)
+  @Objectcode('RR01')
   @Actions('create')
   @ApiOperation({ summary: "Tạo mối quan hệ giữa vai trò và quyền" })
   @ApiOkResponse({ type: RoleRightDto })
@@ -53,7 +52,7 @@ export class RoleRightController {
   }
 
   @Get()
-  @Roles(Role.ADMIN)
+  @Objectcode('RR01')
   @Actions('read')
   @ApiOperation({ summary: "Lọc danh sách RoleRight" })
   @ApiOkResponse({
@@ -84,7 +83,7 @@ export class RoleRightController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN)
+  @Objectcode('RR01')
   @Actions('read')
   @ApiOperation({ summary: "Lấy mối quan hệ vai trò-quyền theo ID" })
   @ApiOkResponse({ type: RoleRightDto })
@@ -105,7 +104,7 @@ export class RoleRightController {
   }
 
   @Put(":id")
-  @Roles(Role.ADMIN)
+  @Objectcode('RR01')
   @Actions("update")
   @HttpCode(200)
   @ApiOperation({ summary: "Cập nhật mối quan hệ vai trò-quyền theo ID" })
@@ -133,7 +132,7 @@ export class RoleRightController {
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN)
+  @Objectcode('RR01')
   @Actions('delete')
   @ApiOperation({ summary: "Xóa mối quan hệ vai trò-quyền theo ID" })
   @ApiResponse({ status: 200, description: "Xóa thành công." })

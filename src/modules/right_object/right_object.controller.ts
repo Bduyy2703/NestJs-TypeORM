@@ -22,9 +22,8 @@ import { UpdateRightObjectDto } from "./dto/update-right-object.dto";
 import { RightObjectService } from "./right_object.service";
 import { FindRightObjectDto } from "./dto/find-right-object.dto";
 import { Public } from "../../cores/decorators/public.decorator";
-import { Roles } from "../../cores/decorators/roles.decorator";
 import { Actions } from "../../cores/decorators/action.decorator";
-import { Role } from "src/common/enums/env.enum";
+import { Objectcode } from "src/cores/decorators/objectcode.decorator";
 
 @ApiTags("RightObject")
 @Controller("right-object")
@@ -32,7 +31,7 @@ export class RightObjectController {
   constructor(private readonly rightObjectService: RightObjectService) {}
 
   @Post()
-  @Roles(Role.ADMIN)
+ @Objectcode('RO01')
   @Actions('create')
   @ApiOperation({ summary: "Tạo mối quan hệ giữa quyền và đối tượng" })
   @ApiOkResponse({ type: RightObjectDto })
@@ -57,7 +56,7 @@ export class RightObjectController {
   }
 
   @Get()
-  @Roles(Role.ADMIN)
+  @Objectcode('RO01')
   @Actions('read')
   @ApiOperation({ summary: "Lọc danh sách RightObject" })
   @ApiOkResponse({
@@ -88,7 +87,7 @@ export class RightObjectController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN)
+  @Objectcode('RO01')
   @Actions('read')
   @ApiOperation({ summary: "Lấy mối quan hệ quyền-đối tượng theo ID" })
   @ApiOkResponse({ type: RightObjectDto })
@@ -109,7 +108,7 @@ export class RightObjectController {
   }
 
   @Put(":id")
-  @Roles(Role.ADMIN )
+  @Objectcode('RO01')
   @HttpCode(200)
   @Actions("update")
   @ApiOperation({ summary: "Cập nhật mối quan hệ quyền-đối tượng theo ID" })
@@ -140,7 +139,7 @@ export class RightObjectController {
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN)
+  @Objectcode('RO01')
   @Actions('delete')
   @ApiOperation({ summary: "Xóa mối quan hệ quyền-đối tượng theo ID" })
   @ApiResponse({ status: 200, description: "Xóa thành công." })

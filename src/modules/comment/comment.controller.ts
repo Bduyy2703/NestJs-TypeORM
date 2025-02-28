@@ -1,9 +1,8 @@
 import { Controller, Get, Param, Delete, Req } from '@nestjs/common';
 import { CommentsService } from './comment.service';
-import { Role } from '../../common/enums/env.enum';
-import { Roles } from '../../cores/decorators/roles.decorator';
 import { ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
+import { Objectcode } from 'src/cores/decorators/objectcode.decorator';
 
 @Controller('comments')
 @ApiTags('Comments')
@@ -14,7 +13,7 @@ export class CommentsController {
    * [ADMIN, USER] can delete its own comment
    */
   @Delete(':id')
-  @Roles(Role.ADMIN, Role.USER)
+  @Objectcode('COMMENT')
   async delete(@Param('id') id: number, @Req() req: Request) {
     const { userId } = req.user as any;
 

@@ -35,24 +35,6 @@ export class RoleRightSeeder implements Seeder {
                 updatedBy: 'admin',
                 isActive: true,
             },
-            {
-                role: roles[0],
-                right: rights[2],
-                createdDate: new Date(),
-                createdBy: 'admin',
-                updatedDate: new Date(),
-                updatedBy: 'admin',
-                isActive: true,
-            },
-            {
-                role: roles[1],
-                right: rights[1],
-                createdDate: new Date(),
-                createdBy: 'admin',
-                updatedDate: new Date(),
-                updatedBy: 'admin',
-                isActive: true,
-            },
         ];
 
         await roleRightRepository.insert(seedData);
