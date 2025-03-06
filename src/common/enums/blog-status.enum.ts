@@ -1,8 +1,0 @@
-export enum StatusEnum {
-    PENDING_APPROVAL = 'PENDING_APPROVAL',
-    PENDING_DELETION = 'PENDING_DELETION',
-    APPROVED = 'APPROVED',
-    DELETED = 'DELETED',
-    ALL = 'ALL',
-  }
-  

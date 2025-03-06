@@ -4,8 +4,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { User } from '../../../modules/users/entities/user.entity';
 import { Role } from 'src/modules/role/entities/t_role';
 import { Blog } from 'src/modules/blogs/entities/blog.entity';
-import { CommentsOnBlogs } from 'src/modules/comment-on-blog/entities/commentOnBlog.entity';
-import { Comment } from 'src/modules/comment/entities/comment.entity';
 import { Notification } from 'src/modules/notification/entities/notification.entity';
 import { Object_entity } from 'src/modules/object/entities/object.entity';
 import { Profile } from 'src/modules/profile/entities/profile.entity';
@@ -32,7 +30,7 @@ import { File } from 'src/modules/files/file.entity';
         username: configService.get<string>('DEV_DB_USERNAME', 'postgres'),
         password: configService.get<string>('DEV_DB_PASSWORD'),
         database: configService.get<string>('DEV_DB_DATABASE'),
-        entities: [User,Role,Blog,Comment,CommentsOnBlogs,Notification,Object_entity,Profile,Right,RightObject,RoleRight,Token,File], 
+        entities: [User,Role,Blog,Notification,Object_entity,Profile,Right,RightObject,RoleRight,Token,File], 
         migrations: ["../migrations/*.ts"],
         synchronize: true, 
         retryAttempts: 5,

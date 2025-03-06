@@ -13,7 +13,6 @@ import { RolesGuard } from './modules/auth/guards/role.guard';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { BlogsModule } from './modules/blogs/blog.module';
 import { ProfilesModule } from './modules/profile/profile.module';
-import { CommentsModule } from './modules/comment/comment.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { RoleModule } from './modules/role/role.module';
 import { ObjectModule } from './modules/object/object.module';
@@ -32,7 +31,6 @@ import 'reflect-metadata';
     TokenModule,
     MailModule,
     ProfilesModule,
-    CommentsModule,
     NotificationModule,
     RoleModule,
     ObjectModule,

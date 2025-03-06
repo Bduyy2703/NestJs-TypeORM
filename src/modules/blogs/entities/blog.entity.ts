@@ -1,7 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
 import { User } from '../../users/entities/user.entity'; // Import model User
-import { CommentsOnBlogs } from '../../comment-on-blog/entities/commentOnBlog.entity'; // Import model CommentsOnBlogs
-import { StatusEnum } from '../../../common/enums/blog-status.enum'; // Enum Status
 
 @Entity()
 export class Blog {
@@ -13,9 +11,6 @@ export class Blog {
 
   @Column({ type: 'text' })
   content: string;
-
-  @Column({ type: 'enum', enum: StatusEnum, default: StatusEnum.PENDING_APPROVAL })
-  status: StatusEnum;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createAt: Date;
@@ -30,6 +25,4 @@ export class Blog {
   @JoinColumn({ name: 'authorId' })
   author: User;
 
-  @OneToMany(() => CommentsOnBlogs, commentsOnBlogs => commentsOnBlogs.blog)
-  comments: CommentsOnBlogs[];
 }
