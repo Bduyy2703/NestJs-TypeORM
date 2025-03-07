@@ -9,8 +9,9 @@ import { RoleModule } from '../role/role.module';
 import { ProfilesModule } from '../profile/profile.module';
 import { RoleService } from '../role/role.service';
 import { Role } from '../role/entities/t_role';
+import { Address } from '../address/entity/address.entity';
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Profile,Role]) , RoleModule,forwardRef(() => ProfilesModule)],
+  imports: [TypeOrmModule.forFeature([User,Address, Profile,Role]) , RoleModule,forwardRef(() => ProfilesModule)],
   controllers: [UsersController],
   providers: [UsersService, RoleService],
   exports: [UsersService,TypeOrmModule],

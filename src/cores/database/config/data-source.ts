@@ -11,6 +11,7 @@ import { RightObject } from '../../../modules/right_object/entities/t_right_obje
 import { RoleRight } from '../../../modules/role_right/entities/t_role_right';
 import { Token } from '../../../modules/token/entities/token.entity';
 import { File } from 'src/modules/files/file.entity';
+import { Address } from 'src/modules/address/entity/address.entity';
 
 dotenv.config({ path: '.env.development' }); 
 
@@ -21,7 +22,7 @@ dotenv.config({ path: '.env.development' });
     username: process.env.DEV_DB_USERNAME || 'postgres',
     password: process.env.DEV_DB_PASSWORD,
     database: process.env.DEV_DB_DATABASE,
-    entities: [User,Role,Blog,Notification,Object_entity,Profile,Right,RightObject,RoleRight,Token,File],
+    entities: [Address,User,Role,Blog,Notification,Object_entity,Profile,Right,RightObject,RoleRight,Token,File],
     migrations: ["src/migrations/*.ts"], 
     synchronize: true,
     logging: false,

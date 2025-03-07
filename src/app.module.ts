@@ -22,6 +22,7 @@ import { RoleRightModule } from './modules/role_right/role_right.module';
 import { PermissionModule } from './modules/permission/permission.module';
 import { MinioModule } from './cores/minio/minio.module';
 import 'reflect-metadata';
+import { AddressModule } from './modules/address/address.module';
 @Module({
   imports: [
     AuthModule,
@@ -39,7 +40,8 @@ import 'reflect-metadata';
     RoleRightModule,
     PermissionModule,
     EventEmitterModule.forRoot(),
-    MinioModule
+    MinioModule,
+    AddressModule,
   ],
   controllers: [AppController],
   providers: [
