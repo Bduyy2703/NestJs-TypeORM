@@ -23,7 +23,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       context.getHandler(),
       context.getClass(),
     ]);
-
     if (isPublicRoute) {
       return true;
     }
@@ -36,7 +35,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     if (!validToken) {
       throw new UnauthorizedException('Invalid access token');
     }
-
     return super.canActivate(context);
   }
 

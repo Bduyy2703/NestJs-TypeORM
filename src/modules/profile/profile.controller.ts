@@ -18,7 +18,7 @@ export class ProfilesController {
      */
     @Get('all')
     @Actions('read')
-  @Objectcode('PROFILE01')
+    @Objectcode('PROFILE01')
     async findAll() {
         return await this.profilesService.findAll();
     }
@@ -33,15 +33,6 @@ export class ProfilesController {
         const { userId } = req.user as any;
 
         return await this.profilesService.getMe(userId);
-    }
-
-    /**
-     * [VIEWER] can view others profile
-     */
-    @Public()
-    @Get(':username')
-    async findByUsername(@Param('username') username: string) {
-        return await this.profilesService.findByUsername(username);
     }
 
     /**

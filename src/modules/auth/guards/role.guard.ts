@@ -14,16 +14,14 @@ export class RolesGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const isPublicRoute = this.reflector.getAllAndOverride("isPublic", [
+    const isPublicRoute = this.reflector.getAllAndOverride("publicRoute", [
       context.getHandler(),
       context.getClass(),
     ]);
-
     if (isPublicRoute) {
       return true;
     }
-
-    const objectcodes = this.reflector.getAllAndOverride<string[]>(
+    const objectcodes = this.reflector.getAllAndOverride<string>(
       "objectcode",
       [context.getHandler(), context.getClass()]
     );
@@ -33,7 +31,7 @@ export class RolesGuard implements CanActivate {
     }
 
     const { user } = context.switchToHttp().getRequest();
-    const actions = this.reflector.getAllAndOverride<string[]>("actions", [
+    const actions = this.reflector.getAllAndOverride<string>("actions", [
       context.getHandler(),
       context.getClass(),
     ]);
@@ -41,9 +39,8 @@ export class RolesGuard implements CanActivate {
     if (!actions || actions.length === 0) {
       throw new ForbiddenException("Không tìm thấy action phù hợp!");
     }
-
     const hasPermission = await this.permissionService.hasPermission(
-      user.id,
+      user.userId,
       objectcodes,
       actions
     );

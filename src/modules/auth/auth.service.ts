@@ -65,8 +65,14 @@ export class AuthService {
     });
 
     await this.mailerService.sendUserConfirmation(newUser, tokenOTP, accessToken);
-
+    const res = {
+      name : newUser.username,
+      email : newUser.email,
+      role : newUser.role.code
+    }
     return {
+      message : "Success",
+      res,
       accessToken,
       refreshToken,
       expiredInAccessToken,
@@ -117,7 +123,15 @@ export class AuthService {
         accessToken: accessToken,
       });
 
+      const res = {
+        name : userWithRole.username,
+        email : userWithRole.email,
+        role : userWithRole.role.code,
+      }
+
       return {
+        message : "success",
+        res,
         accessToken,
         refreshToken,
         expiredInAccessToken,
@@ -138,8 +152,14 @@ export class AuthService {
       userWithRole.tokenOTP = tokenOTP;
 
       await this.usersService.updateUser(userWithRole);
+      const res = {
+        name : userWithRole.username,
+        email : userWithRole.email,
+        role : userWithRole.role.code,
+      }
       return {
         message: 'Email is not verified . Please check Email to verified',
+        res,
         accessToken,
         refreshToken,
         expiredInAccessToken,
@@ -173,7 +193,7 @@ export class AuthService {
   }
 
   async validateAccessToken(accessToken: string): Promise<boolean> {
-    console.log("1233333333333333")
+
     const foundedToken = await this.tokenService.findAccessToken(accessToken);
     return foundedToken ? true : false;
   }
@@ -212,13 +232,12 @@ export class AuthService {
     // 4. check this refreshToken is truly using by this user
     const holderToken =
       await this.tokenService.findByRefreshToken(refreshToken);
-
     if (!holderToken) {
       throw new UnauthorizedException('Invalid token or not registered');
     }
 
     const userWithRole = await this.userRepository.findOne({
-      where: { id: holderToken.user.id },
+      where: { id: decodeToken.userId },
       relations: ['role'],
     });
 
