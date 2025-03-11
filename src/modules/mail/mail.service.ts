@@ -19,4 +19,29 @@ export class MailService {
       },
     });
   }
+
+  async sendMail(to: string, subject: string, template: string, context: any) {
+    try {
+      console.log(context)
+      await this.mailerService.sendMail({
+        to,
+        template,
+        subject,
+        context: {
+          name: context.name,
+          newPassword : context.otp
+        },
+      });
+      return { success: true, message: 'Email sent successfully' };
+    } catch (error) {
+      console.error('Error sending email:', error);
+      return { success: false, message: 'Failed to send email' };
+    }
+  }
+  async sendForgotPasswordOTP(user: any, otp: string) {
+    return this.sendMail(user.email, 'Reset Your Password', './forgotPass', {
+      name: user.username,
+      otp,
+    });
+  }
 }

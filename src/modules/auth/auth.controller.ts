@@ -112,6 +112,41 @@ export class AuthController {
   }
 
   /**
+   * Client forgot password (done)
+  */
+  @Public()
+  @Post('forgot-password')
+  @ApiOkResponse({ description: 'OTP has been sent to email if it exists' })
+  @ApiBadRequestResponse({ description: 'Invalid email format' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        email: {
+          type: 'string',
+          example: 'user@example.com',
+          description: 'User email to receive the OTP',
+        },
+      },
+    },
+  })  
+  async forgotPassword(@Body('email') email: string, @Res() res: Response) {
+    if (!email) {
+      return new SuccessResponse({
+        message: 'Invalid email format',
+        metadata: null, // Thêm metadata để tránh lỗi TypeScript
+      }).send(res);
+    }
+  
+    await this.authService.forgotPassword(email);
+  
+    return new SuccessResponse({
+      message: 'If the email exists, an OTP has been sent to reset the password',
+      metadata: null, // Thêm metadata để phù hợp với kiểu yêu cầu
+    }).send(res);
+  }
+  
+  /**
    * Client do action logout (done)
    */
   @Get('logout')

@@ -94,6 +94,20 @@ export class AuthService {
     return { message: 'Email verified successfully' };
   }
 
+
+  // forgot password
+  async forgotPassword(email: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) return; // Tránh lộ thông tin email không tồn tại
+  
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.tokenOTP = otp;
+    await this.usersService.update(user);
+  
+    // Gọi hàm sendForgotPasswordOTP trong MailService
+    await this.mailerService.sendForgotPasswordOTP(user, otp);
+  }
+  
   //login
   async login(user: LoginDto) {
 

@@ -36,7 +36,7 @@ export class UsersController {
    */
   @Get(':id')
   @Actions('read')
-  @Objectcode('RR01')
+  @Objectcode('USER01')
   async findOneById(@Param('id') id: string) {
     return await this.usersService.findOneById(id);
   }
@@ -45,7 +45,7 @@ export class UsersController {
    * [USER] can change own password
    */
   @Patch('me/change-password')
-  @Objectcode('RR01')
+  @Objectcode('USER01')
   @Actions('execute')
   updatePassword(
     @Body() updatePasswordDto: UpdatePasswordDto,
@@ -59,7 +59,7 @@ export class UsersController {
    * [ADMIN] can reset password of user
    */
   @Patch(':id/reset-password')
-  @Objectcode('RR01')
+  @Objectcode('USER01')
   @Actions('update')
   @ApiOkResponse({ type: ResetPasswordDto })
   changePassword(@Param('id') id: string) {
@@ -70,7 +70,7 @@ export class UsersController {
    * [ADMIN] can delete user
    */
   @Delete(':id')
-  @Objectcode('RR01')
+  @Objectcode('USER01')
   @Actions('delete')
   delete(@Param('id') id: string) {
     return this.usersService.deleteById(id);

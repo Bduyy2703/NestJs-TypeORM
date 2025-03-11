@@ -175,4 +175,18 @@ export class UsersService {
 
     return { message: 'Delete successful', code: HttpStatus.OK };
   }
+
+  async findByEmail(email: string): Promise<User | null> {
+    return this.userRepository.findOne({ where: { email } });
+  }
+
+  async findByOtp(otp: string): Promise<User | null> {
+    return this.userRepository.findOne({
+      where: { tokenOTP : otp },
+    });
+  }
+
+  async update(user: User) {
+    return this.userRepository.save(user);
+  }
 }
