@@ -42,4 +42,7 @@ export class FileRepository {
   async findFilesByBucketName(bucketName: string) {
     return await this.fileRepo.find({ where: { bucketName } });
   }
+  async findFilesByTarget(targetId: number, targetType: string) {
+    return this.fileRepo.find({ where: { targetId, targetType } });
+  }
 }

@@ -20,7 +20,7 @@ import { RightModule } from './modules/right/right.module';
 import { RightObjectModule } from './modules/right_object/right_object.module';
 import { RoleRightModule } from './modules/role_right/role_right.module';
 import { PermissionModule } from './modules/permission/permission.module';
-import { MinioModule } from './cores/minio/minio.module';
+import { MinioModule } from './modules/files/minio/minio.module';
 import 'reflect-metadata';
 import { AddressModule } from './modules/address/address.module';
 @Module({
@@ -57,4 +57,4 @@ import { AddressModule } from './modules/address/address.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }

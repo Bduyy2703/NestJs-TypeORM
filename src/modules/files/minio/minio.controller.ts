@@ -10,12 +10,12 @@ import {
     Delete,
     UploadedFiles,
 } from '@nestjs/common';
-import { BadRequestException } from '../exceptions/bad-request.exceptions'
+import { BadRequestException } from '../../../cores/exceptions/bad-request.exceptions'
 import { MinioService } from './minio.service';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import multer from 'multer';
-import { Public } from '../decorators/public.decorator';
+import { Public } from '../../../cores/decorators/public.decorator';
 import { ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { v4 as uuidv4 } from 'uuid';
 import { FileRepository } from 'src/modules/files/file.repository';
@@ -67,7 +67,7 @@ export class MinioController {
                 objectName,
                 file.buffer,
                 file.mimetype,
-            );
+             );
             const fileUrlList = await this.minioService.getUrlByName(bucketName, [objectName]);
             // Lưu thông tin file vào DB
             const fileData = await this.fileRepository.createFile({

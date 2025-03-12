@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
-import { User } from '../../users/entities/user.entity'; // Import model User
+import { User } from '../../users/entities/user.entity';
+import { File } from '../../files/file.entity'; // Import File
 
 @Entity()
 export class Blog {
@@ -18,11 +19,6 @@ export class Blog {
   @Column({ type: 'timestamp', nullable: true, onUpdate: 'CURRENT_TIMESTAMP' })
   updatedAt?: Date;
 
-  @Column({ type: 'varchar' })
-  authorId: string;
-
-  @ManyToOne(() => User, user => user.blogs, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'authorId' })
-  author: User;
-
+  @OneToMany(() => File, file => file.targetId, { cascade: true }) 
+  files: File[];
 }

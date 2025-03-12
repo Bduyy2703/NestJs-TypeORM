@@ -1,113 +1,42 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  HttpStatus,
-  Inject,
-  Injectable,
-  NotFoundException,
-  forwardRef,
-} from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Blog } from './entities/blog.entity';
 import { CreateBlogDto } from './dto/create-blog.dto';
-import { Blog } from '../blogs/entities/blog.entity';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UpdateBlogDto } from './dto/update-blog.dto';
 
 @Injectable()
 export class BlogsService {
   constructor(
-    private eventEmitter: EventEmitter2,
     @InjectRepository(Blog)
-    private blogRepository: Repository<Blog>,
-  ) { }
+    private readonly blogRepository: Repository<Blog>,
+  ) {}
 
-  async findById(blogId: number): Promise<Blog> {
-    const blog = await this.blogRepository.findOne({
-      where: { id: blogId },
-    });
-
-    if (!blog) {
-      throw new NotFoundException(`Blog with ID ${blogId} not found`);
-    }
-
-    return blog;
+  async create(createBlogDto: CreateBlogDto): Promise<Blog> {
+    const blog = this.blogRepository.create(createBlogDto);
+    return await this.blogRepository.save(blog);
   }
 
-
-  async requestCreate(
-    userId: string,
-    createBlogDto: CreateBlogDto,
-  ): Promise<Blog> {
-    try {
-      const blog = this.blogRepository.create({
-        ...createBlogDto,
-        authorId: userId, // Assuming the Blog entity has an author relation
-      });
-      const savedBlog = await this.blogRepository.save(blog);
-      if (!savedBlog) {
-        throw new BadRequestException('Cannot create blog');
-      }
-      return savedBlog;
-    } catch (error) {
-      console.log('error nè : ', error)
-    }
-  }
-  async findAllByUserId(userId: string) {
-    // Logic để lấy tất cả bài viết theo ID user
-    return this.blogRepository.find({
-      where: { authorId: userId },
-    });
-  }
-
-  async delete(blogId: number) {
-    try {
-      const blog = await this.blogRepository.findOne({
-        where: { id: blogId},
-      });
-
-      if (!blog) {
-        throw new BadRequestException('Blog is not in pending deletion');
-      }
-      // Delete the blog
-      await this.blogRepository.delete(blogId);
-
-      return {
-        message: 'Delete successful',
-        statusCode: HttpStatus.OK,
-      };
-    } catch (err) {
-      console.log(err)
-      throw new BadRequestException('Something went wrong when delete');
-    }
-  }
-
-
-  async update(
-    blogId: number,
-    userId: string,
-    data: UpdateBlogDto,
-  ) {
-    // 1. Kiểm tra bài viết có tồn tại
-    const blog = await this.blogRepository.findOne({ where: { id: blogId } });
-
+  async findById(id: number): Promise<Blog> {
+    const blog = await this.blogRepository.findOne({ where: { id } });
     if (!blog) {
       throw new NotFoundException('Blog not found');
     }
+    return blog;
+  }
 
-    try {
-      const updatedBlog = await this.blogRepository.save({
-        ...blog,
-        ...data, // Trạng thái mặc định
-      });
+  async findAll(): Promise<Blog[]> {
+    return await this.blogRepository.find();
+  }
 
-      return {
-        message: 'Blog successfully updated',
-        updatedBlog,
-      };
-    } catch (error) {
-      console.error(error);
-      throw new BadRequestException('Something went wrong while updating the blog');
-    }
+  async update(id: number, updateBlogDto: UpdateBlogDto): Promise<void> {
+    const blog = await this.findById(id);
+    Object.assign(blog, updateBlogDto);
+    await this.blogRepository.save(blog);
+  }
+
+  async delete(id: number): Promise<void> {
+    const blog = await this.findById(id);
+    await this.blogRepository.remove(blog);
   }
 }

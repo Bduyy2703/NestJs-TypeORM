@@ -32,9 +32,6 @@ export class User {
   @Column({ nullable: true })
   tokenOTP?: string;
 
-  @OneToMany(() => Blog, blog => blog.author)
-  blogs: Blog[];
-
   @OneToOne(() => Profile, profile => profile.user, { cascade: true })
   profile: Profile;
 

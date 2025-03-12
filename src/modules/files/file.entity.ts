@@ -2,7 +2,7 @@ import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity('files')
 export class File {
-  @PrimaryGeneratedColumn('uuid') // UUID tự động sinh
+  @PrimaryGeneratedColumn('uuid')
   fileId: string;
 
   @Column()
@@ -13,4 +13,10 @@ export class File {
 
   @Column()
   fileUrl: string;
+
+  @Column({ type: 'int' }) 
+  targetId: number;
+
+  @Column({ type: 'varchar' }) 
+  targetType: string;
 }
