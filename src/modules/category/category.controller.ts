@@ -94,7 +94,7 @@ import {
     @ApiBody({ type: UpdateCategoryDto })
     async update(@Param('id') id: number, @Body() dto: UpdateCategoryDto) {
       try {
-        const updatedCategory = await this.categoryService.update(id, dto);
+        const updatedCategory = await this.categoryService.updateCategory(id, dto);
         if (!updatedCategory) {
           throw new HttpException(
             { statusCode: HttpStatus.NOT_FOUND, message: 'Danh mục không tồn tại' },
@@ -107,8 +107,9 @@ import {
           data: updatedCategory,
         };
       } catch (error) {
+        console.log(error)
         throw new HttpException(
-          { statusCode: HttpStatus.BAD_REQUEST, message: 'Không thể cập nhật danh mục' },
+          { statusCode: HttpStatus.BAD_REQUEST, message: 'Không thể cập nhật danh mục '+ error },
           HttpStatus.BAD_REQUEST,
         );
       }
