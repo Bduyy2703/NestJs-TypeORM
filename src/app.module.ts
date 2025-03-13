@@ -23,6 +23,7 @@ import { PermissionModule } from './modules/permission/permission.module';
 import { MinioModule } from './modules/files/minio/minio.module';
 import 'reflect-metadata';
 import { AddressModule } from './modules/address/address.module';
+import { CategoryModule } from './modules/category/category.module';
 @Module({
   imports: [
     AuthModule,
@@ -42,6 +43,7 @@ import { AddressModule } from './modules/address/address.module';
     EventEmitterModule.forRoot(),
     MinioModule,
     AddressModule,
+    CategoryModule,
   ],
   controllers: [AppController],
   providers: [
