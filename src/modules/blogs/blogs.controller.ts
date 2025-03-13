@@ -200,22 +200,32 @@ export class BlogsController {
 
     await this.blogsService.update(id, updateBlogDto);
 
-    // Lấy danh sách ảnh hiện tại từ DB
     const oldImages = await this.fileRepository.findFilesByTarget(id, 'blog');
-
-    // Chuyển danh sách giữ lại thành Set để kiểm tra dễ dàng
+    if (keepFiles) {
+      if (typeof keepFiles === 'string') {
+        try {
+          keepFiles = JSON.parse(keepFiles);
+        } catch (error) {
+          throw new BadRequestException('Invalid keepFiles format');
+        }
+      }
+    
+      // Nếu chỉ có một object, chuyển thành mảng
+      if (!Array.isArray(keepFiles)) {
+        keepFiles = [keepFiles];
+      }
+    } else {
+      keepFiles = []; 
+    }
     const keepFilesSet = new Set(keepFiles.map(file => file.fileId));
 
-    // 1️⃣ **Xác định danh sách file cần xóa**
     const removedImages = oldImages.filter(img => !keepFilesSet.has(img.fileId));
 
-    // 2️⃣ **Xóa ảnh cũ không cần thiết**
     for (const image of removedImages) {
       await this.minioService.deleteFile(image.bucketName, image.fileName);
       await this.fileRepository.Delete(image.fileId);
-    } 
+    }
 
-    // 3️⃣ **Upload ảnh mới (nếu có)**
     const newUploadedFiles = [];
     if (files && files.length > 0) {
       for (const file of files) {
@@ -243,11 +253,9 @@ export class BlogsController {
         newUploadedFiles.push(fileData.fileUrl);
       }
     }
-
-    // 4️⃣ **Trả về danh sách ảnh chính xác**
     return {
       message: 'Blog updated successfully',
-      updatedImages: [...keepFiles.map(f => f.fileName), ...newUploadedFiles], // Danh sách ảnh còn lại sau update
+      updatedImages: [...keepFiles.map(f => f.fileName), ...newUploadedFiles], 
     };
   }
 
