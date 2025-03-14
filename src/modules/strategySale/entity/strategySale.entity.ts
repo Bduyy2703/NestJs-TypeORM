@@ -1,6 +1,6 @@
 import { Category } from "src/modules/category/entity/category.entity";
 import { Product } from "src/modules/product/entity/product.entity";
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity()
 export class StrategySale {
@@ -11,27 +11,29 @@ export class StrategySale {
   name: string;
 
   @Column({ type: "decimal", precision: 5, scale: 2, nullable: true })
-  discountPercent: number; 
+  discountPercent: number;
 
   @Column({ type: "decimal", precision: 10, scale: 2, nullable: true })
-  discountAmount: number; 
+  discountAmount: number;
 
   @Column({ type: "timestamp", nullable: true })
-  startDate: Date; 
+  startDate: Date;
 
   @Column({ type: "timestamp", nullable: true })
   endDate: Date;
 
   @Column({ default: true })
-  isActive: boolean; 
+  isActive: boolean;
 
+  @Column({ default: false })
+  isGlobalSale: boolean;
+  
   @ManyToOne(() => Category, { nullable: true, onDelete: "SET NULL" })
   @JoinColumn({ name: "categoryId" })
-  category: Category; 
+  category: Category;
 
-  @ManyToOne(() => Product, { nullable: true, onDelete: "SET NULL" })
-  @JoinColumn({ name: "productId" })
-  product: Product; 
+  @OneToMany(() => Product, (product) => product.strategySale)
+  products: Product[];
 
   @CreateDateColumn()
   createdAt: Date;
