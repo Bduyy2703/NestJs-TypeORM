@@ -25,6 +25,7 @@ import 'reflect-metadata';
 import { AddressModule } from './modules/address/address.module';
 import { CategoryModule } from './modules/category/category.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
+import { DiscountModule } from './modules/discount/discount.module';
 @Module({
   imports: [
     AuthModule,
@@ -46,6 +47,7 @@ import { InventoryModule } from './modules/inventory/inventory.module';
     AddressModule,
     CategoryModule,
     InventoryModule,
+    DiscountModule,
   ],
   controllers: [AppController],
   providers: [

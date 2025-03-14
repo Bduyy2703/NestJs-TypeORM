@@ -17,6 +17,7 @@ import { Category } from 'src/modules/category/entity/category.entity';
 import { Product } from 'src/modules/product/entity/product.entity';
 import { Inventory } from 'src/modules/inventory/entity/inventory.entity';
 import { ProductDetails } from 'src/modules/product/entity/productDetail.entity';
+import { Discount } from 'src/modules/discount/entity/discount.entity';
 @Module({
   imports: [
     // ConfigModule đảm bảo biến môi trường được nạp trước
@@ -35,7 +36,7 @@ import { ProductDetails } from 'src/modules/product/entity/productDetail.entity'
         username: configService.get<string>('DEV_DB_USERNAME', 'postgres'),
         password: configService.get<string>('DEV_DB_PASSWORD'),
         database: configService.get<string>('DEV_DB_DATABASE'),
-        entities: [ProductDetails,Inventory,Product,Category,Address,User,Role,Blog,Notification,Object_entity,Profile,Right,RightObject,RoleRight,Token,File], 
+        entities: [Discount,ProductDetails,Inventory,Product,Category,Address,User,Role,Blog,Notification,Object_entity,Profile,Right,RightObject,RoleRight,Token,File], 
         migrations: ["../migrations/*.ts"],
         synchronize: true, 
         retryAttempts: 5,
