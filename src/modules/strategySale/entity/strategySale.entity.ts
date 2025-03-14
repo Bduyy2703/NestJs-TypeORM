@@ -8,30 +8,30 @@ export class StrategySale {
   id: number;
 
   @Column()
-  name: string; // Tên chiến lược (vd: Sale mùa hè)
+  name: string;
 
   @Column({ type: "decimal", precision: 5, scale: 2, nullable: true })
-  discountPercent: number; // Giảm giá theo %
+  discountPercent: number; 
 
   @Column({ type: "decimal", precision: 10, scale: 2, nullable: true })
-  discountAmount: number; // Giảm giá theo số tiền cố định
+  discountAmount: number; 
 
   @Column({ type: "timestamp", nullable: true })
-  startDate: Date; // Ngày bắt đầu
+  startDate: Date; 
 
   @Column({ type: "timestamp", nullable: true })
-  endDate: Date; // Ngày kết thúc
+  endDate: Date;
 
   @Column({ default: true })
-  isActive: boolean; // Trạng thái kích hoạt
+  isActive: boolean; 
 
   @ManyToOne(() => Category, { nullable: true, onDelete: "SET NULL" })
   @JoinColumn({ name: "categoryId" })
-  category: Category; // Giảm giá cho danh mục (nếu có)
+  category: Category; 
 
   @ManyToOne(() => Product, { nullable: true, onDelete: "SET NULL" })
   @JoinColumn({ name: "productId" })
-  product: Product; // Giảm giá cho sản phẩm cụ thể (nếu có)
+  product: Product; 
 
   @CreateDateColumn()
   createdAt: Date;

@@ -23,7 +23,6 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import multer from 'multer';
 import { MinioService } from '../files/minio/minio.service';
 import { FileRepository } from '../files/file.repository';
-import { Req } from '@nestjs/common';
 
 @Controller('blogs')
 @ApiTags('Blogs')

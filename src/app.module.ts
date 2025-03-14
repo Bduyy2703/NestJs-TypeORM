@@ -24,6 +24,7 @@ import { MinioModule } from './modules/files/minio/minio.module';
 import 'reflect-metadata';
 import { AddressModule } from './modules/address/address.module';
 import { CategoryModule } from './modules/category/category.module';
+import { InventoryModule } from './modules/inventory/inventory.module';
 @Module({
   imports: [
     AuthModule,
@@ -44,6 +45,7 @@ import { CategoryModule } from './modules/category/category.module';
     MinioModule,
     AddressModule,
     CategoryModule,
+    InventoryModule,
   ],
   controllers: [AppController],
   providers: [

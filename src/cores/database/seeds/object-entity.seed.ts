@@ -112,6 +112,24 @@ export class ObjectEntitySeeder implements Seeder {
                 updatedBy: 'admin',
                 isActive: true,
             },
+            {
+                code: 'INVENTORY01',
+                name: 'Object inventory',
+                createdDate: new Date(),
+                createdBy: 'admin',
+                updatedDate: new Date(),
+                updatedBy: 'admin',
+                isActive: true,
+            },
+            {
+                code: 'PRODUCT01',
+                name: 'Object product',
+                createdDate: new Date(),
+                createdBy: 'admin',
+                updatedDate: new Date(),
+                updatedBy: 'admin',
+                isActive: true,
+            },
         ];
 
         await objectRepository.insert(seedData);

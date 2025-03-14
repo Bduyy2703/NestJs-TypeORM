@@ -14,6 +14,8 @@ import { File } from 'src/modules/files/file.entity';
 import { Address } from 'src/modules/address/entity/address.entity';
 import { Category } from 'src/modules/category/entity/category.entity';
 import { Product } from 'src/modules/product/entity/product.entity';
+import { Inventory } from 'src/modules/inventory/entity/inventory.entity';
+import { ProductDetails } from 'src/modules/product/entity/productDetail.entity';
 
 dotenv.config({ path: '.env.development' }); 
 
@@ -24,7 +26,7 @@ dotenv.config({ path: '.env.development' });
     username: process.env.DEV_DB_USERNAME || 'postgres',
     password: process.env.DEV_DB_PASSWORD,
     database: process.env.DEV_DB_DATABASE,
-    entities: [Product,Category,Address,User,Role,Blog,Notification,Object_entity,Profile,Right,RightObject,RoleRight,Token,File],
+    entities: [ProductDetails,Inventory,Product,Category,Address,User,Role,Blog,Notification,Object_entity,Profile,Right,RightObject,RoleRight,Token,File],
     migrations: ["src/migrations/*.ts"], 
     synchronize: true,
     logging: false,

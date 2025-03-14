@@ -25,7 +25,6 @@ export class RolesGuard implements CanActivate {
       "objectcode",
       [context.getHandler(), context.getClass()]
     );
-
     if (!objectcodes) {
       throw new ForbiddenException("Bạn cần quyền để truy cập!");
     }
