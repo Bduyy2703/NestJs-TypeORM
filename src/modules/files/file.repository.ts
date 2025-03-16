@@ -45,4 +45,8 @@ export class FileRepository {
   async findFilesByTarget(targetId: number, targetType: string) {
     return this.fileRepo.find({ where: { targetId, targetType } });
   }
+
+  async updateFileTarget(fileId: string, targetId: number) {
+    return await this.fileRepo.update(fileId, { targetId });
+  }
 }

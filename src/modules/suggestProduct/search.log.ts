@@ -13,6 +13,9 @@ export class SearchLog {
   @JoinColumn({ name: "userId" })
   user: User;
 
+  @Column()
+  isClick: number; 
+
   @CreateDateColumn()
   searchedAt: Date;
 }
