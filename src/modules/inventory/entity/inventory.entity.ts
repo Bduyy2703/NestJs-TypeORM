@@ -12,6 +12,9 @@ export class Inventory {
   @Column({ type: "varchar", length: 255 })
   location: string; 
 
+  @Column({ default: 0 })
+  stock: number;
+
   @OneToMany(() => ProductDetails, (productDetails) => productDetails.inventory)
   productDetails: ProductDetails[];
   
