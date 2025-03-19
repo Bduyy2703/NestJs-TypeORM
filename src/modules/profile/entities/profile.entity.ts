@@ -15,9 +15,6 @@ export class Profile {
   @Column({ nullable: true })
   phoneNumber?: string;
 
-  @Column({ default: true })
-  isActive: boolean;
-
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createAt?: Date;
 

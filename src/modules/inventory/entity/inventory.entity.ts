@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from "typeorm";
-import { Product } from "src/modules/product/entity/product.entity";
+import { ProductDetails } from "src/modules/product/entity/productDetail.entity";
 
 @Entity()
 export class Inventory {
@@ -12,6 +12,7 @@ export class Inventory {
   @Column({ type: "varchar", length: 255 })
   location: string; 
 
-  @OneToMany(() => Product, (product) => product.inventory)
-  products: Product[];
+  @OneToMany(() => ProductDetails, (productDetails) => productDetails.inventory)
+  productDetails: ProductDetails[];
+  
 }

@@ -26,6 +26,7 @@ import { AddressModule } from './modules/address/address.module';
 import { CategoryModule } from './modules/category/category.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { DiscountModule } from './modules/discount/discount.module';
+import { ProductModule } from './modules/product/product.module';
 @Module({
   imports: [
     AuthModule,
@@ -48,6 +49,7 @@ import { DiscountModule } from './modules/discount/discount.module';
     CategoryModule,
     InventoryModule,
     DiscountModule,
+    ProductModule,
   ],
   controllers: [AppController],
   providers: [

@@ -1,76 +1,82 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from "typeorm";
 import { Product } from "src/modules/product/entity/product.entity";
+import { Inventory } from "src/modules/inventory/entity/inventory.entity";
 
 
 export enum ProductSize {
-    SMALL = "S",
-    MEDIUM = "M",
-    LARGE = "L",
-    XLARGE = "XL",
-  }
-  
-  export enum ProductColor {
-    GOLD = "Vàng",
-    WHITE_GOLD = "Vàng trắng",
-    ROSE_GOLD = "Vàng hồng",
-    SILVER = "Bạc",
-    PLATINUM = "Bạch kim",
-  }
-  
-  export enum ProductMaterial {
-    GOLD = "Vàng",
-    WHITE_GOLD = "Vàng trắng",
-    ROSE_GOLD = "Vàng hồng",
-    SILVER = "Bạc",
-    PLATINUM = "Bạch kim",
-    TITANIUM = "Titan",
-    DIAMOND = "Kim cương",
-    PEARL = "Ngọc trai",
-    EMERALD = "Ngọc lục bảo",
-    RUBY = "Hồng ngọc",
-    SAPPHIRE = "Lam ngọc",
-    JADE = "Ngọc bích",
-  }
+  SMALL = "S",
+  MEDIUM = "M",
+  LARGE = "L",
+  XLARGE = "XL",
+}
+
+export enum ProductColor {
+  GOLD = "Vàng",
+  WHITE_GOLD = "Vàng trắng",
+  ROSE_GOLD = "Vàng hồng",
+  SILVER = "Bạc",
+  PLATINUM = "Bạch kim",
+}
+
+export enum ProductMaterial {
+  GOLD = "Vàng",
+  WHITE_GOLD = "Vàng trắng",
+  ROSE_GOLD = "Vàng hồng",
+  SILVER = "Bạc",
+  PLATINUM = "Bạch kim",
+  TITANIUM = "Titan",
+  DIAMOND = "Kim cương",
+  PEARL = "Ngọc trai",
+  EMERALD = "Ngọc lục bảo",
+  RUBY = "Hồng ngọc",
+  SAPPHIRE = "Lam ngọc",
+  JADE = "Ngọc bích",
+}
 @Entity()
 export class ProductDetails {
-    @PrimaryGeneratedColumn()
-    id: number;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-    @Column({ type: "enum", enum: ProductSize })
-    size: ProductSize;
-  
-    @Column({ type: "enum", enum: ProductColor })
-    color: ProductColor;
+  @Column({ type: "enum", enum: ProductSize })
+  size: ProductSize;
 
-    @Column({ type: "enum", enum: ProductMaterial })
-    material: ProductMaterial;
+  @Column({ type: "enum", enum: ProductColor })
+  color: ProductColor;
 
-    @Column()
-    stock: number;
+  @Column({ type: "enum", enum: ProductMaterial })
+  material: ProductMaterial;
 
-    @Column({ type: "int", default: 0 })
-    sold: number;
+  @Column()
+  stock: number;
 
-    @Column({ nullable: true })
-    length?: string;
+  @Column({ type: "int", default: 0 })
+  sold: number;
 
-    @Column({ nullable: true })
-    care_instructions?: string;
+  @Column({ nullable: true })
+  length?: string;
 
-    @Column({ nullable: true })
-    stone_size?: string;
+  @Column({ nullable: true })
+  care_instructions?: string;
 
-    @Column({ nullable: true })
-    stone_type?: string;
+  @Column({ nullable: true })
+  stone_size?: string;
 
-    @Column({ nullable: true })
-    design_style?: string;
+  @Column({ nullable: true })
+  stone_type?: string;
 
-    @Column({ nullable: true, type: "text" })
-    description?: string;
+  @Column({ nullable: true })
+  design_style?: string;
 
-    @ManyToOne(() => Product, (product) => product.productDetails, { onDelete: "CASCADE" })
-    @JoinColumn({ name: "productId" })
-    product: Product;
+  @Column({ nullable: true, type: "text" })
+  description?: string;
+
+  @ManyToOne(() => Product, (product) => product.productDetails, { onDelete: "CASCADE" })
+  @JoinColumn({ name: "productId" })
+  product: Product;
+
+  @ManyToOne(() => Inventory, (inventory) => inventory.productDetails, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'inventoryId' })
+  inventory: Inventory;
+
 }
 

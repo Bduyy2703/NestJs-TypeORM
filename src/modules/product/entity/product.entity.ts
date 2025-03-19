@@ -1,8 +1,6 @@
 import { Category } from "src/modules/category/entity/category.entity";
 import { ProductDetails } from "./productDetail.entity";
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
-import { File } from "src/modules/files/file.entity";
-import { Inventory } from "src/modules/inventory/entity/inventory.entity";
 import { StrategySale } from "src/modules/strategySale/entity/strategySale.entity";
 
 @Entity()
@@ -17,10 +15,7 @@ export class Product {
   originalPrice: number;
 
   @Column({ type: "decimal", precision: 10, scale: 2, nullable: true, default: null })
-  priceSale: number | null;
-
-  @Column({ default: 0 })
-  quantity: number;
+  priceSale: number | null; // nên xóa 
 
   @ManyToOne(() => Category, (category) => category.products, { nullable: true, onDelete: "SET NULL" })
   @JoinColumn({ name: "categoryId" })
@@ -28,13 +23,6 @@ export class Product {
 
   @OneToMany(() => ProductDetails, (productDetails) => productDetails.product, { cascade: true })
   productDetails: ProductDetails[];
-
-  @ManyToOne(() => Inventory, (inventory) => inventory.products, { onDelete: "CASCADE" })
-  @JoinColumn({ name: "inventoryId" })
-  inventory: Inventory;
-
-  @OneToMany(() => File, (file) => file.targetId, { cascade: true })
-  images: File[];
 
   @ManyToOne(() => StrategySale, (strategySale) => strategySale.products, { nullable: true, onDelete: "SET NULL" })
   @JoinColumn({ name: "strategySaleId" })
@@ -46,3 +34,6 @@ export class Product {
   @UpdateDateColumn()
   updatedAt: Date;
 }
+
+
+// mỗi product có nhiều detail , 1 detail có 1 hoặc kho inventory 

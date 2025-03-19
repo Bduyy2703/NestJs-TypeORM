@@ -8,13 +8,13 @@ import 'reflect-metadata';
 dotenv.config({ path: '.env' });
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.setGlobalPrefix('/api-docs/v1');
+  app.setGlobalPrefix('/api/v1');
   app.useGlobalPipes(new ValidationPipe({ transform: true, forbidNonWhitelisted: true, }));
 
   // Config Swagger
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api-docs', app, document);
-
+  app.enableCors();
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

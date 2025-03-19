@@ -38,3 +38,9 @@ export class StrategySale {
   @CreateDateColumn()
   createdAt: Date;
 }
+ // th1 3/3 sale toàn bộ hệ thông global true null null
+ // th2 thứ 6 sale cate nhẫn false null cate 1 
+ // th3 mùa hè sale đồng hồ bạc của pnj có id 1 2 3 
+
+
+ // nên tách ra 
