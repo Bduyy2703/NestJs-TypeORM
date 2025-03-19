@@ -9,11 +9,11 @@ import { File } from '../files/file.entity';
 import { Inventory } from '../inventory/entity/inventory.entity';
 import { Category } from '../category/entity/category.entity';
 import { StrategySale } from '../strategySale/entity/strategySale.entity';
-import { ProductDetails } from './entity/productDetail.entity';
+import { ProductDetails } from '../product-details/entity/productDetail.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Product, File, Inventory, Category, StrategySale, ProductDetails]),
+    TypeOrmModule.forFeature([Product, File, Category, StrategySale, ProductDetails]),
   ],
   controllers: [ProductsController],
   providers: [ProductService, MinioService, FileRepository],

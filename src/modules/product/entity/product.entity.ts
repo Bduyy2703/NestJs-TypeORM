@@ -1,5 +1,5 @@
 import { Category } from "src/modules/category/entity/category.entity";
-import { ProductDetails } from "./productDetail.entity";
+import { ProductDetails } from "../../product-details/entity/productDetail.entity";
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { StrategySale } from "src/modules/strategySale/entity/strategySale.entity";
 
@@ -13,9 +13,6 @@ export class Product {
 
   @Column({ type: "decimal", precision: 10, scale: 2 })
   originalPrice: number;
-
-  @Column({ type: "decimal", precision: 10, scale: 2, nullable: true, default: null })
-  priceSale: number | null; // nên xóa 
 
   @ManyToOne(() => Category, (category) => category.products, { nullable: true, onDelete: "SET NULL" })
   @JoinColumn({ name: "categoryId" })
@@ -34,6 +31,3 @@ export class Product {
   @UpdateDateColumn()
   updatedAt: Date;
 }
-
-
-// mỗi product có nhiều detail , 1 detail có 1 hoặc kho inventory 

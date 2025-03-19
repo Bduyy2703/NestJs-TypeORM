@@ -4,7 +4,7 @@ import { Repository } from "typeorm";
 import { Inventory } from "./entity/inventory.entity";
 import { CreateInventoryDto } from "./dto/create-inventory.dto";
 import { UpdateInventoryDto } from "./dto/update-inventory.dto";
-import { ProductDetails } from "../product/entity/productDetail.entity";
+import { ProductDetails } from "../product-details/entity/productDetail.entity";
 
 @Injectable()
 export class InventoryService {
@@ -15,13 +15,13 @@ export class InventoryService {
   ) { }
 
   async findAll(): Promise<Inventory[]> {
-    return this.inventoryRepository.find({ relations: ["products"] });
+    return this.inventoryRepository.find({ relations: ["productDetails"] });
   }
 
   async findById(id: number): Promise<Inventory> {
     const inventory = await this.inventoryRepository.findOne({
       where: { id },
-      relations: ["products"],
+      relations: ["productDetails"],
     });
     if (!inventory) throw new NotFoundException("Không tìm thấy kho");
     return inventory;

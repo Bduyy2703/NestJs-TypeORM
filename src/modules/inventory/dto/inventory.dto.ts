@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { Expose, Type } from "class-transformer";
-import { ProductDetailsDto } from "../../product/dto/product-details.dto";
+import { ProductDetailsDto } from "../../product-details/dto/product-details.dto";
 
 export class InventoryDto {
   @ApiProperty({ example: 1, description: "ID của kho" })

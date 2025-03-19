@@ -15,7 +15,7 @@ import { Address } from 'src/modules/address/entity/address.entity';
 import { Category } from 'src/modules/category/entity/category.entity';
 import { Product } from 'src/modules/product/entity/product.entity';
 import { Inventory } from 'src/modules/inventory/entity/inventory.entity';
-import { ProductDetails } from 'src/modules/product/entity/productDetail.entity';
+import { ProductDetails } from 'src/modules/product-details/entity/productDetail.entity';
 import { Discount } from 'src/modules/discount/entity/discount.entity';
 import { StrategySale } from 'src/modules/strategySale/entity/strategySale.entity';
 
