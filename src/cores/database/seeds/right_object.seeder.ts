@@ -194,6 +194,9 @@ export class RightObjectSeeder implements Seeder {
                 updatedBy: 'admin',
                 isActive: true,
             },
+
+
+            
             //user
             {
                 rightId: rights[2].id,

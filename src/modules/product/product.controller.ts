@@ -18,12 +18,13 @@ import multer from "multer";
 import { v4 as uuidv4 } from "uuid";
 import { ProductService } from "./product.service";
 import { CreateProductDto } from "./dto/create-product.dto";
-import { ApiBody, ApiConsumes, ApiTags, ApiSecurity } from "@nestjs/swagger";
+import { ApiBody, ApiConsumes, ApiTags, ApiSecurity, ApiOperation } from "@nestjs/swagger";
 import { MinioService } from "../files/minio/minio.service";
 import { FileRepository } from "../files/file.repository";
 import { Actions } from "src/cores/decorators/action.decorator";
 import { Objectcode } from "src/cores/decorators/objectcode.decorator";
 import { UpdateProductDto } from "./dto/update-product.dto";
+import { Public } from "src/cores/decorators/public.decorator";
 
 @Controller("products")
 @ApiTags("Products")
@@ -36,23 +37,24 @@ export class ProductsController {
   ) { }
 
   @Post("create")
-  @Actions("createcreate")
-  @Objectcode("Product01")
+  @Actions("create")
+  @Objectcode("PRODUCT01")
   @UseInterceptors(
     FilesInterceptor("files", 10, {
       storage: multer.memoryStorage(),
       limits: { fileSize: 100 * 1024 * 1024 }, // 100MB max
     })
   )
+  @ApiOperation({ summary: "Tạo sản phẩm mới và hình ảnh của sản phẩm đó" })
   @ApiConsumes("multipart/form-data")
   @ApiBody({
     schema: {
       type: "object",
       properties: {
         name: { type: "string" },
-        price: { type: "number" },
+        originalPrice: { type: "number" },
         categoryId: { type: "string" },
-        inventoryId: { type: "string" },
+        saleStrategyId: { type: "string" },
         files: {
           type: "array",
           items: { type: "string", format: "binary" },
@@ -67,7 +69,6 @@ export class ProductsController {
   ) {
     const userId = req.user?.userId;
     if (!userId) throw new BadRequestException("User ID is required");
-
     const product = await this.productsService.createProduct(createProductDto);
 
     let uploadedImages = [];
@@ -109,6 +110,8 @@ export class ProductsController {
 
 
   @Get()
+  @Public()
+  @ApiOperation({ summary: "Lấy danh sách tất cả các sản phẩm" })
   async getAllProducts(
     @Query("page") page: number = 1,
     @Query("limit") limit: number = 10
@@ -118,6 +121,8 @@ export class ProductsController {
 
 
   @Get(":id")
+  @ApiOperation({ summary: "Lấy sản phẩm theo id" })
+  @Public()
   async getProductById(@Param("id") id: number) {
     const product = await this.productsService.getProductById(id);
     if (!product) throw new NotFoundException("Product not found");
@@ -127,7 +132,8 @@ export class ProductsController {
 
   @Put(":id")
   @Actions("update")
-  @Objectcode("Product01")
+  @Objectcode("PRODUCT01")
+  @ApiOperation({ summary: "cập nhật sản phẩm và hình ảnh của sản phẩm" })
   @UseInterceptors(
     FilesInterceptor("files", 10, {
       storage: multer.memoryStorage(),
@@ -140,8 +146,9 @@ export class ProductsController {
       type: "object",
       properties: {
         name: { type: "string" },
-        description: { type: "string" },
-        price: { type: "number" },
+        originalPrice: { type: "number" },
+        categoryId: { type: "string" },
+        saleStrategyId: { type: "string" },
         keepFiles: {
           type: "array",
           items: {
@@ -172,7 +179,8 @@ export class ProductsController {
 
   @Delete(":id")
   @Actions("delete")
-  @Objectcode("Product01")
+  @Objectcode("PRODUCT01")
+  @ApiOperation({ summary: "xóa sản phẩm" })
   async deleteProduct(@Param("id") id: number) {
     return this.productsService.deleteProduct(id);
   }

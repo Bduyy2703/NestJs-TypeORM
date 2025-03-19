@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { v4 as uuidv4 } from 'uuid';
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Product } from "./entity/product.entity";
@@ -22,7 +23,7 @@ export class ProductService {
   ) { }
 
   async createProduct(createProductDto: CreateProductDto): Promise<Product> {
-    const { categoryId, strategySaleId, productDetails, ...productData } = createProductDto;
+    const { categoryId, strategySaleId, ...productData } = createProductDto;
 
     const category = categoryId
       ? await this.categoryRepository.findOne({ where: { id: categoryId } })
@@ -87,7 +88,7 @@ export class ProductService {
 
     return {
       ...product,
-      images: images.map((img) => img.fileUrl),
+      images: images.map((img) => img),
     };
   }
 
@@ -100,8 +101,25 @@ export class ProductService {
   ) {
     const product = await this.productRepository.findOne({ where: { id } });
     if (!product) throw new NotFoundException("Sản phẩm không tồn tại!");
-    
-    await this.productRepository.save({...updateProductDto });
+
+    if (updateProductDto.categoryId) {
+      const category = await this.categoryRepository.findOne({
+        where: { id: updateProductDto.categoryId },
+      });
+      if (!category) throw new BadRequestException("Danh mục không tồn tại!");
+      product.category = category;
+    }
+
+    if (updateProductDto.strategySaleId) {
+      const strategySale = await this.strategySaleRepository.findOne({
+        where: { id: updateProductDto.strategySaleId },
+      });
+      if (!strategySale) throw new BadRequestException("Chiến lược giảm giá không tồn tại!");
+      product.strategySale = strategySale; // Gán lại object, không chỉ ID
+    }
+    product.originalPrice = updateProductDto.originalPrice;
+    product.name = updateProductDto.name;
+    await this.productRepository.save(product);
 
     const oldImages = await this.fileService.findFilesByTarget(id, "product");
 
@@ -163,8 +181,6 @@ export class ProductService {
       updatedImages: [...keepFiles.map((f) => f.fileName), ...newUploadedFiles],
     };
   }
-
-
 
   async deleteProduct(id: number) {
     const product = await this.productRepository.findOne({
