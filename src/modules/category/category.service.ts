@@ -3,12 +3,20 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Category } from './entity/category.entity';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
+import { Product } from '../product/entity/product.entity';
+import { File } from '../files/file.entity';
 
 @Injectable()
 export class CategoryService {
   constructor(
     @InjectRepository(Category)
     private readonly categoryRepository: Repository<Category>,
+
+    @InjectRepository(Product)
+    private readonly productRepository: Repository<Product>,
+
+    @InjectRepository(File)
+    private readonly fileRepository: Repository<File>,
   ) { }
 
   async findAll(): Promise<Category[]> {
@@ -96,4 +104,20 @@ export class CategoryService {
     await this.categoryRepository.remove(category);
     return true;
   }
+  async findProductsByCategoryId(categoryId: number): Promise<Product[]> {
+    const products = await this.productRepository.find({
+      where: { category: { id: categoryId } },
+      relations: ["category"],
+    });
+
+    for (const product of products) {
+      const images = await this.fileRepository.find({
+        where: { targetId: product.id, targetType: 'product' },
+      });
+      (product as any).images = images.map(file => file.fileUrl); 
+    }
+
+    return products;
+  }
+  
 }
