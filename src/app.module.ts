@@ -27,6 +27,7 @@ import { CategoryModule } from './modules/category/category.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { DiscountModule } from './modules/discount/discount.module';
 import { ProductModule } from './modules/product/product.module';
+import { ProductDetailsModule } from './modules/product-details/product.module';
 @Module({
   imports: [
     AuthModule,
@@ -50,6 +51,7 @@ import { ProductModule } from './modules/product/product.module';
     InventoryModule,
     DiscountModule,
     ProductModule,
+    ProductDetailsModule,
   ],
   controllers: [AppController],
   providers: [

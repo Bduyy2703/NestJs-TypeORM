@@ -100,20 +100,33 @@ export class ProductDetailsService {
       images, // Gán thêm ảnh lấy từ bảng File
     };
   }
-
+  
   async update(id: number, updateDto: UpdateProductDetailsDto) {
     const productDetails = await this.findOne(id);
+    
+    let inventory = productDetails.inventory;
+
+    if (updateDto.inventoryId) {
+        const foundInventory = await this.inventoryRepository.findOne({ where: { id: updateDto.inventoryId } });
+
+        if (!foundInventory) {
+            throw new Error(`Inventory with ID ${updateDto.inventoryId} not found`);
+        }
+        
+        inventory = foundInventory;
+    }
+
     const updatedData = {
-      ...updateDto,
-      size: updateDto.size as ProductSize,
-      color: updateDto.color as ProductColor,
-      material: updateDto.material as ProductMaterial,
+        ...updateDto,
+        size: updateDto.size as ProductSize,
+        color: updateDto.color as ProductColor,
+        material: updateDto.material as ProductMaterial,
+        inventory,
     };
-  
-    await this.productDetailsRepository.update(id, updatedData);
+
+    await this.productDetailsRepository.save({ ...productDetails, ...updatedData });
     return this.findOne(id);
-  }
-  
+}
 
   async remove(id: number) {
     const productDetails = await this.findOne(id);

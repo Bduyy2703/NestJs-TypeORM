@@ -8,9 +8,10 @@ import {
   Delete,
   HttpStatus,
   HttpCode,
+  Patch,
 } from "@nestjs/common";
 import { InventoryService } from "./inventory.service";
-import { ApiTags, ApiOperation, ApiParam, ApiResponse, ApiSecurity } from "@nestjs/swagger";
+import { ApiTags, ApiOperation, ApiParam, ApiResponse, ApiSecurity, ApiBody } from "@nestjs/swagger";
 import { CreateInventoryDto } from "./dto/create-inventory.dto";
 import { UpdateInventoryDto } from "./dto/update-inventory.dto";
 import { Actions } from "src/cores/decorators/action.decorator";
@@ -80,41 +81,23 @@ export class InventoryController {
     return { statusCode: HttpStatus.OK, message: "Xóa kho thành công" };
   }
 
-  // Nhập hàng vào kho
-  @Post(":id/add-stock")
+  @Patch(":id/update-stock")
   @Actions("update")
   @Objectcode("INVENTORY01")
-  @ApiOperation({ summary: "Nhập hàng vào kho" })
-  @ApiParam({ name: "id", type: "number", example: 1 })
-  @ApiResponse({ status: HttpStatus.OK, description: "Nhập hàng thành công" })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: "Không tìm thấy kho" })
-  async addStock(@Param("id") id: number, @Body() body: { quantity: number }) {
-    const data = await this.inventoryService.addStock(id, body.quantity);
-    return { statusCode: HttpStatus.OK, message: "Nhập hàng thành công", data };
-  }
-
-  // Xuất hàng khỏi kho
-  @Post(":id/remove-stock")
-  @Actions("update")
-  @Objectcode("INVENTORY01")
-  @ApiOperation({ summary: "Xuất hàng khỏi kho" })
-  @ApiParam({ name: "id", type: "number", example: 1 })
-  @ApiResponse({ status: HttpStatus.OK, description: "Xuất hàng thành công" })
-  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: "Số lượng không đủ" })
-  async removeStock(@Param("id") id: number, @Body() body: { quantity: number }) {
-    const data = await this.inventoryService.removeStock(id, body.quantity);
-    return { statusCode: HttpStatus.OK, message: "Xuất hàng thành công", data };
-  }
-
-  // Kiểm tra tồn kho
-  @Get(":id/stock")
-  @Actions("read")
-  @Objectcode("INVENTORY01")
-  @ApiOperation({ summary: "Kiểm tra số lượng tồn kho" })
-  @ApiParam({ name: "id", type: "number", example: 1 })
-  @ApiResponse({ status: HttpStatus.OK, description: "Lấy số lượng thành công" })
-  async getStock(@Param("id") id: number) {
-    const data = await this.inventoryService.getStock(id);
-    return { statusCode: HttpStatus.OK, message: "Lấy số lượng tồn kho thành công", data };
+  @ApiOperation({ summary: "Cập nhật số lượng tồn kho" })
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        idDetails: { type: "number", example: 2 },
+        quantity: { type: "number", example: 10 },
+      },
+    },
+  })
+  @ApiResponse({ status: HttpStatus.OK, description: "Cập nhật số lượng thành công" })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: "Số lượng không đủ hoặc lỗi khác" })
+  async updateStock(@Body() body: { idDetails: number; quantity: number }) {
+    const data = await this.inventoryService.updateStock(body.idDetails, body.quantity);
+    return { statusCode: HttpStatus.OK, message: "Cập nhật số lượng thành công", data };
   }
 }

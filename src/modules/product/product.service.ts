@@ -73,25 +73,27 @@ export class ProductService {
     };
   }
 
-
   async getProductById(id: number) {
     const product = await this.productRepository.findOne({
       where: { id },
       relations: ["productDetails"],
     });
-
+  
     if (!product) {
       throw new NotFoundException("Sản phẩm không tồn tại!");
     }
-
+  
     const images = await this.fileService.findFilesByTarget(id, "product");
-
+  
+    const totalSold = product.productDetails.reduce((sum, detail) => sum + detail.sold, 0);
+  
     return {
       ...product,
       images: images.map((img) => img),
+      totalSold, 
     };
   }
-
+  
 
   async updateProduct(
     id: number,

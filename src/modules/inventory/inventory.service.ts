@@ -34,57 +34,36 @@ export class InventoryService {
   }
 
   async update(id: number, updateInventoryDto: UpdateInventoryDto): Promise<Inventory> {
-    await this.findById(id); // Kiểm tra tồn tại
+    await this.findById(id); 
     await this.inventoryRepository.update(id, updateInventoryDto);
     return this.findById(id);
   }
 
   async delete(id: number): Promise<void> {
-    await this.findById(id); // Kiểm tra tồn tại
+    await this.findById(id);
     await this.inventoryRepository.delete(id);
   }
-  // Nhập hàng vào kho
-  async addStock(productDetailId: number, quantity: number) {
+
+  async updateStock(idDetails: number, quantity: number) {
     const productDetail = await this.productDetailsRepository.findOne({
-      where: { id: productDetailId },
-      relations: ['inventory'], // Lấy thông tin kho
+      where: { id: idDetails },
     });
-
-    if (!productDetail) throw new NotFoundException("Không tìm thấy sản phẩm trong kho");
-
-    productDetail.stock += quantity; // Cập nhật số lượng sản phẩm
-
+  
+    if (!productDetail) {
+      throw new NotFoundException("Không tìm thấy chi tiết sản phẩm");
+    }
+  
+    if (quantity < 0 && productDetail.stock + quantity < 0) {
+      throw new BadRequestException("Số lượng trong kho không đủ để xuất");
+    }
+  
+    productDetail.stock += quantity;
+    if (quantity < 0) {
+      productDetail.sold += Math.abs(quantity);
+    }
     await this.productDetailsRepository.save(productDetail);
-
-    return { message: "Nhập hàng thành công", stock: productDetail.stock };
+    return productDetail;
   }
-
-  // Xuất hàng khỏi kho
-  async removeStock(productDetailId: number, quantity: number) {
-    const productDetail = await this.productDetailsRepository.findOne({
-      where: { id: productDetailId },
-      relations: ['inventory'],
-    });
-
-    if (!productDetail) throw new NotFoundException("Không tìm thấy sản phẩm trong kho");
-
-    if (productDetail.stock < quantity) throw new BadRequestException("Số lượng không đủ để xuất");
-
-    productDetail.stock -= quantity; // Giảm số lượng hàng tồn
-
-    await this.productDetailsRepository.save(productDetail);
-
-    return { message: "Xuất hàng thành công", stock: productDetail.stock };
-  }
-
-  // Lấy số lượng tồn kho
-  async getStock(productDetailId: number) {
-    const productDetail = await this.productDetailsRepository.findOne({
-      where: { id: productDetailId },
-    });
-
-    if (!productDetail) throw new NotFoundException("Không tìm thấy sản phẩm trong kho");
-
-    return { productDetailId, stock: productDetail.stock };
-  }
+  
+  
 }
