@@ -43,19 +43,20 @@ export class DiscountService {
 
   async applyDiscount(dto: ApplyDiscountDto) {
     const { discountCode, totalPrice } = dto;
-
-    // Tìm mã giảm giá
+  
     const discount = await this.discountRepository.findOne({ where: { name: discountCode } });
     if (!discount) {
       throw new NotFoundException("Mã giảm giá không tồn tại");
     }
 
-    // Kiểm tra số lượng mã giảm giá còn lại
+    if (!discount.isActive) {
+      throw new BadRequestException("Mã giảm giá không khả dụng");
+    }
+  
     if (discount.quantity <= 0) {
       throw new BadRequestException("Mã giảm giá đã hết lượt sử dụng");
     }
-
-    // Kiểm tra thời hạn mã giảm giá
+  
     const now = new Date();
     if (discount.startDate && now < discount.startDate) {
       throw new BadRequestException("Mã giảm giá chưa được kích hoạt");
@@ -63,29 +64,28 @@ export class DiscountService {
     if (discount.endDate && now > discount.endDate) {
       throw new BadRequestException("Mã giảm giá đã hết hạn");
     }
-
-    // Kiểm tra điều kiện áp dụng (nếu có)
+  
     if (discount.condition) {
       const minOrderValue = parseFloat(discount.condition.match(/\d+/)?.[0] || "0"); // Lấy số trong chuỗi điều kiện
       if (totalPrice < minOrderValue) {
         throw new BadRequestException(`Mã giảm giá chỉ áp dụng cho đơn hàng từ ${minOrderValue} VND trở lên`);
       }
     }
-
-    // Tính toán giá trị giảm
+  
     let discountAmount = 0;
     if (discount.discountType === "PERCENTAGE") {
       discountAmount = (totalPrice * discount.discountValue) / 100;
     } else {
       discountAmount = discount.discountValue;
     }
-
-    // Đảm bảo không giảm quá giá trị đơn hàng
+  
     discountAmount = Math.min(discountAmount, totalPrice);
 
-    // Tính giá sau khi giảm
     const finalPrice = totalPrice - discountAmount;
-
+  
+    discount.quantity -= 1;
+    await this.discountRepository.save(discount);
+  
     return {
       originalPrice: totalPrice,
       discountAmount,
@@ -93,4 +93,5 @@ export class DiscountService {
       message: `Áp dụng mã giảm giá thành công!`,
     };
   }
+  
 }
