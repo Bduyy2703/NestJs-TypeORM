@@ -14,6 +14,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiOkResponse,
+  ApiSecurity,
 } from "@nestjs/swagger";
 import { plainToClass } from "class-transformer";
 import { RightObjectDto } from "./dto/right-object.dto";
@@ -27,6 +28,7 @@ import { Objectcode } from "src/cores/decorators/objectcode.decorator";
 
 @ApiTags("RightObject")
 @Controller("right-object")
+@ApiSecurity("JWT-auth")
 export class RightObjectController {
   constructor(private readonly rightObjectService: RightObjectService) {}
 

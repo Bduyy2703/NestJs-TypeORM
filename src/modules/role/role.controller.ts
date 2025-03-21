@@ -13,6 +13,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiOkResponse,
+  ApiSecurity,
 } from "@nestjs/swagger";
 import { plainToClass } from "class-transformer";
 import { RoleDto } from "./dto/role.dto";
@@ -25,6 +26,7 @@ import { Objectcode } from "src/cores/decorators/objectcode.decorator";
 
 @ApiTags("Role")
 @Controller("role")
+@ApiSecurity("JWT-auth")
 export class RoleController {
   constructor(private readonly roleService: RoleService) {}
 

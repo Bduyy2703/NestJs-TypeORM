@@ -13,6 +13,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiOkResponse,
+  ApiSecurity,
 } from "@nestjs/swagger";
 import { plainToClass } from "class-transformer";
 import { ObjectDto } from "./dto/object.dto";
@@ -24,6 +25,7 @@ import { Objectcode } from "src/cores/decorators/objectcode.decorator";
 
 @ApiTags("Object")
 @Controller("object")
+@ApiSecurity("JWT-auth")
 export class ObjectController {
   constructor(private readonly objectService: ObjectService) {}
 

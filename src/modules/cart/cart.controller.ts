@@ -13,7 +13,7 @@ import { Objectcode } from "src/cores/decorators/objectcode.decorator";
 @ApiBearerAuth()
 @ApiSecurity("JWT-auth")
 export class CartController {
-  constructor(private readonly cartService: CartService) {}
+  constructor(private readonly cartService: CartService) { }
 
   // Lấy giỏ hàng của user hiện tại
   @Get()
@@ -22,17 +22,18 @@ export class CartController {
   @ApiOperation({ summary: "Lấy giỏ hàng của người dùng" })
   @ApiResponse({ status: 200, description: "Danh sách sản phẩm trong giỏ hàng" })
   async getCart(@Req() req: Request) {
-    return this.cartService.getCart(req.user as User);
+    const userId = (req.user as any).userId
+    return this.cartService.getCart(userId);
   }
 
   // Thêm sản phẩm vào giỏ hàng
-  @Post()
+  @Post('/create')
   @Actions('create')
   @Objectcode('CART01')
   @ApiOperation({ summary: "Thêm sản phẩm vào giỏ hàng" })
   @ApiResponse({ status: 201, description: "Sản phẩm đã được thêm vào giỏ hàng" })
   async addToCart(@Req() req: Request, @Body() dto: AddToCartDto) {
-    return this.cartService.addToCart(req.user as User, dto);
+    return this.cartService.addToCart((req.user as any).userId, dto);
   }
 
   // Cập nhật số lượng sản phẩm trong giỏ hàng
@@ -65,7 +66,7 @@ export class CartController {
     return this.cartService.clearCart(req.user as User);
   }
 
-  @Post()
+  @Post("checkout")
   @Actions("create")
   @Objectcode("CHECKOUT01")
   @ApiOperation({ summary: "Checkout giỏ hàng để chuyển sang thanh toán" })

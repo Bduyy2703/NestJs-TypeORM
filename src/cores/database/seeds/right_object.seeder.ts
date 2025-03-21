@@ -209,7 +209,20 @@ export class RightObjectSeeder implements Seeder {
                 isActive: true,
             },
 
-            
+              {
+                rightId: rights[0].id,
+                objectId: objects[14].id,
+                createYn: true,
+                readYn: true,
+                updateYn: true,
+                deleteYn: true,
+                executeYn: true,
+                createdDate: new Date(),
+                createdBy: 'admin',
+                updatedDate: new Date(),
+                updatedBy: 'admin',
+                isActive: true,
+            },
             //user
             {
                 rightId: rights[2].id,
