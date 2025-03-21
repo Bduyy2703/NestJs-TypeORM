@@ -5,6 +5,7 @@ import { Profile } from '../../profile/entities/profile.entity';
 import { Token } from '../../token/entities/token.entity';  
 import 'reflect-metadata';
 import { Address } from 'src/modules/address/entity/address.entity';
+import { Cart } from 'src/modules/cart/entity/cart.entity';
 @Entity()
 export class User {
   @PrimaryGeneratedColumn('uuid')
@@ -40,4 +41,8 @@ export class User {
 
   @OneToMany(() => Address, (address) => address.user, { cascade: true })
   addresses: Address[];
+
+  
+  @OneToOne(() => Cart, (cart) => cart.user)
+  cart: Cart;
 }

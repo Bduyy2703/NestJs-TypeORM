@@ -1,6 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany } from "typeorm";
 import { Product } from "src/modules/product/entity/product.entity";
 import { Inventory } from "src/modules/inventory/entity/inventory.entity";
+import { CartItem } from "src/modules/cart/entity/cartItem.entity";
 
 
 export enum ProductSize {
@@ -78,5 +79,7 @@ export class ProductDetails {
   @JoinColumn({ name: 'inventoryId' })
   inventory: Inventory;
 
+  @OneToMany(() => CartItem, (cartItem) => cartItem.productDetails)
+  cartItems: CartItem[];
 }
 

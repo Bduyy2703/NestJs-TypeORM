@@ -309,6 +309,20 @@ export class RightObjectSeeder implements Seeder {
                 updatedBy: 'admin',
                 isActive: true,
             },
+            {
+                rightId: rights[2].id,
+                objectId: objects[15].id,
+                createYn: true,
+                readYn: true,
+                updateYn: true,
+                deleteYn: true,
+                executeYn: true,
+                createdDate: new Date(),
+                createdBy: 'admin',
+                updatedDate: new Date(),
+                updatedBy: 'admin',
+                isActive: true,
+            },
         ];
 
         await rightObjectRepository.insert(seedData);

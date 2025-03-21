@@ -65,5 +65,4 @@ export class InventoryService {
     return productDetail;
   }
   
-  
 }

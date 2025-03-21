@@ -148,6 +148,15 @@ export class ObjectEntitySeeder implements Seeder {
                 updatedBy: 'admin',
                 isActive: true,
             },
+            {
+                code: 'CART01',
+                name: 'Object cart',
+                createdDate: new Date(),
+                createdBy: 'admin',
+                updatedDate: new Date(),
+                updatedBy: 'admin',
+                isActive: true,
+            },
         ];
 
         await objectRepository.insert(seedData);

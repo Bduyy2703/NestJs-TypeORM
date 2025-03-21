@@ -19,6 +19,8 @@ import { Inventory } from 'src/modules/inventory/entity/inventory.entity';
 import { ProductDetails } from 'src/modules/product-details/entity/productDetail.entity';
 import { Discount } from 'src/modules/discount/entity/discount.entity';
 import { StrategySale } from 'src/modules/strategySale/entity/strategySale.entity';
+import { Cart } from '../../../modules/cart/entity/cart.entity';
+import { CartItem } from 'src/modules/cart/entity/cartItem.entity';
 @Module({
   imports: [
     // ConfigModule đảm bảo biến môi trường được nạp trước
@@ -37,7 +39,7 @@ import { StrategySale } from 'src/modules/strategySale/entity/strategySale.entit
         username: configService.get<string>('DEV_DB_USERNAME', 'postgres'),
         password: configService.get<string>('DEV_DB_PASSWORD'),
         database: configService.get<string>('DEV_DB_DATABASE'),
-        entities: [StrategySale,Discount,ProductDetails,Inventory,Product,Category,Address,User,Role,Blog,Notification,Object_entity,Profile,Right,RightObject,RoleRight,Token,File], 
+        entities: [Cart,CartItem,StrategySale,Discount,ProductDetails,Inventory,Product,Category,Address,User,Role,Blog,Notification,Object_entity,Profile,Right,RightObject,RoleRight,Token,File], 
         migrations: ["../migrations/*.ts"],
         synchronize: true, 
         retryAttempts: 5,
