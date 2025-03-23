@@ -21,7 +21,7 @@ export class Product {
   @OneToMany(() => ProductDetails, (productDetails) => productDetails.product, { cascade: true })
   productDetails: ProductDetails[];
 
-  @ManyToOne(() => StrategySale, (strategySale) => strategySale.products, { nullable: true, onDelete: "SET NULL" })
+  @ManyToOne(() => StrategySale, (sale) => sale.products, { onDelete: "SET NULL", nullable: true })
   @JoinColumn({ name: "strategySaleId" })
   strategySale: StrategySale;
 

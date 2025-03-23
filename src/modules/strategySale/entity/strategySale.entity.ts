@@ -1,6 +1,6 @@
-import { Category } from "src/modules/category/entity/category.entity";
-import { Product } from "src/modules/product/entity/product.entity";
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Entity, Column, CreateDateColumn, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { StrategySaleCategory } from "./strategy-category";
+import { StrategySaleProduct } from "./strategy-product";
 
 @Entity()
 export class StrategySale {
@@ -27,20 +27,14 @@ export class StrategySale {
 
   @Column({ default: false })
   isGlobalSale: boolean;
-  
-  @ManyToOne(() => Category, { nullable: true, onDelete: "SET NULL" })
-  @JoinColumn({ name: "categoryId" })
-  category: Category;
 
-  @OneToMany(() => Product, (product) => product.strategySale)
-  products: Product[];
+  // Liên kết đến các bảng trung gian
+  @OneToMany(() => StrategySaleCategory, (saleCate) => saleCate.strategySale, { cascade: true })
+  saleCategories: StrategySaleCategory[];
+
+  @OneToMany(() => StrategySaleProduct, (saleProd) => saleProd.strategySale, { cascade: true })
+  saleProducts: StrategySaleProduct[];
 
   @CreateDateColumn()
   createdAt: Date;
 }
- // th1 3/3 sale toàn bộ hệ thông global true null null
- // th2 thứ 6 sale cate nhẫn false null cate 1 
- // th3 mùa hè sale đồng hồ bạc của pnj có id 1 2 3 
-
-
- // nên tách ra 
