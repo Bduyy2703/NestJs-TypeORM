@@ -1,6 +1,6 @@
-import { Entity, Column, CreateDateColumn, OneToMany, PrimaryGeneratedColumn } from "typeorm";
-import { StrategySaleCategory } from "./strategy-category";
-import { StrategySaleProduct } from "./strategy-product";
+import { Entity, Column, CreateDateColumn, PrimaryGeneratedColumn, OneToMany } from "typeorm";
+import { Product } from "src/modules/product/entity/product.entity";
+import { Category } from "src/modules/category/entity/category.entity";
 
 @Entity()
 export class StrategySale {
@@ -22,18 +22,18 @@ export class StrategySale {
   @Column({ type: "timestamp", nullable: true })
   endDate: Date;
 
-  @Column({ default: true })
+  @Column({ default: false })
   isActive: boolean;
 
   @Column({ default: false })
   isGlobalSale: boolean;
 
-  // Liên kết đến các bảng trung gian
-  @OneToMany(() => StrategySaleCategory, (saleCate) => saleCate.strategySale, { cascade: true })
-  saleCategories: StrategySaleCategory[];
+  // Liên kết với Product và Category
+  @OneToMany(() => Product, (product) => product.strategySale)
+  products: Product[];
 
-  @OneToMany(() => StrategySaleProduct, (saleProd) => saleProd.strategySale, { cascade: true })
-  saleProducts: StrategySaleProduct[];
+  @OneToMany(() => Category, (category) => category.strategySale)
+  categories: Category[];
 
   @CreateDateColumn()
   createdAt: Date;
