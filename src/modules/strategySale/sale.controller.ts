@@ -135,17 +135,20 @@ export class SaleStrategyController {
   }
 
   @Post(":id/products")
+  @Actions("create")
+  @Objectcode("SALE01")
   @ApiOperation({ summary: "Thêm sản phẩm vào chương trình giảm giá" })
   @ApiResponse({ status: 200, description: "Thêm thành công." })
   async addProductToSale(
     @Param("id", ParseIntPipe) id: number,
     @Body() dto: AddSaleProductDto
   ) {
-    await this.validateSale(id);
     return await this.saleService.addProductToSale(id, dto);
   }
 
   @Delete(":id/products/:productId")
+  @Actions("delete")
+  @Objectcode("SALE01")
   @ApiOperation({ summary: "Xóa sản phẩm khỏi chương trình giảm giá" })
   @ApiResponse({ status: 204, description: "Xóa thành công." })
   @HttpCode(204)
@@ -158,6 +161,8 @@ export class SaleStrategyController {
   }
 
   @Post(":id/categories")
+  @Actions("create")
+  @Objectcode("SALE01")
   @ApiOperation({ summary: "Thêm danh mục vào chương trình giảm giá" })
   @ApiResponse({ status: 200, description: "Thêm thành công." })
   async addCategoryToSale(
@@ -169,6 +174,8 @@ export class SaleStrategyController {
   }
 
   @Delete(":id/categories/:categoryId")
+  @Actions("delete")
+  @Objectcode("SALE01")
   @ApiOperation({ summary: "Xóa danh mục khỏi chương trình giảm giá" })
   @ApiResponse({ status: 204, description: "Xóa thành công." })
   @HttpCode(204)

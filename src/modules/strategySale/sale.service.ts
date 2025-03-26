@@ -205,7 +205,12 @@ export class SaleStrategyService {
     if (!sale) {
       throw new NotFoundException("Chương trình giảm giá không tồn tại.");
     }
-  
+
+    if(sale.isGlobalSale)
+    {
+      throw new NotFoundException("Chương trình giảm giá đang áp dụng toàn hệ thống , không thể thêm sản phẩm vào");
+    }
+
     const product = await this.productRepository.findOne({ 
       where: { id: dto.productId },
       relations: { productStrategySales: true },
