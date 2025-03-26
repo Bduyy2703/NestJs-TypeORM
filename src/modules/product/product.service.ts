@@ -1,15 +1,16 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { v4 as uuidv4 } from 'uuid';
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { In, Repository } from "typeorm";
 import { Product } from "./entity/product.entity";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { Category } from "src/modules/category/entity/category.entity";
-import { StrategySale } from "src/modules/strategySale/entity/strategySale.entity";
 import { ProductDetails } from "../product-details/entity/productDetail.entity";
 import { UpdateProductDto } from "./dto/update-product.dto";
 import { FileRepository } from '../files/file.repository';
 import { MinioService } from "../files/minio/minio.service";
+import { ProductStrategySale } from "../strategySale/entity/productSale.entity";
+import { StrategySale } from "../strategySale/entity/strategySale.entity";
 
 @Injectable()
 export class ProductService {
@@ -17,35 +18,52 @@ export class ProductService {
     @InjectRepository(Product) private readonly productRepository: Repository<Product>,
     @InjectRepository(Category) private readonly categoryRepository: Repository<Category>,
     @InjectRepository(StrategySale) private readonly strategySaleRepository: Repository<StrategySale>,
+    @InjectRepository(ProductStrategySale) private readonly strategyProductSaleRepository: Repository<ProductStrategySale>,
     @InjectRepository(ProductDetails) private readonly productDetailsRepository: Repository<ProductDetails>,
     private readonly minioService: MinioService,
     private readonly fileService: FileRepository
   ) { }
 
   async createProduct(createProductDto: CreateProductDto): Promise<Product> {
-    const { categoryId, strategySaleId, ...productData } = createProductDto;
+    const { categoryId, strategySaleIds, ...productData } = createProductDto;
 
+    // Kiểm tra danh mục
     const category = categoryId
       ? await this.categoryRepository.findOne({ where: { id: categoryId } })
       : null;
     if (categoryId && !category) throw new NotFoundException("Danh mục không tồn tại!");
 
-
-    const strategySale = strategySaleId
-      ? await this.strategySaleRepository.findOne({ where: { id: strategySaleId } })
-      : null;
-    if (strategySaleId && !strategySale) throw new NotFoundException("Chiến lược giảm giá không tồn tại!");
-
+    // Tạo sản phẩm trước
     const product = this.productRepository.create({
       ...productData,
       category,
-      strategySale,
     });
 
     await this.productRepository.save(product);
 
+    // Nếu có chiến lược giảm giá, thêm vào bảng trung gian
+    if (strategySaleIds && strategySaleIds.length > 0) {
+      const strategySales = await this.strategySaleRepository.find({
+        where: { id: In(strategySaleIds) }, // Kiểm tra theo id của StrategySale
+      });
+
+      if (strategySales.length !== strategySaleIds.length) {
+        throw new NotFoundException("Một hoặc nhiều chiến lược giảm giá không tồn tại!");
+      }
+
+      const productStrategySales = strategySales.map((strategySale) =>
+        this.strategyProductSaleRepository.create({
+          product,
+          strategySale,
+        })
+      );
+
+      await this.strategyProductSaleRepository.save(productStrategySales);
+    }
+
     return product;
   }
+
 
   async getAllProducts(page: number, limit: number) {
     const [products, total] = await this.productRepository.findAndCount({
@@ -78,22 +96,22 @@ export class ProductService {
       where: { id },
       relations: ["productDetails"],
     });
-  
+
     if (!product) {
       throw new NotFoundException("Sản phẩm không tồn tại!");
     }
-  
+
     const images = await this.fileService.findFilesByTarget(id, "product");
-  
+
     const totalSold = product.productDetails.reduce((sum, detail) => sum + detail.sold, 0);
-  
+
     return {
       ...product,
       images: images.map((img) => img),
-      totalSold, 
+      totalSold,
     };
   }
-  
+
 
   async updateProduct(
     id: number,
@@ -112,12 +130,18 @@ export class ProductService {
       product.category = category;
     }
 
-    if (updateProductDto.strategySaleId) {
-      const strategySale = await this.strategySaleRepository.findOne({
-        where: { id: updateProductDto.strategySaleId },
+    if (updateProductDto.strategySaleIds) {
+      const strategySales = await this.strategySaleRepository.find({
+        where: { id: In(updateProductDto.strategySaleIds) },
       });
-      if (!strategySale) throw new BadRequestException("Chiến lược giảm giá không tồn tại!");
-      product.strategySale = strategySale; // Gán lại object, không chỉ ID
+
+      if (!strategySales.length) throw new BadRequestException("Chiến lược giảm giá không tồn tại!");
+
+      // Chuyển đổi strategySales thành ProductStrategySale[]
+      product.productStrategySales = strategySales.map(strategySale => ({
+        product,
+        strategySale,
+      })) as any; // Ép kiểu tránh lỗi TypeScript
     }
     product.originalPrice = updateProductDto.originalPrice;
     product.name = updateProductDto.name;

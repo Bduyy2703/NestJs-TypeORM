@@ -20,6 +20,8 @@ import { Discount } from 'src/modules/discount/entity/discount.entity';
 import { StrategySale } from 'src/modules/strategySale/entity/strategySale.entity';
 import { Cart } from 'src/modules/cart/entity/cart.entity';
 import { CartItem } from 'src/modules/cart/entity/cartItem.entity';
+import { ProductStrategySale } from 'src/modules/strategySale/entity/productSale.entity';
+import { CategoryStrategySale } from 'src/modules/strategySale/entity/categorySale.entity';
 
 dotenv.config({ path: '.env.development' }); 
 
@@ -30,7 +32,7 @@ dotenv.config({ path: '.env.development' });
     username: process.env.DEV_DB_USERNAME || 'postgres',
     password: process.env.DEV_DB_PASSWORD,
     database: process.env.DEV_DB_DATABASE,
-    entities: [Cart,CartItem,StrategySale,Discount,ProductDetails,Inventory,Product,Category,Address,User,Role,Blog,Notification,Object_entity,Profile,Right,RightObject,RoleRight,Token,File],
+    entities: [Cart,CartItem,StrategySale,ProductStrategySale,CategoryStrategySale,Discount,ProductDetails,Inventory,Product,Category,Address,User,Role,Blog,Notification,Object_entity,Profile,Right,RightObject,RoleRight,Token,File],
     migrations: ["src/migrations/*.ts"], 
     synchronize: true,
     logging: false,

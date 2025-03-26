@@ -2,6 +2,7 @@ import { Category } from "src/modules/category/entity/category.entity";
 import { ProductDetails } from "../../product-details/entity/productDetail.entity";
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { StrategySale } from "src/modules/strategySale/entity/strategySale.entity";
+import { ProductStrategySale } from "src/modules/strategySale/entity/productSale.entity";
 
 @Entity()
 export class Product {
@@ -21,9 +22,8 @@ export class Product {
   @OneToMany(() => ProductDetails, (productDetails) => productDetails.product, { cascade: true })
   productDetails: ProductDetails[];
 
-  @ManyToOne(() => StrategySale, (sale) => sale.products, { onDelete: "SET NULL", nullable: true })
-  @JoinColumn({ name: "strategySaleId" })
-  strategySale: StrategySale;
+  @OneToMany(() => ProductStrategySale, (productStrategySale) => productStrategySale.product)
+  productStrategySales: ProductStrategySale[];
 
   @CreateDateColumn()
   createdAt: Date;

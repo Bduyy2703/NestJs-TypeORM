@@ -18,7 +18,7 @@ import { UpdateSaleDto } from "./dto/update-strategy.dto";
 import { GetSaleDto } from "./dto/get-sale-strategy";
 import { AddSaleProductDto } from "./dto/addProduct-tosale.dto";
 import { AddSaleCategoryDto } from "./dto/addCategory";
-import { ApiOperation, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { Actions } from "src/cores/decorators/action.decorator";
 import { Objectcode } from "src/cores/decorators/objectcode.decorator";
 import { Public } from "src/cores/decorators/public.decorator";
@@ -26,6 +26,7 @@ import { Public } from "src/cores/decorators/public.decorator";
 @ApiTags("Sale Strategies")
 @Controller("sales")
 @ApiSecurity("JWT-auth")
+@ApiBearerAuth()
 export class SaleStrategyController {
   constructor(private readonly saleService: SaleStrategyService) { }
 
@@ -40,40 +41,13 @@ export class SaleStrategyController {
     return sale;
   }
 
-  @Post()
-  @Actions("create")
-  @Objectcode("SALE01")
-  @ApiOperation({ summary: "Tạo chương trình giảm giá mới" })
-  @ApiResponse({ status: 201, description: "Tạo thành công." })
-  @ApiResponse({ status: 400, description: "Thất bại trong lúc tạo" })
-  async createSale(@Body() dto: CreateSaleDto) {
-    if (dto.isGlobalSale && (dto.products?.length || dto.categories?.length)) {
-      throw new BadRequestException("Không thể chọn sản phẩm hoặc danh mục khi isGlobalSale = true.");
-    }
-    return await this.saleService.createSale(dto);
-  }
-
-
-  @Put(":id")
-  @Actions("update")
-  @Objectcode("SALE01")
-  @ApiOperation({ summary: "Cập nhật thông tin chương trình giảm giá" })
-  @ApiResponse({ status: 200, description: "Cập nhật thành công." })
-  @ApiResponse({ status: 404, description: "Sale không tồn tại." })
-  async updateSale(@Param("id", ParseIntPipe) id: number, @Body() dto: UpdateSaleDto) {
-    return await this.saleService.updateSale(id, dto);
-  }
-
-  @Delete(":id")
-  @Actions("delete")
-  @Objectcode("SALE01")
-  @ApiOperation({ summary: "Xóa chương trình giảm giá" })
-  @ApiResponse({ status: 204, description: "Xóa thành công." })
-  @ApiResponse({ status: 404, description: "Sale không tồn tại." })
-  @HttpCode(204)
-  async deleteSale(@Param("id", ParseIntPipe) id: number) {
-    await this.validateSale(id);
-    return await this.saleService.deleteSale(id);
+  @Get("/active")
+  @Public()
+  @ApiOperation({ summary: "Lấy chương trình giảm giá đang diễn ra" })
+  @ApiResponse({ status: 200, description: "Lấy thành công." })
+  @ApiResponse({ status: 404, description: "Không có chương trình giảm giá nào đang diễn ra." })
+  async getActiveSale() {
+    return await this.saleService.getActiveSale();
   }
 
   @Get()
@@ -82,45 +56,43 @@ export class SaleStrategyController {
   @ApiOperation({ summary: "Lấy danh sách tất cả chương trình giảm giá" })
   @ApiResponse({ status: 200, description: "Lấy danh sách thành công." })
   async getAllSales(@Query() query: GetSaleDto) {
-    return await this.saleService.getAllSales();
-  }
-
-  @Get(":id")
-  @Actions("read")
-  @Objectcode("SALE01")
-  @ApiOperation({ summary: "Lấy thông tin chi tiết một chương trình giảm giá" })
-  @ApiResponse({ status: 200, description: "Lấy thông tin thành công." })
-  @ApiResponse({ status: 404, description: "Sale không tồn tại." })
-  async getSaleById(@Param("id", ParseIntPipe) id: number) {
-    return await this.saleService.getSaleById(id);
-  }
-
-  @Get("/products")
-  @Actions("read")
-  @Objectcode("SALE01")
-  @ApiOperation({ summary: "Lấy danh sách sản phẩm trong chương trình giảm giá" })
-  @ApiResponse({ status: 200, description: "Lấy danh sách sản phẩm thành công." })
-  async getSaleProducts() {
-    return await this.saleService.getSaleProducts();
+    console.log(query)
+    return await this.saleService.getAllSales(query);
   }
 
   @Get("/categories")
-  @Actions("read")
-  @Objectcode("SALE01")
+  @Public()
   @ApiOperation({ summary: "Lấy danh sách danh mục trong chương trình giảm giá" })
   @ApiResponse({ status: 200, description: "Lấy danh sách danh mục thành công." })
   async getSaleCategories() {
     return await this.saleService.getSaleCategories();
   }
 
-  @Get("/active")
-  @Actions("read")
+  @Get("/products")
+  @Public()
+  @ApiOperation({ summary: "Lấy danh sách sản phẩm trong chương trình giảm giá" })
+  @ApiResponse({ status: 200, description: "Lấy danh sách sản phẩm thành công." })
+  async getSaleProducts() {
+    return await this.saleService.getSaleProducts();
+  }
+  
+  @Get(":id")
+  @Public()
+  @ApiOperation({ summary: "Lấy thông tin chi tiết một chương trình giảm giá" })
+  @ApiResponse({ status: 200, description: "Lấy thông tin thành công." })
+  @ApiResponse({ status: 404, description: "Sale không tồn tại." })
+  async getSaleById(@Param("id", ParseIntPipe) id: number) {
+    return await this.saleService.getSaleById(id);
+  }
+ 
+  @Post()
+  @Actions("create")
   @Objectcode("SALE01")
-  @ApiOperation({ summary: "Lấy chương trình giảm giá đang diễn ra" })
-  @ApiResponse({ status: 200, description: "Lấy thành công." })
-  @ApiResponse({ status: 404, description: "Không có chương trình giảm giá nào đang diễn ra." })
-  async getActiveSale() {
-    return await this.saleService.getActiveSale();
+  @ApiOperation({ summary: "Tạo chương trình giảm giá mới" })
+  @ApiResponse({ status: 201, description: "Tạo thành công." })
+  @ApiResponse({ status: 400, description: "Thất bại trong lúc tạo" })
+  async createSale(@Body() dto: CreateSaleDto) {
+    return await this.saleService.createSale(dto);
   }
 
   @Put("/active/end")
@@ -135,6 +107,31 @@ export class SaleStrategyController {
       throw new NotFoundException("Không có chương trình giảm giá nào đang diễn ra.");
     }
     return await this.saleService.endSale(activeSale.id);
+  }
+
+  @Put(":id")
+  @Actions("update")
+  @Objectcode("SALE01")
+  @ApiOperation({ summary: "Cập nhật thông tin chương trình giảm giá" })
+  @ApiResponse({ status: 200, description: "Cập nhật thành công." })
+  @ApiResponse({ status: 404, description: "Sale không tồn tại." })
+  async updateSale(@Param("id", ParseIntPipe) id: number, @Body() dto: UpdateSaleDto) {
+    if (dto.isGlobalSale && (dto.products?.length || dto.categories?.length)) {
+      throw new BadRequestException("Không thể chọn sản phẩm hoặc danh mục khi isGlobalSale = true.");
+    }
+    return await this.saleService.updateSale(id, dto);
+  }
+
+  @Delete(":id")
+  @Actions("delete")
+  @Objectcode("SALE01")
+  @ApiOperation({ summary: "Xóa chương trình giảm giá" })
+  @ApiResponse({ status: 204, description: "Xóa thành công." })
+  @ApiResponse({ status: 404, description: "Sale không tồn tại." })
+  @HttpCode(204)
+  async deleteSale(@Param("id", ParseIntPipe) id: number) {
+    await this.validateSale(id);
+    return await this.saleService.deleteSale(id);
   }
 
   @Post(":id/products")
@@ -160,18 +157,6 @@ export class SaleStrategyController {
     return await this.saleService.removeProductFromSale(id, productId);
   }
 
-  @Put(":id/products/:productId")
-  @ApiOperation({ summary: "chỉnh sửa sản phẩm có trong chương trình giảm giá" })
-  @ApiResponse({ status: 204, description: "cập nhật thành công." })
-  async updateSaleProduct(
-    @Param("id", ParseIntPipe) id: number,
-    @Param("productId", ParseIntPipe) productId: number,
-    @Body() dto: AddSaleProductDto
-  ) {
-    await this.validateSale(id);
-    return await this.saleService.updateSaleProduct(id, productId, dto);
-  }
-
   @Post(":id/categories")
   @ApiOperation({ summary: "Thêm danh mục vào chương trình giảm giá" })
   @ApiResponse({ status: 200, description: "Thêm thành công." })
@@ -193,17 +178,5 @@ export class SaleStrategyController {
   ) {
     await this.validateSale(id);
     return await this.saleService.removeCategoryFromSale(id, categoryId);
-  }
-
-  @Put(":id/categories/:categoryId")
-  @ApiOperation({ summary: "chỉnh sửa danh mục có trong chương trình giảm giá" })
-  @ApiResponse({ status: 204, description: "cập nhật thành công." })
-  async updateSaleCategory(
-    @Param("id", ParseIntPipe) id: number,
-    @Param("categoryId", ParseIntPipe) categoryId: number,
-    @Body() dto: AddSaleCategoryDto
-  ) {
-    await this.validateSale(id);
-    return await this.saleService.updateSaleCategory(id, categoryId, dto);
   }
 }

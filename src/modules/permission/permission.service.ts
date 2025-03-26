@@ -17,7 +17,7 @@ export class PermissionService {
       SELECT fn_check_right($1, $2, $3) AS has_permission
     `;
     const result = await this.dataSource.query(query, [userId, objectCodeStr, actionStr]);
-
+    console.log(userId , action , objectCode)
     return result[0].has_permission ?? false;
   }
 }

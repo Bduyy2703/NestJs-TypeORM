@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { IsBoolean, IsDateString, IsNumber, IsInt, IsOptional, IsString, Min } from "class-validator";
+import { IsBoolean, IsDateString, IsNumber, IsInt, IsOptional, IsString, Min, ArrayNotEmpty } from "class-validator";
 
 export class CreateSaleDto {
   @ApiProperty({ description: "Tên chương trình giảm giá", example: "Khuyến mãi mùa hè" })
@@ -32,13 +32,21 @@ export class CreateSaleDto {
   @IsBoolean()
   isGlobalSale: boolean;
 
-  @ApiPropertyOptional({ description: "Danh sách ID danh mục áp dụng (chỉ khi `isGlobalSale = false`)", example: [1, 2, 3] })
+  @ApiPropertyOptional({
+    description: "Danh sách ID danh mục áp dụng (chỉ khi `isGlobalSale = false`)",
+    example: [1, 2, 3]
+  })
   @IsOptional()
   @IsInt({ each: true })
+  @ArrayNotEmpty()
   categories?: number[];
 
-  @ApiPropertyOptional({ description: "Danh sách ID sản phẩm áp dụng (chỉ khi `isGlobalSale = false`)", example: [10, 20, 30] })
+  @ApiPropertyOptional({
+    description: "Danh sách ID sản phẩm áp dụng (chỉ khi `isGlobalSale = false`)",
+    example: [10, 20, 30]
+  })
   @IsOptional()
   @IsInt({ each: true })
+  @ArrayNotEmpty()
   products?: number[];
 }

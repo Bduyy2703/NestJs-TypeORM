@@ -7,12 +7,13 @@ import { MinioService } from '../files/minio/minio.service';
 import { FileRepository } from '../files/file.repository';
 import { File } from '../files/file.entity';
 import { Category } from '../category/entity/category.entity';
-import { StrategySale } from '../strategySale/entity/strategySale.entity';
 import { ProductDetails } from '../product-details/entity/productDetail.entity';
+import { ProductStrategySale } from '../strategySale/entity/productSale.entity';
+import { StrategySale } from '../strategySale/entity/strategySale.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Product, File, Category, StrategySale, ProductDetails]),
+    TypeOrmModule.forFeature([Product, File, Category, ProductStrategySale, StrategySale,  ProductDetails]),
   ],
   controllers: [ProductsController],
   providers: [ProductService, MinioService, FileRepository],

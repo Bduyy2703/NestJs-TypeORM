@@ -1,6 +1,7 @@
-import { Entity, Column, CreateDateColumn, PrimaryGeneratedColumn, OneToMany } from "typeorm";
+import { Entity, Column, CreateDateColumn, PrimaryGeneratedColumn, OneToMany, RelationId } from "typeorm";
 import { Product } from "src/modules/product/entity/product.entity";
-import { Category } from "src/modules/category/entity/category.entity";
+import { CategoryStrategySale } from "./categorySale.entity";
+import { ProductStrategySale } from "./productSale.entity";
 
 @Entity()
 export class StrategySale {
@@ -29,11 +30,17 @@ export class StrategySale {
   isGlobalSale: boolean;
 
   // Liên kết với Product và Category
-  @OneToMany(() => Product, (product) => product.strategySale)
-  products: Product[];
+  @OneToMany(() => ProductStrategySale, (productStrategySale) => productStrategySale.strategySale)
+  productStrategySales: ProductStrategySale[];
+  
+  @OneToMany(() => CategoryStrategySale, (categoryStrategySale) => categoryStrategySale.strategySale)
+  categoryStrategySales: CategoryStrategySale[];
 
-  @OneToMany(() => Category, (category) => category.strategySale)
-  categories: Category[];
+  @RelationId((strategySale: StrategySale) => strategySale.productStrategySales)
+  productIds: number[];
+
+  @RelationId((strategySale: StrategySale) => strategySale.categoryStrategySales)
+  categoryIds: number[];
 
   @CreateDateColumn()
   createdAt: Date;
