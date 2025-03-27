@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Req, UseGuards } from "@nestjs/common";
+import { Controller, Get, Post, Patch, Delete, Body, Param, Req, UseGuards, BadRequestException } from "@nestjs/common";
 import { CartService } from "./cart.service";
 import { AddToCartDto } from "./dto/Add-to-cart.dto";
 import { UpdateCartItemDto } from "./dto/update-cartItem.dto";
@@ -72,7 +72,14 @@ export class CartController {
   @ApiOperation({ summary: "Checkout giỏ hàng để chuyển sang thanh toán" })
   @ApiResponse({ status: 200, description: "Thanh toán thành công" })
   @ApiResponse({ status: 400, description: "Giỏ hàng trống hoặc sản phẩm không đủ số lượng" })
-  async checkout(@Req() req: Request) {
-    return this.cartService.checkout(req.user as User);
+  async checkout(@Req() req: Request, @Body() body: { selectedItems: { productId: number; quantity: number }[] }) {
+    const user = req.user as User;
+    
+    if (!body.selectedItems || body.selectedItems.length === 0) {
+      throw new BadRequestException("Không có sản phẩm nào được chọn để thanh toán");
+    }
+  
+    return this.cartService.checkout(user, body.selectedItems);
   }
+  
 }

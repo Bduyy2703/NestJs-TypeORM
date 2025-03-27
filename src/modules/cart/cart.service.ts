@@ -7,6 +7,7 @@ import { AddToCartDto } from "./dto/Add-to-cart.dto";
 import { UpdateCartItemDto } from "./dto/update-cartItem.dto"
 import { ProductDetails } from "src/modules/product-details/entity/productDetail.entity";
 import { User } from "src/modules/users/entities/user.entity";
+import { File } from "../files/file.entity";
 
 @Injectable()
 export class CartService {
@@ -14,7 +15,8 @@ export class CartService {
     @InjectRepository(Cart) private cartRepo: Repository<Cart>,
     @InjectRepository(User) private userRepo: Repository<User>,
     @InjectRepository(CartItem) private cartItemRepo: Repository<CartItem>,
-    @InjectRepository(ProductDetails) private productDetailsRepo: Repository<ProductDetails>
+    @InjectRepository(ProductDetails) private productDetailsRepo: Repository<ProductDetails>,
+    @InjectRepository(File) private fileRepo: Repository<File>,
   ) { }
 
   // Lấy giỏ hàng của user
@@ -23,9 +25,9 @@ export class CartService {
       where: { user: { id: userId } },
       relations: ["cartItems", "cartItems.productDetails", "cartItems.productDetails.product"] // Join thêm bảng product
     });
-  
+
     if (!cart) return { cartItems: [] };
-  
+
     // Tính tổng giá trị cho từng sản phẩm trong giỏ hàng
     const cartWithTotal = {
       ...cart,
@@ -34,12 +36,12 @@ export class CartService {
         totalPrice: item.quantity * item.productDetails.product.finalPrice, // Lấy price từ product
       })),
       totalAmount: cart.cartItems.reduce(
-        (sum, item) => sum + item.quantity * item.productDetails.product.finalPrice, 
+        (sum, item) => sum + item.quantity * item.productDetails.product.finalPrice,
         0
       ), // Tổng tiền giỏ hàng
       totalQuantity: cart.cartItems.reduce((sum, item) => sum + item.quantity, 0), // Tổng số lượng sản phẩm
     };
-  
+
     return cartWithTotal;
   }
 
@@ -121,31 +123,76 @@ export class CartService {
   }
 
   // api check out để chuyển sang api thanh toán 
-  async checkout(user: User) {
-    const cart = await this.cartRepo.findOne({ where: { user }, relations: ["cartItems", "cartItems.productDetails"] });
+  async checkout(
+    user: User,
+    selectedItems: { productId: number; quantity: number }[]
+  ) {
+    if (!selectedItems || selectedItems.length === 0) {
+      throw new BadRequestException("Không có sản phẩm nào được chọn để thanh toán");
+    }
+  
+    // Lấy giỏ hàng của user
+    const cart = await this.cartRepo.findOne({
+      where: { user },
+      relations: ["cartItems", "cartItems.productDetails", "cartItems.productDetails.product"],
+    });
+  
     if (!cart || cart.cartItems.length === 0) {
-      throw new BadRequestException("Giỏ hàng trống, không thể thanh toán");
+      throw new BadRequestException("Giỏ hàng trống");
     }
-
-    for (const cartItem of cart.cartItems) {
-      const product = cartItem.productDetails;
-
-      if (product.stock < cartItem.quantity) {
-        throw new BadRequestException(`Sản phẩm ${product.id} không đủ số lượng`);
+  
+    let totalAmount = 0;
+    const checkoutItems = [];
+  
+    for (const item of selectedItems) {
+      const cartItem = cart.cartItems.find(ci => ci.productDetails.id === item.productId);
+  
+      if (!cartItem) {
+        throw new BadRequestException(`Sản phẩm ${item.productId} không có trong giỏ hàng`);
       }
-
-      product.stock -= cartItem.quantity;
-      product.sold += cartItem.quantity;
-      await this.productDetailsRepo.save(product);
+      
+      if (cartItem.quantity < item.quantity) {
+        throw new BadRequestException(`Sản phẩm ${item.productId} số lượng không đủ`);
+      }
+  
+      const productDetails = cartItem.productDetails;
+      const product = productDetails.product;
+  
+      if (productDetails.stock < item.quantity) {
+        throw new BadRequestException(`Sản phẩm "${product.name}" chỉ còn ${productDetails.stock} trong kho`);
+      }
+  
+      // Lấy hình ảnh sản phẩm từ bảng file
+      const productImage = await this.fileRepo.findOne({
+        where: { targetId: product.id, targetType: "product" }
+      });
+  
+      // Tính tổng giá từng sản phẩm
+      const totalPrice = product.finalPrice * item.quantity;
+      totalAmount += totalPrice;
+  
+      checkoutItems.push({
+        productId: product.id,
+        name: product.name,
+        image: productImage ? productImage.fileUrl : null, // Nếu có ảnh thì lấy, không có thì null
+        quantity: item.quantity,
+        price: product.finalPrice,
+        totalPrice,
+      });
     }
-
-    // Sau khi trừ kho thành công, xóa giỏ hàng
-    await this.cartItemRepo.remove(cart.cartItems);
-    await this.cartRepo.remove(cart);
-
-    return { message: "Thanh toán thành công" };
-  }
-
+  
+    return {
+      message: "Xác nhận đơn hàng thành công",
+      user: {
+        id: user.id,
+        name: user.username,
+        email: user.email,
+        addresses: user.addresses, // Lấy danh sách địa chỉ
+      },
+      checkoutItems,
+      totalAmount,
+    };
+  }  
 }
 
 

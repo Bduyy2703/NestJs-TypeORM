@@ -6,9 +6,10 @@ import { Cart } from "./entity/cart.entity";
 import { CartItem } from "./entity/cartItem.entity";
 import { ProductDetails } from "src/modules/product-details/entity/productDetail.entity";
 import { User } from "src/modules/users/entities/user.entity";
+import { File } from "../files/file.entity";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Cart, CartItem, ProductDetails, User])],
+  imports: [TypeOrmModule.forFeature([Cart, CartItem, ProductDetails, User,File])],
   controllers: [CartController],
   providers: [CartService],
   exports: [CartService],

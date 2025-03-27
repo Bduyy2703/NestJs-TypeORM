@@ -112,24 +112,41 @@ export class SaleStrategyService {
         );
       }
   
-      // 🔥 Lấy danh sách sản phẩm cần cập nhật
-      const productIds = [
-        ...sale.productStrategySales.map((ps) => ps.product.id),
-        ...sale.categoryStrategySales.flatMap((cs) => cs.category.products.map((p) => p.id))
-      ];
+      let productIds: number[];
   
-      // 🔥 Nếu bật giảm giá, cập nhật finalPrice
+      if (dto.isGlobalSale) {
+        // 🔥 Nếu là giảm giá toàn trang, lấy tất cả sản phẩm
+        const allProducts = await this.productRepository.find({ select: ["id"] });
+        productIds = allProducts.map((p) => p.id);
+      } else {
+        // 🔥 Nếu không phải global sale, lấy danh sách sản phẩm cụ thể
+        productIds = [
+          ...sale.productStrategySales.map((ps) => ps.product.id),
+          ...sale.categoryStrategySales.flatMap((cs) => cs.category.products.map((p) => p.id))
+        ];
+      }
+  
+      // 🔥 Cập nhật giá sản phẩm
       await this.productRepository.update(
         { id: In(productIds) },
         { finalPrice: () => `originalPrice * (1 - ${sale.discountAmount} / 100)` }
       );
     } else {
-      // 🔥 Nếu tắt giảm giá, đặt lại finalPrice về originalPrice
-      const productIds = [
-        ...sale.productStrategySales.map((ps) => ps.product.id),
-        ...sale.categoryStrategySales.flatMap((cs) => cs.category.products.map((p) => p.id))
-      ];
+      let productIds: number[];
   
+      if (sale.isGlobalSale) {
+        // 🔥 Nếu tắt giảm giá toàn trang, cập nhật lại tất cả sản phẩm
+        const allProducts = await this.productRepository.find({ select: ["id"] });
+        productIds = allProducts.map((p) => p.id);
+      } else {
+        // 🔥 Nếu tắt giảm giá chỉ với một số sản phẩm
+        productIds = [
+          ...sale.productStrategySales.map((ps) => ps.product.id),
+          ...sale.categoryStrategySales.flatMap((cs) => cs.category.products.map((p) => p.id))
+        ];
+      }
+  
+      // 🔥 Đặt lại finalPrice về originalPrice
       await this.productRepository.update(
         { id: In(productIds) },
         { finalPrice: () => "originalPrice" }
@@ -139,7 +156,6 @@ export class SaleStrategyService {
     Object.assign(sale, dto);
     return await this.saleRepository.save(sale);
   }  
-
   /**
    * Xóa chương trình giảm giá
    */
@@ -147,34 +163,43 @@ export class SaleStrategyService {
     const sale = await this.getSaleById(id);
     await this.saleRepository.remove(sale);
   }
+/**
+ * Kết thúc chương trình giảm giá hiện tại
+ */
+async endSale(id: number): Promise<StrategySale> {
+  const sale = await this.getSaleById(id);
+  if (!sale.isActive) {
+    throw new BadRequestException("Chương trình giảm giá này đã kết thúc.");
+  }
 
-  /**
-   * Kết thúc chương trình giảm giá hiện tại
-   */
-  async endSale(id: number): Promise<StrategySale> {
-    const sale = await this.getSaleById(id);
-    if (!sale.isActive) {
-      throw new BadRequestException("Chương trình giảm giá này đã kết thúc.");
-    }
-    sale.isActive = false;
-    await this.saleRepository.save(sale);
-  
-    const productIds = [
+  sale.isActive = false;
+  await this.saleRepository.save(sale);
+
+  let productIds: number[];
+
+  if (sale.isGlobalSale) {
+    // 🔥 Nếu giảm giá toàn trang, lấy tất cả sản phẩm
+    const allProducts = await this.productRepository.find({ select: ["id"] });
+    productIds = allProducts.map((p) => p.id);
+  } else {
+    // 🔥 Nếu chỉ giảm giá một số sản phẩm, lấy danh sách sản phẩm từ chiến lược
+    productIds = [
       ...sale.productStrategySales.map((ps) => ps.product.id),
       ...sale.categoryStrategySales.flatMap((cs) => cs.category.products.map((p) => p.id))
     ];
-  
-    const uniqueProductIds = [...new Set(productIds)];
-  
-    if (uniqueProductIds.length > 0) {
-      await this.productRepository.update(
-        { id: In(uniqueProductIds) },
-        { finalPrice: () => "originalPrice" }
-      );
-    }
-  
-    return sale;
-  }  
+  }
+
+  const uniqueProductIds = [...new Set(productIds)];
+
+  if (uniqueProductIds.length > 0) {
+    await this.productRepository.update(
+      { id: In(uniqueProductIds) },
+      { finalPrice: () => "originalPrice" }
+    );
+  }
+
+  return sale;
+}
 
   /**
    * Lấy danh sách tất cả chương trình giảm giá
