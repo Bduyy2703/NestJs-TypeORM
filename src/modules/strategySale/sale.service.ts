@@ -99,21 +99,46 @@ export class SaleStrategyService {
    */
   async updateSale(id: number, dto: UpdateSaleDto): Promise<StrategySale> {
     const sale = await this.getSaleById(id);
-
+  
     if (dto.isActive === true) {
-        const existingActiveSale = await this.saleRepository.findOne({
-            where: { isActive: true, id: Not(id) },
-        });
-
-        if (existingActiveSale) {
-
-            dto.isActive = false;
-            throw new BadRequestException("Đã có chương trình giảm giá đang diễn ra. Vui lòng kết thúc trước khi kích hoạt chương trình mới.");
-        }
+      const existingActiveSale = await this.saleRepository.findOne({
+        where: { isActive: true, id: Not(id) },
+      });
+  
+      if (existingActiveSale) {
+        dto.isActive = false;
+        throw new BadRequestException(
+          "Đã có chương trình giảm giá đang diễn ra. Vui lòng kết thúc trước khi kích hoạt chương trình mới."
+        );
+      }
+  
+      // 🔥 Lấy danh sách sản phẩm cần cập nhật
+      const productIds = [
+        ...sale.productStrategySales.map((ps) => ps.product.id),
+        ...sale.categoryStrategySales.flatMap((cs) => cs.category.products.map((p) => p.id))
+      ];
+  
+      // 🔥 Nếu bật giảm giá, cập nhật finalPrice
+      await this.productRepository.update(
+        { id: In(productIds) },
+        { finalPrice: () => `originalPrice * (1 - ${sale.discountAmount} / 100)` }
+      );
+    } else {
+      // 🔥 Nếu tắt giảm giá, đặt lại finalPrice về originalPrice
+      const productIds = [
+        ...sale.productStrategySales.map((ps) => ps.product.id),
+        ...sale.categoryStrategySales.flatMap((cs) => cs.category.products.map((p) => p.id))
+      ];
+  
+      await this.productRepository.update(
+        { id: In(productIds) },
+        { finalPrice: () => "originalPrice" }
+      );
     }
+  
     Object.assign(sale, dto);
     return await this.saleRepository.save(sale);
-}
+  }  
 
   /**
    * Xóa chương trình giảm giá
@@ -132,8 +157,24 @@ export class SaleStrategyService {
       throw new BadRequestException("Chương trình giảm giá này đã kết thúc.");
     }
     sale.isActive = false;
-    return await this.saleRepository.save(sale);
-  }
+    await this.saleRepository.save(sale);
+  
+    const productIds = [
+      ...sale.productStrategySales.map((ps) => ps.product.id),
+      ...sale.categoryStrategySales.flatMap((cs) => cs.category.products.map((p) => p.id))
+    ];
+  
+    const uniqueProductIds = [...new Set(productIds)];
+  
+    if (uniqueProductIds.length > 0) {
+      await this.productRepository.update(
+        { id: In(uniqueProductIds) },
+        { finalPrice: () => "originalPrice" }
+      );
+    }
+  
+    return sale;
+  }  
 
   /**
    * Lấy danh sách tất cả chương trình giảm giá
@@ -327,6 +368,7 @@ export class SaleStrategyService {
     // Xóa bản ghi trong bảng CategoryStrategySale
     await this.categoryStrategySaleRepository.remove(categorySale);
   }
+
 }
 
 

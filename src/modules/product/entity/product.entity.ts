@@ -15,6 +15,9 @@ export class Product {
   @Column({ type: "decimal", precision: 10, scale: 2 })
   originalPrice: number;
 
+  @Column({ type: "decimal", precision: 10, scale: 2, nullable: true })
+  finalPrice: number;
+
   @ManyToOne(() => Category, (category) => category.products, { nullable: true, onDelete: "SET NULL" })
   @JoinColumn({ name: "categoryId" })
   category: Category;

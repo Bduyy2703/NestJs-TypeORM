@@ -34,8 +34,10 @@ export class ProductService {
     if (categoryId && !category) throw new NotFoundException("Danh mục không tồn tại!");
 
     // Tạo sản phẩm trước
+    const final_price = createProductDto.originalPrice
     const product = this.productRepository.create({
       ...productData,
+      finalPrice: final_price,
       category,
     });
 
@@ -60,29 +62,31 @@ export class ProductService {
 
       await this.strategyProductSaleRepository.save(productStrategySales);
     }
-
     return product;
   }
-
 
   async getAllProducts(page: number, limit: number) {
     const [products, total] = await this.productRepository.findAndCount({
       skip: (page - 1) * limit,
       take: limit,
-      relations: ["productDetails"],
+      relations: ["productDetails", "category"],
     });
-
-    // ✅ Lấy danh sách sản phẩm kèm theo hình ảnh từ bảng File
+  
+    // ✅ Lấy hình ảnh cho từng sản phẩm
     const productsWithImages = await Promise.all(
       products.map(async (product) => {
         const images = await this.fileService.findFilesByTarget(product.id, "product");
         return {
-          ...product,
-          images: images.map((img) => img.fileUrl), // Trả về danh sách URL hình ảnh
+          id: product.id,
+          name: product.name,
+          originalPrice: product.originalPrice,
+          finalPrice: product.finalPrice,
+          category: product.category,
+          images: images.map((img) => img.fileUrl),
         };
       })
     );
-
+  
     return {
       data: productsWithImages,
       total,
@@ -90,28 +94,24 @@ export class ProductService {
       totalPages: Math.ceil(total / limit),
     };
   }
-
+  
   async getProductById(id: number) {
     const product = await this.productRepository.findOne({
       where: { id },
-      relations: ["productDetails"],
+      relations: ["productDetails", "category"],
     });
-
+  
     if (!product) {
       throw new NotFoundException("Sản phẩm không tồn tại!");
     }
-
+  
     const images = await this.fileService.findFilesByTarget(id, "product");
-
-    const totalSold = product.productDetails.reduce((sum, detail) => sum + detail.sold, 0);
-
+  
     return {
       ...product,
-      images: images.map((img) => img),
-      totalSold,
+      images: images.map((img) => img.fileUrl),
     };
-  }
-
+  }  
 
   async updateProduct(
     id: number,

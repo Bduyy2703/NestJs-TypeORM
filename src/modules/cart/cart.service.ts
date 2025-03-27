@@ -31,10 +31,10 @@ export class CartService {
       ...cart,
       cartItems: cart.cartItems.map((item) => ({
         ...item,
-        totalPrice: item.quantity * item.productDetails.product.originalPrice, // Lấy price từ product
+        totalPrice: item.quantity * item.productDetails.product.finalPrice, // Lấy price từ product
       })),
       totalAmount: cart.cartItems.reduce(
-        (sum, item) => sum + item.quantity * item.productDetails.product.originalPrice, 
+        (sum, item) => sum + item.quantity * item.productDetails.product.finalPrice, 
         0
       ), // Tổng tiền giỏ hàng
       totalQuantity: cart.cartItems.reduce((sum, item) => sum + item.quantity, 0), // Tổng số lượng sản phẩm
