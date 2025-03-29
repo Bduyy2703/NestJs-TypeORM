@@ -71,7 +71,7 @@ export class ProductService {
       take: limit,
       relations: ["productDetails", "category"],
     });
-  
+
     // ✅ Lấy hình ảnh cho từng sản phẩm
     const productsWithImages = await Promise.all(
       products.map(async (product) => {
@@ -86,7 +86,7 @@ export class ProductService {
         };
       })
     );
-  
+
     return {
       data: productsWithImages,
       total,
@@ -94,24 +94,29 @@ export class ProductService {
       totalPages: Math.ceil(total / limit),
     };
   }
-  
+
   async getProductById(id: number) {
     const product = await this.productRepository.findOne({
       where: { id },
       relations: ["productDetails", "category"],
     });
-  
+
     if (!product) {
       throw new NotFoundException("Sản phẩm không tồn tại!");
     }
-  
+
     const images = await this.fileService.findFilesByTarget(id, "product");
-  
+
+    const totalStock = product.productDetails.reduce((sum, detail) => sum + detail.stock, 0);
+    const totalSold = product.productDetails.reduce((sum, detail) => sum + detail.sold, 0);
+
     return {
       ...product,
       images: images.map((img) => img.fileUrl),
+      totalStock,
+      totalSold,
     };
-  }  
+  }
 
   async updateProduct(
     id: number,

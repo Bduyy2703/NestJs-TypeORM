@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Category } from './entity/category.entity';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
 import { Product } from '../product/entity/product.entity';
@@ -22,9 +22,9 @@ export class CategoryService {
   async findAll(): Promise<Category[]> {
     return this.categoryRepository
       .createQueryBuilder('category')
-      .leftJoinAndSelect('category.children', 'children') // Lấy danh mục con
-      .where('category.parent IS NULL') // Chỉ lấy danh mục cha
-      .orderBy('category.id', 'ASC') // Sắp xếp theo ID
+      .leftJoinAndSelect('category.children', 'children') 
+      .where('category.parent IS NULL') 
+      .orderBy('category.id', 'ASC')
       .getMany();
   }
 
@@ -46,17 +46,15 @@ export class CategoryService {
   }
   
   async updateCategory(id: number, updateData: UpdateCategoryDto): Promise<Category> {
-    // 🔹 Tìm danh mục cần cập nhật
     const existingCategory = await this.categoryRepository.findOne({
       where: { id },
-      relations: ['parent'], // Lấy thông tin danh mục cha nếu có
+      relations: ['parent'], 
     });
 
     if (!existingCategory) {
       throw new NotFoundException('Danh mục không tồn tại!');
     }
 
-    // 🔹 Kiểm tra nếu `slug` bị trùng lặp
     if (updateData.slug) {
       const slugExists = await this.categoryRepository.findOne({ where: { slug: updateData.slug } });
       if (slugExists && slugExists.id !== id) {
@@ -64,7 +62,6 @@ export class CategoryService {
       }
     }
 
-    // 🔹 Xử lý quan hệ cha - con nếu `parentId` được gửi
     let newParent: Category | null = null;
     if (updateData.parentId) {
       newParent = await this.categoryRepository.findOne({ where: { id: updateData.parentId } });
@@ -72,11 +69,11 @@ export class CategoryService {
       if (!newParent) {
         throw new NotFoundException('Danh mục cha không tồn tại!');
       }
-      // Ngăn chặn tự làm cha của chính nó
+
       if (updateData.parentId === id) {
         throw new BadRequestException('Danh mục không thể là cha của chính nó!');
       }
-      // Kiểm tra vòng lặp cha - con
+
       let parentCheck = newParent;
       while (parentCheck) {
         if (parentCheck.id === id) {
@@ -85,16 +82,16 @@ export class CategoryService {
         parentCheck = parentCheck.parent;
       }
     }
-    // 🔹 Cập nhật danh mục (Dùng `parent` thay vì `parentId`)
+
     await this.categoryRepository.update(id, {
       name : updateData.name,
       slug : updateData.slug,
-      parent: newParent || null, // Nếu không có `parentId`, cập nhật thành `null`
+      parent: newParent || null, 
     });
     console.log(1111111111111)
     return this.categoryRepository.findOne({
       where: { id },
-      relations: ['parent', 'children'], // Trả về đầy đủ dữ liệu quan hệ
+      relations: ['parent', 'children'], 
     });
   }
 
@@ -104,20 +101,26 @@ export class CategoryService {
     await this.categoryRepository.remove(category);
     return true;
   }
+
   async findProductsByCategoryId(categoryId: number): Promise<Product[]> {
+    const childCategories = await this.categoryRepository.find({
+      where: { parent: { id: categoryId } },
+    });
+  
+    const categoryIds = [categoryId, ...childCategories.map(c => c.id)];
     const products = await this.productRepository.find({
-      where: { category: { id: categoryId } },
+      where: { category: { id: In(categoryIds) } },
       relations: ["category"],
     });
-
+  
     for (const product of products) {
       const images = await this.fileRepository.find({
-        where: { targetId: product.id, targetType: 'product' },
+        where: { targetId: product.id, targetType: "product" },
       });
-      (product as any).images = images.map(file => file.fileUrl); 
+      (product as any).images = images.map((file) => file.fileUrl);
     }
-
+  
     return products;
-  }
+  }  
   
 }

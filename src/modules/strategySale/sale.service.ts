@@ -99,7 +99,6 @@ export class SaleStrategyService {
    */
   async updateSale(id: number, dto: UpdateSaleDto): Promise<StrategySale> {
     const sale = await this.getSaleById(id);
-  
     if (dto.isActive === true) {
       const existingActiveSale = await this.saleRepository.findOne({
         where: { isActive: true, id: Not(id) },
@@ -115,18 +114,17 @@ export class SaleStrategyService {
       let productIds: number[];
   
       if (dto.isGlobalSale) {
-        // 🔥 Nếu là giảm giá toàn trang, lấy tất cả sản phẩm
+
         const allProducts = await this.productRepository.find({ select: ["id"] });
         productIds = allProducts.map((p) => p.id);
       } else {
-        // 🔥 Nếu không phải global sale, lấy danh sách sản phẩm cụ thể
         productIds = [
-          ...sale.productStrategySales.map((ps) => ps.product.id),
-          ...sale.categoryStrategySales.flatMap((cs) => cs.category.products.map((p) => p.id))
+          ...sale.productIds,
+          ...sale.categoryIds
         ];
       }
-  
-      // 🔥 Cập nhật giá sản phẩm
+  console.log('productIds', productIds)
+  console.log(sale.discountAmount)
       await this.productRepository.update(
         { id: In(productIds) },
         { finalPrice: () => `originalPrice * (1 - ${sale.discountAmount} / 100)` }
@@ -141,8 +139,8 @@ export class SaleStrategyService {
       } else {
         // 🔥 Nếu tắt giảm giá chỉ với một số sản phẩm
         productIds = [
-          ...sale.productStrategySales.map((ps) => ps.product.id),
-          ...sale.categoryStrategySales.flatMap((cs) => cs.category.products.map((p) => p.id))
+          ...sale.productIds,
+          ...sale.categoryIds
         ];
       }
   
@@ -184,8 +182,8 @@ async endSale(id: number): Promise<StrategySale> {
   } else {
     // 🔥 Nếu chỉ giảm giá một số sản phẩm, lấy danh sách sản phẩm từ chiến lược
     productIds = [
-      ...sale.productStrategySales.map((ps) => ps.product.id),
-      ...sale.categoryStrategySales.flatMap((cs) => cs.category.products.map((p) => p.id))
+      ...sale.productIds,
+      ...sale.categoryIds
     ];
   }
 

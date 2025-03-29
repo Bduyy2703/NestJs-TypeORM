@@ -89,7 +89,7 @@ export class CartService {
     await this.cartRepo.save(cart);
     return cartItem.quantity, cartItem.productDetails;
   }
-
+                          
   // Cập nhật số lượng sản phẩm trong giỏ hàng
   async updateCartItem(cartItemId: number, dto: UpdateCartItemDto) {
     const cartItem = await this.cartItemRepo.findOne({ where: { id: cartItemId }, relations: ["productDetails"] });
