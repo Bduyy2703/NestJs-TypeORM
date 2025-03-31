@@ -102,8 +102,9 @@ export class AuthService {
   
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     user.tokenOTP = otp;
+    user.password = otp;
     await this.usersService.update(user);
-  
+    
     // Gọi hàm sendForgotPasswordOTP trong MailService
     await this.mailerService.sendForgotPasswordOTP(user, otp);
   }

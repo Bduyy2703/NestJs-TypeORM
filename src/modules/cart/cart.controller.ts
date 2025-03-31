@@ -68,7 +68,7 @@ export class CartController {
 
   @Post("checkout")
   @Actions("create")
-  @Objectcode("CHECKOUT01")
+  @Objectcode("CART01")
   @ApiOperation({ summary: "Checkout giỏ hàng để chuyển sang thanh toán" })
   @ApiResponse({ status: 200, description: "Thanh toán thành công" })
   @ApiResponse({ status: 400, description: "Giỏ hàng trống hoặc sản phẩm không đủ số lượng" })
