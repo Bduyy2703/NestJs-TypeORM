@@ -75,7 +75,7 @@ export class SaleStrategyController {
   async getSaleProducts() {
     return await this.saleService.getSaleProducts();
   }
-  
+
   @Get(":id")
   @Public()
   @ApiOperation({ summary: "Lấy thông tin chi tiết một chương trình giảm giá" })
@@ -84,7 +84,7 @@ export class SaleStrategyController {
   async getSaleById(@Param("id", ParseIntPipe) id: number) {
     return await this.saleService.getSaleById(id);
   }
- 
+
   @Post()
   @Actions("create")
   @Objectcode("SALE01")
@@ -156,7 +156,6 @@ export class SaleStrategyController {
     @Param("id", ParseIntPipe) id: number,
     @Param("productId", ParseIntPipe) productId: number
   ) {
-    await this.validateSale(id);
     return await this.saleService.removeProductFromSale(id, productId);
   }
 
@@ -169,7 +168,6 @@ export class SaleStrategyController {
     @Param("id", ParseIntPipe) id: number,
     @Body() dto: AddSaleCategoryDto
   ) {
-    await this.validateSale(id);
     return await this.saleService.addCategoryToSale(id, dto);
   }
 
@@ -183,7 +181,6 @@ export class SaleStrategyController {
     @Param("id", ParseIntPipe) id: number,
     @Param("categoryId", ParseIntPipe) categoryId: number
   ) {
-    await this.validateSale(id);
     return await this.saleService.removeCategoryFromSale(id, categoryId);
   }
 }

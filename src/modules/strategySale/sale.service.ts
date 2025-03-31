@@ -112,19 +112,27 @@ export class SaleStrategyService {
       }
   
       let productIds: number[];
-  
-      if (dto.isGlobalSale) {
-
+      
+      if (sale.isGlobalSale) {
         const allProducts = await this.productRepository.find({ select: ["id"] });
         productIds = allProducts.map((p) => p.id);
       } else {
+
+        const allCategoryIds = sale.categoryStrategySales.map(c => c.categoryId);
+        const allProduct =  sale.productStrategySales.map(c => c.productId)
+        const productsInCategories = await this.productRepository.find({
+          where: {
+            category: { id: In(allCategoryIds) }
+          },
+          select: ["id"]
+        });
+
         productIds = [
-          ...sale.productIds,
-          ...sale.categoryIds
+         ...allProduct,
+          ...productsInCategories.map(p => p.id)
         ];
       }
-  console.log('productIds', productIds)
-  console.log(sale.discountAmount)
+
       await this.productRepository.update(
         { id: In(productIds) },
         { finalPrice: () => `originalPrice * (1 - ${sale.discountAmount} / 100)` }
@@ -133,17 +141,25 @@ export class SaleStrategyService {
       let productIds: number[];
   
       if (sale.isGlobalSale) {
-        // 🔥 Nếu tắt giảm giá toàn trang, cập nhật lại tất cả sản phẩm
         const allProducts = await this.productRepository.find({ select: ["id"] });
         productIds = allProducts.map((p) => p.id);
       } else {
-        // 🔥 Nếu tắt giảm giá chỉ với một số sản phẩm
+        const allCategoryIds = sale.categoryStrategySales.map(c => c.categoryId)
+        const allProduct =  sale.productStrategySales.map(c => c.productId)
+        const productsInCategories = await this.productRepository.find({
+          where: {
+            category: { id: In(allCategoryIds) }
+          },
+          select: ["id"]
+        });
+        
+
         productIds = [
-          ...sale.productIds,
-          ...sale.categoryIds
+          ...allProduct,
+          ...productsInCategories.map(p => p.id)
         ];
       }
-  
+      
       // 🔥 Đặt lại finalPrice về originalPrice
       await this.productRepository.update(
         { id: In(productIds) },
@@ -180,10 +196,19 @@ async endSale(id: number): Promise<StrategySale> {
     const allProducts = await this.productRepository.find({ select: ["id"] });
     productIds = allProducts.map((p) => p.id);
   } else {
-    // 🔥 Nếu chỉ giảm giá một số sản phẩm, lấy danh sách sản phẩm từ chiến lược
+    const allCategoryIds = sale.categoryStrategySales.map(c => c.categoryId)
+    const allProduct =  sale.productStrategySales.map(c => c.productId)
+    const productsInCategories = await this.productRepository.find({
+      where: {
+        category: { id: In(allCategoryIds) }
+      },
+      select: ["id"]
+    });
+    
+
     productIds = [
-      ...sale.productIds,
-      ...sale.categoryIds
+      ...allProduct,
+      ...productsInCategories.map(p => p.id)
     ];
   }
 
@@ -261,106 +286,147 @@ async endSale(id: number): Promise<StrategySale> {
    * Thêm sản phẩm vào chương trình giảm giá
    */
   async addProductToSale(saleId: number, dto: AddSaleProductDto): Promise<StrategySale> {
+    // 1. Kiểm tra xem chương trình giảm giá có tồn tại không
     const sale = await this.saleRepository.findOne({
-      where: { id: saleId },
-      relations: { productStrategySales: true },
+        where: { id: saleId },
+        relations: ["productStrategySales"],
     });
-  
+
     if (!sale) {
-      throw new NotFoundException("Chương trình giảm giá không tồn tại.");
+        throw new NotFoundException("Chương trình giảm giá không tồn tại.");
     }
 
-    if(sale.isGlobalSale)
-    {
-      throw new NotFoundException("Chương trình giảm giá đang áp dụng toàn hệ thống , không thể thêm sản phẩm vào");
+    if (sale.isGlobalSale) {
+        throw new BadRequestException("Chương trình giảm giá đang áp dụng toàn hệ thống, không thể thêm sản phẩm vào.");
     }
 
-    const product = await this.productRepository.findOne({ 
-      where: { id: dto.productId },
-      relations: { productStrategySales: true },
+    // 2. Kiểm tra xem sản phẩm có tồn tại không
+    if (!dto.productId) {
+        throw new BadRequestException("ID sản phẩm không hợp lệ.");
+    }
+
+    const product = await this.productRepository.findOne({
+        where: { id: dto.productId },
     });
-  
+
     if (!product) {
-      throw new NotFoundException("Sản phẩm không tồn tại.");
+        throw new NotFoundException("Sản phẩm không tồn tại.");
     }
-  
+
+    // 3. Kiểm tra xem sản phẩm đã thuộc chương trình giảm giá này chưa
     const existingProductSales = await this.productStrategySaleRepository.find({
-      where: { productId: dto.productId },
+        where: { productId: dto.productId },
     });
-  
+
     const isAlreadyInThisSale = existingProductSales.some(ps => ps.strategySaleId === saleId);
     if (isAlreadyInThisSale) {
-      throw new BadRequestException("Sản phẩm đã thuộc chương trình giảm giá này.");
+        throw new BadRequestException("Sản phẩm đã thuộc chương trình giảm giá này.");
     }
-  
-    const allowMultipleSales = true; 
+
+    // 4. Nếu không cho phép sản phẩm tham gia nhiều chương trình khuyến mãi
+    const allowMultipleSales = true;
     if (!allowMultipleSales && existingProductSales.length > 0) {
-      throw new BadRequestException("Sản phẩm chỉ có thể thuộc một chương trình giảm giá.");
+        throw new BadRequestException("Sản phẩm chỉ có thể thuộc một chương trình giảm giá.");
     }
-  
+
+    // 5. Thêm sản phẩm vào chương trình giảm giá
     const newProductSale = this.productStrategySaleRepository.create({
-      strategySale: sale,
-      product,
+        strategySale: sale,
+        product,
     });
-  
+
     await this.productStrategySaleRepository.save(newProductSale);
-  
+
+    // 6. Nếu chương trình giảm giá đang diễn ra, cập nhật finalPrice của sản phẩm
+    if (sale.isActive) {
+        await this.productRepository.update(
+            { id: dto.productId },
+            { finalPrice: () => `originalPrice * (1 - ${sale.discountPercent} / 100)` }
+        );
+    }
+
+    // 7. Trả về thông tin chương trình giảm giá sau khi cập nhật
     return this.getSaleById(saleId);
-  }
+}
   
 
   /**
    * Xóa sản phẩm khỏi chương trình giảm giá
    */
   async removeProductFromSale(saleId: number, productId: number): Promise<void> {
+    // 1. Kiểm tra chương trình giảm giá có tồn tại không
     const sale = await this.saleRepository.findOne({
-      where: { id: saleId },
-      relations: { productStrategySales: true },
+        where: { id: saleId },
+        relations: ["productStrategySales"],
     });
-  
-    if (!sale) {
-      throw new NotFoundException("Chương trình giảm giá không tồn tại.");
-    }
-  
-    const productSale = await this.productStrategySaleRepository.findOne({
-      where: { strategySaleId: saleId, productId: productId },
-    });
-  
-    if (!productSale) {
-      throw new NotFoundException("Sản phẩm không tồn tại trong chương trình giảm giá.");
-    }
-  
-    await this.productStrategySaleRepository.remove(productSale);
-  }
 
-  /**
-   * Thêm danh mục vào chương trình giảm giá
-   */async addCategoryToSale(saleId: number, dto: AddSaleCategoryDto): Promise<StrategySale> {
+    if (!sale) {
+        throw new NotFoundException("Chương trình giảm giá không tồn tại.");
+    }
+
+    // 2. Kiểm tra sản phẩm có nằm trong chương trình giảm giá không
+    const productSale = await this.productStrategySaleRepository.findOne({
+        where: { strategySaleId: saleId, productId: productId },
+    });
+
+    if (!productSale) {
+        throw new NotFoundException("Sản phẩm không tồn tại trong chương trình giảm giá.");
+    }
+
+    // 3. Nếu sale đang diễn ra, đặt lại giá gốc
+    if (sale.isActive) {
+        await this.productRepository.update(
+            { id: productId },
+            { finalPrice: () => "originalPrice" } // Trả giá về ban đầu
+        );
+    }
+
+    // 4. Xóa sản phẩm khỏi chương trình giảm giá
+    await this.productStrategySaleRepository.remove(productSale);
+}
+
+async addCategoryToSale(saleId: number, dto: AddSaleCategoryDto): Promise<StrategySale> {
+  // 1. Tìm chương trình giảm giá
   const sale = await this.saleRepository.findOne({
-    where: { id: saleId },
-    relations: { categoryStrategySales: true },
+      where: { id: saleId },
+      relations: ["categoryStrategySales"],
   });
 
   if (!sale) throw new NotFoundException("Chương trình giảm giá không tồn tại.");
 
+  // 2. Tìm danh mục
   const category = await this.categoryRepository.findOne({ where: { id: dto.categoryId } });
   if (!category) throw new NotFoundException("Danh mục không tồn tại.");
 
+  // 3. Kiểm tra xem danh mục đã có trong chương trình chưa
   const existingCategory = sale.categoryStrategySales.find((cs) => cs.categoryId === dto.categoryId);
   if (existingCategory) throw new BadRequestException("Danh mục đã có trong chương trình giảm giá.");
 
-  // Thêm danh mục vào chương trình giảm giá
+  // 4. Thêm danh mục vào chương trình
   const newCategorySale = this.categoryStrategySaleRepository.create({ strategySale: sale, category });
   await this.categoryStrategySaleRepository.save(newCategorySale);
 
-  // 🚀 **Thêm tất cả sản phẩm thuộc danh mục này vào sale**
-  const products = await this.productRepository.find({ where: { category: category } });
+  // 5. Lấy tất cả sản phẩm thuộc danh mục
+  const products = await this.productRepository.find({
+      where: { category: { id: dto.categoryId } },
+      select: ["id", "originalPrice"],
+  });
 
+  if (products.length === 0) return this.getSaleById(saleId); // Không có sản phẩm nào
+
+  // 6. Thêm tất cả sản phẩm vào chương trình giảm giá
   const productSales = products.map((product) =>
-    this.productStrategySaleRepository.create({ product, strategySale: sale })
+      this.productStrategySaleRepository.create({ product, strategySale: sale })
   );
-
   await this.productStrategySaleRepository.save(productSales);
+
+  // 7. Nếu sale đang diễn ra, cập nhật giá sản phẩm
+  if (sale.isActive) {
+      await this.productRepository.update(
+          { id: In(products.map((p) => p.id)) },
+          { finalPrice: () => `originalPrice * (1 - ${sale.discountAmount} / 100)` }
+      );
+  }
 
   return this.getSaleById(saleId);
 }
@@ -369,29 +435,46 @@ async endSale(id: number): Promise<StrategySale> {
    * Xóa danh mục khỏi chương trình giảm giá
    */
   async removeCategoryFromSale(saleId: number, categoryId: number): Promise<void> {
-    // Tìm chương trình giảm giá
+    // 1. Tìm chương trình giảm giá
     const sale = await this.saleRepository.findOne({
-      where: { id: saleId },
-      relations: { categoryStrategySales: true },
+        where: { id: saleId },
+        relations: ["categoryStrategySales"],
     });
-  
-    if (!sale) {
-      throw new NotFoundException("Chương trình giảm giá không tồn tại.");
-    }
-  
-    // Tìm danh mục trong chương trình giảm giá
-    const categorySale = await this.categoryStrategySaleRepository.findOne({
-      where: { strategySale: { id: saleId }, category: { id: categoryId } },
-    });
-  
-    if (!categorySale) {
-      throw new NotFoundException("Danh mục không tồn tại trong chương trình giảm giá.");
-    }
-  
-    // Xóa bản ghi trong bảng CategoryStrategySale
-    await this.categoryStrategySaleRepository.remove(categorySale);
-  }
 
+    if (!sale) throw new NotFoundException("Chương trình giảm giá không tồn tại.");
+
+    // 2. Tìm danh mục trong chương trình giảm giá
+    const categorySale = await this.categoryStrategySaleRepository.findOne({
+        where: { strategySale: { id: saleId }, category: { id: categoryId } },
+    });
+
+    if (!categorySale) throw new NotFoundException("Danh mục không tồn tại trong chương trình giảm giá.");
+
+    // 3. Xóa bản ghi danh mục khỏi chương trình giảm giá
+    await this.categoryStrategySaleRepository.remove(categorySale);
+
+    // 4. Lấy danh sách sản phẩm thuộc danh mục này
+    const products = await this.productRepository.find({
+        where: { category: { id: categoryId } },
+        select: ["id"],
+    });
+
+    if (products.length === 0) return; // Không có sản phẩm nào, kết thúc luôn
+
+    // 5. Xóa tất cả sản phẩm thuộc danh mục khỏi chương trình giảm giá
+    await this.productStrategySaleRepository.delete({
+        strategySale: { id: saleId },
+        product: { id: In(products.map((p) => p.id)) },
+    });
+
+    // 6. Nếu chương trình giảm giá đang diễn ra, reset giá sản phẩm về originalPrice
+    if (sale.isActive) {
+        await this.productRepository.update(
+            { id: In(products.map((p) => p.id)) },
+            { finalPrice: () => "originalPrice" }
+        );
+    }
+}
 }
 
 
