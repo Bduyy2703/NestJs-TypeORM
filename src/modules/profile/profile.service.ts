@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { User } from '../users/entities/user.entity';
 import { Profile } from './entities/profile.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { Address } from '../address/entity/address.entity';
 @Injectable()
 export class ProfilesService {
   constructor(
@@ -31,9 +32,23 @@ export class ProfilesService {
     });
   }
 
-  async getMe(userId: string): Promise<Profile> {
-    return await this.findByUserId(userId);
+  async getMe(userId: string): Promise<Profile & { email: string; defaultAddress: Address | null }> {
+    const profile = await this.profileRepository.findOne({
+      where: { userId },
+      relations: ["user", "user.addresses"],
+    });
+  
+    if (!profile) {
+      throw new NotFoundException("Không tìm thấy hồ sơ người dùng");
+    }
+  
+    return {
+      ...profile,
+      email: profile.user.email, // Thêm email của user
+      defaultAddress: profile.user.addresses.find(addr => addr.isDefault) || null, // Lấy địa chỉ mặc định
+    };
   }
+  
 
   async update(userId: string, updateProfileDto: UpdateProfileDto): Promise<Profile> {
     const username = `${updateProfileDto.firstName || ''}${updateProfileDto.lastName || ''}`.trim(); // Tạo username từ firstName và lastName
