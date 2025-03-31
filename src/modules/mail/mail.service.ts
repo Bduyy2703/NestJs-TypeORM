@@ -7,7 +7,7 @@ export class MailService {
   constructor(private mailerService: MailerService) {}
 
   async sendUserConfirmation(user: any, tokenOTP: string,accessToken: string) {
-    const url = `http://localhost:3000/api-docs/v1/auth/confirm-email?tokenOTP=${tokenOTP}&accessToken=${accessToken}`;
+    const url = `http://localhost:3000/api/v1/auth/confirm-email?tokenOTP=${tokenOTP}&accessToken=${accessToken}`;
     await this.mailerService.sendMail({
       to: user.email,
       // from: '"Support Team" <support@example.com>', // override default from

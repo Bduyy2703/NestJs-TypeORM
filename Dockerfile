@@ -1,9 +1,13 @@
-FROM node:lts-alpine
-
+FROM node:18-alpine AS builder
 WORKDIR /app
-
+COPY package*.json ./
+RUN npm install
 COPY . .
-COPY .env.prod .env.development
-RUN npm install && npm cache clean --force
+RUN npm run build
 
-CMD ["npm", "start"]
+FROM node:18-alpine
+WORKDIR /app
+COPY --from=builder /app/dist ./dist
+COPY package*.json ./
+RUN npm install --production
+CMD ["node", "dist/main.js"]

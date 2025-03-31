@@ -4,7 +4,7 @@ import { AddToCartDto } from "./dto/Add-to-cart.dto";
 import { UpdateCartItemDto } from "./dto/update-cartItem.dto";
 import { Request } from "express";
 import { User } from "src/modules/users/entities/user.entity";
-import { ApiSecurity, ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from "@nestjs/swagger";
+import { ApiSecurity, ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from "@nestjs/swagger";
 import { Actions } from "src/cores/decorators/action.decorator";
 import { Objectcode } from "src/cores/decorators/objectcode.decorator";
 
@@ -66,20 +66,43 @@ export class CartController {
     return this.cartService.clearCart(req.user as User);
   }
 
+
+
   @Post("checkout")
   @Actions("create")
   @Objectcode("CART01")
   @ApiOperation({ summary: "Checkout giỏ hàng để chuyển sang thanh toán" })
   @ApiResponse({ status: 200, description: "Thanh toán thành công" })
   @ApiResponse({ status: 400, description: "Giỏ hàng trống hoặc sản phẩm không đủ số lượng" })
-  async checkout(@Req() req: Request, @Body() body: { selectedItems: { productId: number; quantity: number }[] }) {
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        selectedItems: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              productId: { type: "number" },
+              quantity: { type: "number" },
+            },
+            required: ["productId", "quantity"],
+          },
+        },
+      },
+      required: ["selectedItems"],
+    },
+  })
+  async checkout(
+    @Req() req: Request,
+    @Body() body: { selectedItems: { productId: number; quantity: number }[] }
+  ) {
     const user = req.user as User;
-    
+
     if (!body.selectedItems || body.selectedItems.length === 0) {
       throw new BadRequestException("Không có sản phẩm nào được chọn để thanh toán");
     }
-  
+
     return this.cartService.checkout(user, body.selectedItems);
   }
-  
 }
