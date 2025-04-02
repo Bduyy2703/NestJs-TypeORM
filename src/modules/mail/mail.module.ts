@@ -31,6 +31,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
             strict: false,
           },
         },
+        options: {
+          inlineCss: false, // Tắt inline CSS
+        },
       }),
       inject: [ConfigService], // Inject ConfigService để lấy biến môi trường
     }),
