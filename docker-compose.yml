@@ -19,7 +19,7 @@ services:
       - MINIO_ACCESS_KEY=admin
       - MINIO_SECRET_KEY=password123
       - MINIO_BUCKET=public
-      - MINIO_HOST=159.223.76.76
+      - MINIO_HOST=35.247.185.8
       - JWT_SECRET=94vFo1lmQQ
       - JWT_REFRESH_SECRET=94vFo1lmQQ
       - EXPIRE_AT=1d
@@ -33,7 +33,7 @@ services:
       - VNP_TMNCODE=AUBE83HC
       - VNP_HASHSECRET=ROSW2WG139LSWVWXS7YJMA6KJMLF77TY
       - VNP_URL=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
-      - VNP_RETURNURL=http://159.223.76.76/payment_return
+      - VNP_RETURNURL=http://35.247.185.8/payment_return
     depends_on:
       - postgres
       - minio

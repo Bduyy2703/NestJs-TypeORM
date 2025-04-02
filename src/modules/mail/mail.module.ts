@@ -6,12 +6,16 @@ import { join } from 'path';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 @Module({
   imports: [
-    ConfigModule.forRoot(), // Load config file và môi trường
+    ConfigModule.forRoot({
+      envFilePath: process.env.NODE_ENV === 'production' ? '.env.prod' : '.env.development',
+      isGlobal: true, // Đảm bảo biến môi trường có thể dùng ở toàn bộ ứng dụng
+    }),
     MailerModule.forRootAsync({
       imports: [ConfigModule], // Import ConfigModule vào MailerModule
       useFactory: async (configService: ConfigService) => ({
         transport: {
           host: configService.get('MAIL_HOST'), // Lấy giá trị từ .env
+          port: parseInt(configService.get('MAIL_PORT') || '587', 10), // Đảm bảo cổng đúng kiểu số
           secure: false,
           tls: {
             rejectUnauthorized: false,
@@ -41,4 +45,4 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
   providers: [MailService],
   exports: [MailService],
 })
-export class MailModule {}
+export class MailModule { }
