@@ -40,8 +40,8 @@ const AppDataSource = new DataSource({
     Role, Blog, Notification, Object_entity, Profile, Right, RightObject,
     RoleRight, Token, File,
   ],
-  migrations: ["src/migrations/*.ts"],
-  synchronize: false, // Tắt synchronize trong migration
+  migrations: process.env.NODE_ENV === 'production' ? ['dist/migrations/*.js'] : ['src/migrations/*.ts'],
+  synchronize: false,
   logging: false,
 });
 

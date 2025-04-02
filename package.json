@@ -19,11 +19,14 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js",
-    "migration:generate": "typeorm migration:generate -d src/cores/database/config/data-source.ts -n",
-    "migration:run": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate src/migrations/InitMigration --dataSource src/cores/database/config/data-source.ts",
-    "migration:revert": "ts-node -r tsconfig-paths/register node_modules/typeorm/cli.js schema:drop -d src/cores/database/config/data-source.ts",
-    "seeding:run": "npx ts-node -r tsconfig-paths/register src/cores/database/seeds/index.ts",
-    "seeding:undo": "typeorm-seeding revert"
+    "migration:generate": "NODE_ENV=development ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate src/migrations -n InitMigration --dataSource src/cores/database/config/data-source.ts",
+    "migration:run": "NODE_ENV=development ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run --dataSource src/cores/database/config/data-source.ts",
+   "migration:revert": "NODE_ENV=development ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert --dataSource src/cores/database/config/data-source.ts",
+    "seeding:run": "NODE_ENV=development npx ts-node -r tsconfig-paths/register src/cores/database/seeds/index.ts",
+    "seeding:undo": "typeorm-seeding revert",
+   "migration:run:prod": "NODE_ENV=production node ./node_modules/typeorm/cli.js migration:run --dataSource dist/cores/database/config/data-source.js",
+  "migration:revert:prod": "NODE_ENV=production node ./node_modules/typeorm/cli.js migration:revert --dataSource dist/cores/database/config/data-source.js",
+  "seeding:run:prod": "NODE_ENV=production node dist/cores/database/seeds/index.js"
   },
   "dependencies": {
     "@nestjs-modules/mailer": "^2.0.2",

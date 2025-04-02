@@ -70,8 +70,8 @@ import { CategoryStrategySale } from 'src/modules/strategySale/entity/categorySa
             Role, Blog, Notification, Object_entity, Profile, Right, RightObject,
             RoleRight, Token, File,
           ],
-          migrations: ["../migrations/*.ts"],
-          synchronize: true, // Chỉ nên dùng trong development, tắt trong production
+          migrations: process.env.NODE_ENV === 'production' ? ['dist/migrations/*.js'] : ['../migrations/*.ts'],
+          synchronize: process.env.NODE_ENV !== 'production', // Tắt synchronize trong production
           retryAttempts: 5,
           retryDelay: 3000,
         };

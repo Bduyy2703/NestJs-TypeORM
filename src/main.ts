@@ -5,7 +5,8 @@ import { SwaggerModule } from '@nestjs/swagger';
 import { config } from './common/configs/swagger.config';
 import * as dotenv from 'dotenv';
 import 'reflect-metadata';
-dotenv.config({ path: '.env' });
+const envFilePath = process.env.NODE_ENV === 'production' ? '.env.prod' : '.env.development';
+dotenv.config({ path: envFilePath })
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('/api/v1');
