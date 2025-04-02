@@ -23,30 +23,59 @@ import { Cart } from '../../../modules/cart/entity/cart.entity';
 import { CartItem } from 'src/modules/cart/entity/cartItem.entity';
 import { ProductStrategySale } from 'src/modules/strategySale/entity/productSale.entity';
 import { CategoryStrategySale } from 'src/modules/strategySale/entity/categorySale.entity';
+
 @Module({
   imports: [
     // ConfigModule đảm bảo biến môi trường được nạp trước
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env.development'], 
+      envFilePath: process.env.NODE_ENV === 'production' ? '.env.prod' : '.env.development',
     }),
 
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get<string>('DEV_DB_HOST'),
-        port: configService.get<number>('DEV_DB_PORT'),
-        username: configService.get<string>('DEV_DB_USERNAME', 'postgres'),
-        password: configService.get<string>('DEV_DB_PASSWORD'),
-        database: configService.get<string>('DEV_DB_DATABASE'),
-        entities: [Cart,CartItem,StrategySale,ProductStrategySale,CategoryStrategySale,Discount,ProductDetails,Inventory,Product,Category,Address,User,Role,Blog,Notification,Object_entity,Profile,Right,RightObject,RoleRight,Token,File], 
-        migrations: ["../migrations/*.ts"],
-        synchronize: true, 
-        retryAttempts: 5,
-        retryDelay: 3000,
-      }),
+      useFactory: (configService: ConfigService) => {
+        const databaseUrl = configService.get<string>('DATABASE_URL');
+        
+        // Nếu có DATABASE_URL, sử dụng nó
+        if (databaseUrl) {
+          return {
+            type: 'postgres',
+            url: databaseUrl,
+            entities: [
+              Cart, CartItem, StrategySale, ProductStrategySale, CategoryStrategySale,
+              Discount, ProductDetails, Inventory, Product, Category, Address, User,
+              Role, Blog, Notification, Object_entity, Profile, Right, RightObject,
+              RoleRight, Token, File,
+            ],
+            migrations: ["../migrations/*.ts"],
+            synchronize: true, // Chỉ nên dùng trong development, tắt trong production
+            retryAttempts: 5,
+            retryDelay: 3000,
+          };
+        }
+
+        // Nếu không có DATABASE_URL, dùng các biến DEV_DB_*
+        return {
+          type: 'postgres',
+          host: configService.get<string>('DEV_DB_HOST'),
+          port: configService.get<number>('DEV_DB_PORT'),
+          username: configService.get<string>('DEV_DB_USERNAME', 'postgres'),
+          password: configService.get<string>('DEV_DB_PASSWORD'),
+          database: configService.get<string>('DEV_DB_DATABASE'),
+          entities: [
+            Cart, CartItem, StrategySale, ProductStrategySale, CategoryStrategySale,
+            Discount, ProductDetails, Inventory, Product, Category, Address, User,
+            Role, Blog, Notification, Object_entity, Profile, Right, RightObject,
+            RoleRight, Token, File,
+          ],
+          migrations: ["../migrations/*.ts"],
+          synchronize: true, // Chỉ nên dùng trong development, tắt trong production
+          retryAttempts: 5,
+          retryDelay: 3000,
+        };
+      },
     }),
   ],
 })
