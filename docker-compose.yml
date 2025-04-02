@@ -3,23 +3,44 @@ services:
   app:
     build: .
     ports:
-      - "80:3000" # Map port 80 vào 3000
+      - "80:3000"
     environment:
-      - DATABASE_URL=postgresql://postgres:password@postgres:5432/nestjs_db
-      - MINIO_ENDPOINT=http://minio:9000
-      - MINIO_ACCESS_KEY=minioadmin
-      - MINIO_SECRET_KEY=minioadmin
-      - MINIO_BUCKET=my-bucket
+      - PORT=3000
+      - REDIS_HOST=redis # Nếu dùng Redis
+      - REDIS_PORT=6379
+      - DATABASE_URL=postgresql://postgres:27102003@postgres:5432/jewelry
+      - MINIO_ENDPOINT=minio
+      - MINIO_PORT=9000
+      - MINIO_USE_SSL=false
+      - MINIO_ACCESS_KEY=admin
+      - MINIO_SECRET_KEY=password123
+      - MINIO_BUCKET=public
+      - MINIO_HOST=159.223.76.76
+      - JWT_SECRET=94vFo1lmQQ
+      - JWT_REFRESH_SECRET=94vFo1lmQQ
+      - EXPIRE_AT=1d
+      - MAIL_HOST=smtp.gmail.com
+      - MAIL_USER=nguyenduy7003@gmail.com
+      - MAIL_PASSWORD=tesf daab xvbr fyqo
+      - MAIL_FROM=nguyenduy7003@gmail.com
+      - CLOUDINARY_CLOUD_NAME=do2vkobzg
+      - CLOUDINARY_API_KEY=384362255338848
+      - CLOUDINARY_API_SECRET=0LBnBJ22MNuzhBO7h8PYyzoIv2I
+      - VNP_TMNCODE=AUBE83HC
+      - VNP_HASHSECRET=ROSW2WG139LSWVWXS7YJMA6KJMLF77TY
+      - VNP_URL=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+      - VNP_RETURNURL=http://159.223.76.76/payment_return
     depends_on:
       - postgres
       - minio
+      # - redis # Nếu dùng Redis
 
   postgres:
-    image: postgres:15
+    image: postgres:16
     environment:
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=nestjs_db
+      - POSTGRES_PASSWORD=27102003
+      - POSTGRES_DB=jewelry
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
@@ -32,11 +53,19 @@ services:
       - "9000:9000"
       - "9001:9001"
     environment:
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin
+      - MINIO_ROOT_USER=admin
+      - MINIO_ROOT_PASSWORD=password123
     volumes:
       - minio-data:/data
+
+  # redis: # Nếu dùng Redis
+  #   image: redis:7
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis-data:/data
 
 volumes:
   pgdata:
   minio-data:
+  # redis-data: # Nếu dùng Redis
