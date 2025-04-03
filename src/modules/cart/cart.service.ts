@@ -89,7 +89,7 @@ export class CartService {
     await this.cartRepo.save(cart);
     return cartItem.quantity, cartItem.productDetails;
   }
-                          
+
   // Cập nhật số lượng sản phẩm trong giỏ hàng
   async updateCartItem(cartItemId: number, dto: UpdateCartItemDto) {
     const cartItem = await this.cartItemRepo.findOne({ where: { id: cartItemId }, relations: ["productDetails"] });
@@ -124,75 +124,70 @@ export class CartService {
 
   // api check out để chuyển sang api thanh toán 
   async checkout(
-    user: User,
+    user: any,
     selectedItems: { productId: number; quantity: number }[]
   ) {
     if (!selectedItems || selectedItems.length === 0) {
       throw new BadRequestException("Không có sản phẩm nào được chọn để thanh toán");
     }
-  
+
+    const user_cart = await this.userRepo.findOne({ where: { id: user.userId } })
     // Lấy giỏ hàng của user
     const cart = await this.cartRepo.findOne({
-      where: { user },
+      where: { user:user_cart },
       relations: ["cartItems", "cartItems.productDetails", "cartItems.productDetails.product"],
     });
-  
+
     if (!cart || cart.cartItems.length === 0) {
       throw new BadRequestException("Giỏ hàng trống");
     }
-  
+
     let totalAmount = 0;
     const checkoutItems = [];
-  
+
     for (const item of selectedItems) {
       const cartItem = cart.cartItems.find(ci => ci.productDetails.id === item.productId);
-  
+
       if (!cartItem) {
         throw new BadRequestException(`Sản phẩm ${item.productId} không có trong giỏ hàng`);
       }
-      
+
       if (cartItem.quantity < item.quantity) {
         throw new BadRequestException(`Sản phẩm ${item.productId} số lượng không đủ`);
       }
-  
+
       const productDetails = cartItem.productDetails;
       const product = productDetails.product;
-  
+
       if (productDetails.stock < item.quantity) {
         throw new BadRequestException(`Sản phẩm "${product.name}" chỉ còn ${productDetails.stock} trong kho`);
       }
-  
+
       // Lấy hình ảnh sản phẩm từ bảng file
       const productImage = await this.fileRepo.findOne({
         where: { targetId: product.id, targetType: "product" }
       });
-  
+
       // Tính tổng giá từng sản phẩm
       const totalPrice = product.finalPrice * item.quantity;
       totalAmount += totalPrice;
-  
+
       checkoutItems.push({
-        productId: product.id,
-        name: product.name,
         image: productImage ? productImage.fileUrl : null, // Nếu có ảnh thì lấy, không có thì null
+        productDetails,
         quantity: item.quantity,
         price: product.finalPrice,
         totalPrice,
       });
     }
-  
+    const usercheckout = await this.userRepo.findOne({ where: { id: user.userId } , relations:["profile","addresses"] })
     return {
       message: "Xác nhận đơn hàng thành công",
-      user: {
-        id: user.id,
-        name: user.username,
-        email: user.email,
-        addresses: user.addresses, // Lấy danh sách địa chỉ
-      },
+      usercheckout,
       checkoutItems,
       totalAmount,
     };
-  }  
+  }
 }
 
 

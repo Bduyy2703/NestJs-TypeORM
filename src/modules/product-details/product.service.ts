@@ -66,7 +66,7 @@ export class ProductDetailsService {
   async findAll(productId: number) {
     const productDetails = await this.productDetailsRepository.find({
       where: { product: { id: productId } },
-      relations: ["product"], // Lấy thông tin product
+      relations: ["product" , "inventory"], // Lấy thông tin product
     });
 
     // Lấy ảnh từ bảng File theo targetId = productId, targetType = 'product'
@@ -83,9 +83,9 @@ export class ProductDetailsService {
   async findOne(id: number) {
     const productDetails = await this.productDetailsRepository.findOne({
       where: { id },
-      relations: ["product"], // Lấy thông tin product
+      relations: ["product","inventory"], // Lấy thông tin product
     });
-
+    console.log(productDetails)
     if (!productDetails) {
       throw new NotFoundException("ProductDetails not found");
     }

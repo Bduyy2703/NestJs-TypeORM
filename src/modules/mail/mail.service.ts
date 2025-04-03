@@ -7,7 +7,7 @@ export class MailService {
   constructor(private mailerService: MailerService) {}
 
   async sendUserConfirmation(user: any, tokenOTP: string,accessToken: string) {
-    const url = `http://159.223.76.76/api/v1/auth/confirm-email?tokenOTP=${tokenOTP}&accessToken=${accessToken}`;
+    const url = `http://35.247.185.8/api/v1/auth/confirm-email?tokenOTP=${tokenOTP}&accessToken=${accessToken}`;
     // dẫn link đến Fe kẹp theo các cái token như trên , xong Fe mới gọi api là cái link trên
     await this.mailerService.sendMail({
       to: user.email,

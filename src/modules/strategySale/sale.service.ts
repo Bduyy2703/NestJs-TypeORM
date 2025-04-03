@@ -117,7 +117,6 @@ export class SaleStrategyService {
         const allProducts = await this.productRepository.find({ select: ["id"] });
         productIds = allProducts.map((p) => p.id);
       } else {
-
         const allCategoryIds = sale.categoryStrategySales.map(c => c.categoryId);
         const allProduct =  sale.productStrategySales.map(c => c.productId)
         const productsInCategories = await this.productRepository.find({
@@ -126,7 +125,6 @@ export class SaleStrategyService {
           },
           select: ["id"]
         });
-
         productIds = [
          ...allProduct,
           ...productsInCategories.map(p => p.id)

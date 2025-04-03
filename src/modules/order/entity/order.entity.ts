@@ -1,39 +1,72 @@
-import { Product } from "src/modules/product/entity/product.entity";
-import { User } from "src/modules/users/entities/user.entity";
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+// import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany } from "typeorm";
+// import { User } from "./"
+// import { OrderItem } from ""; // Sẽ định nghĩa tiếp
 
-@Entity()
-export class Order {
-  @PrimaryGeneratedColumn()
-  id: number;
+// @Entity()
+// export class Order {
+//   @PrimaryGeneratedColumn()
+//   id: number;
 
-//   @ManyToOne(() => User, (user) => user.orders, { onDelete: "CASCADE" })
-//   @JoinColumn({ name: "userId" })
+//   @ManyToOne(() => User, (user) => user.orders)
 //   user: User;
 
-  @OneToMany(() => OrderItem, (orderItem) => orderItem.order, { cascade: true })
-  orderItems: OrderItem[];
+//   @Column({ type: "varchar", length: 255 })
+//   addressStreet: string;
 
-  @CreateDateColumn()
-  createdAt: Date;
-}
+//   @Column({ type: "varchar", length: 255 })
+//   addressCity: string;
 
-@Entity()
-export class OrderItem {
-  @PrimaryGeneratedColumn()
-  id: number;
+//   @Column({ type: "varchar", length: 50 })
+//   addressCountry: string;
 
-  @ManyToOne(() => Order, (order) => order.orderItems, { onDelete: "CASCADE" })
-  @JoinColumn({ name: "orderId" })
-  order: Order;
+//   @OneToMany(() => OrderItem, (orderItem) => orderItem.order, { cascade: true })
+//   orderItems: OrderItem[];
 
-  @ManyToOne(() => Product, { onDelete: "CASCADE" })
-  @JoinColumn({ name: "productId" })
-  product: Product;
+//   @Column({ type: "decimal", precision: 15, scale: 2 })
+//   totalAmount: number; // Tổng tiền sản phẩm
 
-  @Column()
-  quantity: number;
+//   @Column({ type: "decimal", precision: 15, scale: 2 })
+//   shippingFee: number; // Phí ship gốc
 
-  @Column({ type: "decimal", precision: 10, scale: 2 })
-  priceAtPurchase: number;
-}
+//   @Column({ type: "decimal", precision: 15, scale: 2, default: 0 })
+//   discountAmount: number; // Số tiền giảm giá
+
+//   @Column({ type: "decimal", precision: 15, scale: 2 })
+//   finalTotal: number; // Tổng tiền cuối cùng
+
+//   @Column({ type: "varchar", length: 50, default: "PENDING" })
+//   status: string; // PENDING, PAID, SHIPPED, DELIVERED, CANCELLED
+
+//   @Column({ type: "varchar", length: 255, nullable: true })
+//   paymentUrl: string; // URL thanh toán từ cổng thanh toán
+
+//   @CreateDateColumn()
+//   createdAt: Date;
+
+//   @UpdateDateColumn()
+//   updatedAt: Date;
+// }
+
+// @Entity()
+// export class OrderItem {
+//   @PrimaryGeneratedColumn()
+//   id: number;
+
+//   @ManyToOne(() => Order, (order) => order.orderItems)
+//   order: Order;
+
+//   @Column({ type: "int" })
+//   productId: number;
+
+//   @Column({ type: "varchar", length: 255 })
+//   name: string;
+
+//   @Column({ type: "int" })
+//   quantity: number;
+
+//   @Column({ type: "decimal", precision: 15, scale: 2 })
+//   price: number;
+
+//   @Column({ type: "decimal", precision: 15, scale: 2 })
+//   totalPrice: number;
+// }

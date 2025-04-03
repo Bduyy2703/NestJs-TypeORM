@@ -6,28 +6,28 @@ export class Discount {
   id: number;
 
   @Column({ type: "varchar", length: 255, unique: true })
-  name: string; 
+  name: string;
 
-  @Column({ type: "varchar", length: 255, nullable: true })
-  condition: string; 
+  @Column({ type: "enum", enum: ["SHIPPING", "TOTAL"], default: "TOTAL" })
+  condition: "SHIPPING" | "TOTAL";
 
   @Column({ type: "decimal", precision: 10, scale: 2 })
-  discountValue: number; 
+  discountValue: number;
 
   @Column({ type: "enum", enum: ["PERCENTAGE", "FIXED"], default: "FIXED" })
-  discountType: "PERCENTAGE" | "FIXED"; 
+  discountType: "PERCENTAGE" | "FIXED";
 
   @Column({ type: "int", default: 0 })
-  quantity: number; 
+  quantity: number;
 
   @Column({ type: "timestamp", nullable: true })
-  startDate: Date; 
+  startDate: Date;
 
   @Column({ type: "timestamp", nullable: true })
-  endDate: Date; 
+  endDate: Date;
 
   @Column({ type: "boolean", default: true })
-  isActive: boolean; 
+  isActive: boolean;
 
   @CreateDateColumn()
   createdAt: Date;

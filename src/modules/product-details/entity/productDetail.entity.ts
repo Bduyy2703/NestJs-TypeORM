@@ -53,8 +53,17 @@ export class ProductDetails {
   @Column({ type: "int", default: 0 })
   sold: number;
 
-  @Column({ nullable: true })
-  length?: string;
+  @Column({ type: "float", nullable: true }) // cm
+  length?: number;
+
+  @Column({ type: "float", nullable: true }) // cm
+  width?: number;
+
+  @Column({ type: "float", nullable: true }) // cm
+  height?: number;
+
+  @Column({ type: "float", nullable: true }) // gram
+  weight?: number;
 
   @Column({ nullable: true })
   care_instructions?: string;

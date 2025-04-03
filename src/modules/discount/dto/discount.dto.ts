@@ -4,14 +4,13 @@ import { Type, Expose } from "class-transformer";
 
 export class CreateDiscountDto {
   @ApiProperty({ example: "SALE50", description: "Tên mã giảm giá" })
-
   @Expose()
   name: string;
 
-  @ApiProperty({ example: "Giảm 50k cho đơn từ 500k", description: "Điều kiện áp dụng", required: false })
+  @ApiProperty({ example:"SHIPPING" , description: "Điều kiện áp dụng", required: false })
   @IsOptional()
   @Expose()
-  condition?: string;
+  condition?: "SHIPPING" | "TOTAL";
 
   @ApiProperty({ example: 50000, description: "Giá trị giảm giá" })
   @IsNumber()

@@ -2,7 +2,6 @@ import { Controller, Get, Post, Body, Param, Put, Delete, HttpStatus } from "@ne
 import { DiscountService } from "./discount.service";
 import { CreateDiscountDto, UpdateDiscountDto } from "./dto/discount.dto";
 import { ApiTags, ApiOperation, ApiParam, ApiSecurity, ApiResponse } from "@nestjs/swagger";
-import { ApplyDiscountDto } from "./dto/apply-discount.dto";
 import { Actions } from "src/cores/decorators/action.decorator";
 import { Objectcode } from "src/cores/decorators/objectcode.decorator";
 
@@ -58,14 +57,5 @@ export class DiscountController {
     @ApiResponse({ status: HttpStatus.OK, description: "Thành công" })
     remove(@Param("id") id: number) {
         return this.discountService.remove(id);
-    }
-
-    // apply the discount 
-    @Post("apply")
-    @Actions('execute')
-    @Objectcode('DISCOUNT01')
-    @ApiOperation({ summary: "Áp dụng mã giảm giá vào đơn hàng" })
-    async applyDiscount(@Body() dto: ApplyDiscountDto) {
-        return this.discountService.applyDiscount(dto);
     }
 }
