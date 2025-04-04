@@ -14,13 +14,15 @@ import {
   CalculateShippingFeeResponseDto,
   ApplyDiscountDto,
   ApplyDiscountResponseDto,
+  AvailableDiscountDto,
+  AvailableDiscountResponseDto,
 } from "./dto/shipping.dto";
 
 @ApiTags("Shipping") // Tag cho Swagger
 @ApiSecurity("JWT-auth") // Yêu cầu JWT authentication
 @Controller("shipping")
 export class ShippingController {
-  constructor(private shippingService: ShippingService) {}
+  constructor(private shippingService: ShippingService) { }
 
   @Post("calculate")
   @Objectcode("SHIP01")
@@ -54,12 +56,27 @@ export class ShippingController {
   })
   @ApiResponse({ status: 400, description: "Mã giảm giá không hợp lệ" })
   async applyDiscount(@Body() body: ApplyDiscountDto) {
-    const { checkoutItems, totalAmount, shippingFee, discountCodes } = body;
+    const { totalAmount, shippingFee, discountCodes } = body;
     return this.shippingService.applyDiscount(
-      checkoutItems,
       totalAmount,
       shippingFee,
       discountCodes
     );
   }
+
+  @Post("available-discounts")
+  @Objectcode("SHIP01")
+  @Actions("read")
+  @ApiOperation({ summary: "Lấy danh sách mã giảm giá áp dụng được" })
+  @ApiBody({ type: AvailableDiscountDto })
+  @ApiResponse({
+    status: 200,
+    description: "Danh sách mã giảm giá hợp lệ",
+    type: [AvailableDiscountResponseDto],
+  })
+  async getAvailableDiscounts(@Body() body: AvailableDiscountDto) {
+    const { totalAmount, shippingFee } = body;
+    return this.shippingService.getAvailableDiscounts(totalAmount, shippingFee);
+  }
+  
 }

@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class InitMigration1743584434745 implements MigrationInterface {
-    name = 'InitMigration1743584434745'
+export class InitMigration1743670223017 implements MigrationInterface {
+    name = 'InitMigration1743670223017'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`CREATE TABLE "object_entity" ("id" SERIAL NOT NULL, "code" character varying(30), "name" character varying(30), "createdDate" TIMESTAMP, "createdBy" character varying(50), "updatedDate" TIMESTAMP, "updatedBy" character varying(50), "isActive" boolean NOT NULL DEFAULT true, CONSTRAINT "UQ_492d3c96261431a899e894a8088" UNIQUE ("code"), CONSTRAINT "PK_48c917693356ae868326dda8c47" PRIMARY KEY ("id"))`);
@@ -21,14 +21,15 @@ export class InitMigration1743584434745 implements MigrationInterface {
         await queryRunner.query(`CREATE TYPE "public"."product_details_size_enum" AS ENUM('S', 'M', 'L', 'XL')`);
         await queryRunner.query(`CREATE TYPE "public"."product_details_color_enum" AS ENUM('Vàng', 'Vàng trắng', 'Vàng hồng', 'Bạc', 'Bạch kim')`);
         await queryRunner.query(`CREATE TYPE "public"."product_details_material_enum" AS ENUM('Vàng', 'Vàng trắng', 'Vàng hồng', 'Bạc', 'Bạch kim', 'Titan', 'Kim cương', 'Ngọc trai', 'Ngọc lục bảo', 'Hồng ngọc', 'Lam ngọc', 'Ngọc bích')`);
-        await queryRunner.query(`CREATE TABLE "product_details" ("id" SERIAL NOT NULL, "size" "public"."product_details_size_enum" NOT NULL, "color" "public"."product_details_color_enum" NOT NULL, "material" "public"."product_details_material_enum" NOT NULL, "stock" integer NOT NULL, "sold" integer NOT NULL DEFAULT '0', "length" character varying, "care_instructions" character varying, "stone_size" character varying, "stone_type" character varying, "design_style" character varying, "description" text, "productId" integer, "inventoryId" integer, CONSTRAINT "PK_a3fa8e2e94f3c37a8d731451de4" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "product_details" ("id" SERIAL NOT NULL, "size" "public"."product_details_size_enum" NOT NULL, "color" "public"."product_details_color_enum" NOT NULL, "material" "public"."product_details_material_enum" NOT NULL, "stock" integer NOT NULL, "sold" integer NOT NULL DEFAULT '0', "length" double precision, "width" double precision, "height" double precision, "weight" double precision, "care_instructions" character varying, "stone_size" character varying, "stone_type" character varying, "design_style" character varying, "description" text, "productId" integer, "inventoryId" integer, CONSTRAINT "PK_a3fa8e2e94f3c37a8d731451de4" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "cart_item" ("id" SERIAL NOT NULL, "quantity" integer NOT NULL DEFAULT '1', "cartId" integer, "productDetailsId" integer, CONSTRAINT "PK_bd94725aa84f8cf37632bcde997" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "cart" ("id" SERIAL NOT NULL, "isActive" boolean NOT NULL DEFAULT true, "userId" uuid, CONSTRAINT "REL_756f53ab9466eb52a52619ee01" UNIQUE ("userId"), CONSTRAINT "PK_c524ec48751b9b5bcfbf6e59be7" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "user" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "email" character varying NOT NULL, "password" character varying NOT NULL, "username" character varying, "roleId" integer NOT NULL, "isVerified" boolean NOT NULL DEFAULT false, "tokenOTP" character varying, CONSTRAINT "UQ_e12875dfb3b1d92d7d7c5377e22" UNIQUE ("email"), CONSTRAINT "PK_cace4a159ff9f2512dd42373760" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "blog" ("id" SERIAL NOT NULL, "title" character varying NOT NULL, "content" text NOT NULL, "createAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP, CONSTRAINT "PK_85c6532ad065a448e9de7638571" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "files" ("fileId" uuid NOT NULL DEFAULT uuid_generate_v4(), "bucketName" character varying NOT NULL, "fileName" character varying NOT NULL, "fileUrl" character varying NOT NULL, "targetId" integer NOT NULL, "targetType" character varying NOT NULL, CONSTRAINT "PK_25150aaac483703a4ade8353fc3" PRIMARY KEY ("fileId"))`);
+        await queryRunner.query(`CREATE TYPE "public"."discount_condition_enum" AS ENUM('SHIPPING', 'TOTAL')`);
         await queryRunner.query(`CREATE TYPE "public"."discount_discounttype_enum" AS ENUM('PERCENTAGE', 'FIXED')`);
-        await queryRunner.query(`CREATE TABLE "discount" ("id" SERIAL NOT NULL, "name" character varying(255) NOT NULL, "condition" character varying(255), "discountValue" numeric(10,2) NOT NULL, "discountType" "public"."discount_discounttype_enum" NOT NULL DEFAULT 'FIXED', "quantity" integer NOT NULL DEFAULT '0', "startDate" TIMESTAMP, "endDate" TIMESTAMP, "isActive" boolean NOT NULL DEFAULT true, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "UQ_e62a209370bcee8a188dbc4aeb4" UNIQUE ("name"), CONSTRAINT "PK_d05d8712e429673e459e7f1cddb" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "discount" ("id" SERIAL NOT NULL, "name" character varying(255) NOT NULL, "condition" "public"."discount_condition_enum" NOT NULL DEFAULT 'TOTAL', "discountValue" numeric(10,2) NOT NULL, "discountType" "public"."discount_discounttype_enum" NOT NULL DEFAULT 'FIXED', "quantity" integer NOT NULL DEFAULT '0', "startDate" TIMESTAMP, "endDate" TIMESTAMP, "isActive" boolean NOT NULL DEFAULT true, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "UQ_e62a209370bcee8a188dbc4aeb4" UNIQUE ("name"), CONSTRAINT "PK_d05d8712e429673e459e7f1cddb" PRIMARY KEY ("id"))`);
         await queryRunner.query(`ALTER TABLE "right_object" ADD CONSTRAINT "FK_823b3940be0dcf3d94f7af9ebaa" FOREIGN KEY ("rightId") REFERENCES "right"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
         await queryRunner.query(`ALTER TABLE "right_object" ADD CONSTRAINT "FK_cf3620793a485b2edbe27810552" FOREIGN KEY ("objectId") REFERENCES "object_entity"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
         await queryRunner.query(`ALTER TABLE "role_right" ADD CONSTRAINT "FK_e23a99abf5e82f31facf7efc1a4" FOREIGN KEY ("roleId") REFERENCES "role"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
@@ -72,6 +73,7 @@ export class InitMigration1743584434745 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "right_object" DROP CONSTRAINT "FK_823b3940be0dcf3d94f7af9ebaa"`);
         await queryRunner.query(`DROP TABLE "discount"`);
         await queryRunner.query(`DROP TYPE "public"."discount_discounttype_enum"`);
+        await queryRunner.query(`DROP TYPE "public"."discount_condition_enum"`);
         await queryRunner.query(`DROP TABLE "files"`);
         await queryRunner.query(`DROP TABLE "blog"`);
         await queryRunner.query(`DROP TABLE "user"`);

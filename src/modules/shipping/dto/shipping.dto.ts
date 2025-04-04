@@ -7,21 +7,9 @@ export class CheckoutItemDto {
   @IsNumber()
   productDetailId: number;
 
-  @ApiProperty({ description: "Tên sản phẩm", example: "Nhẫn" })
-  @IsString()
-  name: string;
-
   @ApiProperty({ description: "Số lượng", example: 2 })
   @IsNumber()
   quantity: number;
-
-  @ApiProperty({ description: "Giá sản phẩm", example: "900000.00" })
-  @IsString()
-  price: string;
-
-  @ApiProperty({ description: "Tổng giá sản phẩm", example: 1800000 })
-  @IsNumber()
-  totalPrice: number;
 }
 
 // DTO cho address
@@ -79,10 +67,6 @@ export class CalculateShippingFeeResponseDto {
 
 // DTO cho request của applyDiscount
 export class ApplyDiscountDto {
-  @ApiProperty({ description: "Danh sách sản phẩm", type: [CheckoutItemDto] })
-  @IsArray()
-  checkoutItems: CheckoutItemDto[];
-
   @ApiProperty({ description: "Tổng tiền sản phẩm", example: 8100000 })
   @IsNumber()
   totalAmount: number;
@@ -116,4 +100,49 @@ export class ApplyDiscountResponseDto {
 
   @ApiProperty({ description: "Tổng tiền cuối cùng", example: 7290000 })
   finalTotal: number;
+}
+
+export class AvailableDiscountDto {
+  @ApiProperty({
+    description: "Tổng tiền sản phẩm (không bao gồm phí ship)",
+    example: 1000000,
+  })
+  @IsNumber()
+  totalAmount: number;
+
+  @ApiProperty({
+    description: "Phí giao hàng hiện tại",
+    example: 30000,
+  })
+  @IsNumber()
+  shippingFee: number;
+}
+
+export class AvailableDiscountResponseDto {
+  @ApiProperty({ example: 1, description: "ID mã giảm giá" })
+  id: number;
+
+  @ApiProperty({ example: "FREESHIP", description: "Tên mã giảm giá" })
+  name: string;
+
+  @ApiProperty({ example: "SHIPPING", description: "Loại điều kiện áp dụng" })
+  condition: "SHIPPING" | "TOTAL";
+
+  @ApiProperty({ example: 10, description: "Giá trị giảm" })
+  discountValue: number;
+
+  @ApiProperty({ example: "PERCENTAGE", description: "Loại giảm giá" })
+  discountType: "PERCENTAGE" | "FIXED";
+
+  @ApiProperty({ example: 5, description: "Số lượng còn lại" })
+  quantity: number;
+
+  @ApiProperty({ example: true, description: "Trạng thái hoạt động" })
+  isActive: boolean;
+
+  @ApiProperty({ example: "2025-04-01T00:00:00.000Z", description: "Ngày bắt đầu" })
+  startDate: Date;
+
+  @ApiProperty({ example: "2025-04-15T23:59:59.000Z", description: "Ngày kết thúc" })
+  endDate: Date;
 }
