@@ -92,11 +92,11 @@ export class ApplyDiscountResponseDto {
   @ApiProperty({ description: "Phí ship sau giảm giá", example: 0 })
   shippingFeeAfterDiscount: number;
 
-  @ApiProperty({ description: "Số tiền giảm giá cho tổng hóa đơn", example: 810000 })
-  discountAmount: number;
-
   @ApiProperty({ description: "Tổng tiền sản phẩm", example: 8100000 })
   totalAmount: number;
+
+  @ApiProperty({ description: "Số tiền giảm giá cho tổng hóa đơn", example: 810000 })
+  discountAmount: number;
 
   @ApiProperty({ description: "Tổng tiền cuối cùng", example: 7290000 })
   finalTotal: number;

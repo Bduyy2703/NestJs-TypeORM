@@ -26,7 +26,7 @@ export class ShippingController {
 
   @Post("calculate")
   @Objectcode("SHIP01")
-  @Actions("create")
+  @Actions("execute")
   @ApiOperation({ summary: "Tính phí giao hàng dựa trên địa chỉ" })
   @ApiBody({ type: CalculateShippingFeeDto })
   @ApiResponse({
@@ -46,7 +46,7 @@ export class ShippingController {
 
   @Post("apply-discount")
   @Objectcode("SHIP01")
-  @Actions("create")
+  @Actions("execute")
   @ApiOperation({ summary: "Áp dụng mã giảm giá cho đơn hàng" })
   @ApiBody({ type: ApplyDiscountDto })
   @ApiResponse({
@@ -66,7 +66,7 @@ export class ShippingController {
 
   @Post("available-discounts")
   @Objectcode("SHIP01")
-  @Actions("read")
+  @Actions("execute")
   @ApiOperation({ summary: "Lấy danh sách mã giảm giá áp dụng được" })
   @ApiBody({ type: AvailableDiscountDto })
   @ApiResponse({

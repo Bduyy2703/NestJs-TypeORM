@@ -275,11 +275,12 @@ export class ShippingService {
         let shippingDiscountApplied = false;
         let totalDiscountApplied = false;
 
+        let discoutId = [];
         // Xử lý từng mã giảm giá
         for (const discountCode of discountCodes) {
             const discount = await this.discountRepo.findOne({ where: { name: discountCode, isActive: true } });
             const currentDate = new Date(); // Ngày hiện tại
-
+    
             // Kiểm tra mã giảm giá có hợp lệ không
             if (!discount) {
                 throw new BadRequestException(`Mã giảm giá ${discountCode} không tồn tại`);
@@ -317,26 +318,27 @@ export class ShippingService {
             if (discount.condition === "SHIPPING" && !shippingDiscountApplied) {
                 shippingFeeAfterDiscount = Math.max(0, shippingFee - appliedDiscountValue);
                 shippingDiscountApplied = true;
-                discount.quantity -= 1;
-                await this.discountRepo.save(discount);
             } else if (discount.condition === "TOTAL" && !totalDiscountApplied) {
                 discountAmount = appliedDiscountValue;
                 totalDiscountApplied = true;
-                discount.quantity -= 1;
-                await this.discountRepo.save(discount);
             } else {
                 throw new BadRequestException(`Không thể áp dụng mã ${discountCode}: Đã dùng mã cho ${discount.condition === "SHIPPING" ? "phí ship" : "tổng tiền"}`);
             }
+            discoutId.push(discount.id)
         }
 
         const finalTotal = (totalAmount - discountAmount) + shippingFeeAfterDiscount;
-
+        const shippedApply = shippingFee - shippingFeeAfterDiscount
+        const totalAfterDiscount = (totalAmount - discountAmount)
         return {
             message: "Áp dụng mã giảm giá thành công",
+            discoutId,
             shippingFee,              // Phí ship gốc
-            shippingFeeAfterDiscount, // Phí ship sau giảm giá
-            discountAmount,           // Số tiền giảm giá cho tổng hóa đơn
-            totalAmount,              // Tổng tiền sản phẩm
+            shippedApply, // Phí ship được giảm giảm giá
+            shippingFeeAfterDiscount,
+            totalAmount,
+            discountAmount,   // Số tiền giảm giá cho tổng hóa đơn
+            totalAfterDiscount,        
             finalTotal,               // Tổng tiền cuối cùng
         };
     }
