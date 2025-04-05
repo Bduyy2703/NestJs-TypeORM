@@ -46,7 +46,7 @@ export class ProductService {
     // Nếu có chiến lược giảm giá, thêm vào bảng trung gian
     if (strategySaleIds && strategySaleIds.length > 0) {
       const strategySales = await this.strategySaleRepository.find({
-        where: { id: In(strategySaleIds) }, // Kiểm tra theo id của StrategySale
+        where: { id: In(strategySaleIds) , isActive:false}, // Kiểm tra theo id của StrategySale
       });
 
       if (strategySales.length !== strategySaleIds.length) {

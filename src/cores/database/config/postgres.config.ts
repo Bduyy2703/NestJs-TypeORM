@@ -23,6 +23,8 @@ import { Cart } from '../../../modules/cart/entity/cart.entity';
 import { CartItem } from 'src/modules/cart/entity/cartItem.entity';
 import { ProductStrategySale } from 'src/modules/strategySale/entity/productSale.entity';
 import { CategoryStrategySale } from 'src/modules/strategySale/entity/categorySale.entity';
+import { Invoice } from 'src/modules/invoice/entity/invoice.entity';
+import { InvoiceItem } from 'src/modules/invoice/entity/invoiceItem.entity';
 
 @Module({
   imports: [
@@ -44,7 +46,7 @@ import { CategoryStrategySale } from 'src/modules/strategySale/entity/categorySa
             type: 'postgres',
             url: databaseUrl,
             entities: [
-              Cart, CartItem, StrategySale, ProductStrategySale, CategoryStrategySale,
+              Invoice,InvoiceItem,Cart, CartItem, StrategySale, ProductStrategySale, CategoryStrategySale,
               Discount, ProductDetails, Inventory, Product, Category, Address, User,
               Role, Blog, Notification, Object_entity, Profile, Right, RightObject,
               RoleRight, Token, File,
@@ -65,7 +67,7 @@ import { CategoryStrategySale } from 'src/modules/strategySale/entity/categorySa
           password: configService.get<string>('DEV_DB_PASSWORD'),
           database: configService.get<string>('DEV_DB_DATABASE'),
           entities: [
-            Cart, CartItem, StrategySale, ProductStrategySale, CategoryStrategySale,
+            InvoiceItem,Invoice,Cart, CartItem, StrategySale, ProductStrategySale, CategoryStrategySale,
             Discount, ProductDetails, Inventory, Product, Category, Address, User,
             Role, Blog, Notification, Object_entity, Profile, Right, RightObject,
             RoleRight, Token, File,
