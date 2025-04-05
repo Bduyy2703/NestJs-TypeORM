@@ -111,6 +111,19 @@ export class CartService {
     return this.cartItemRepo.remove(cartItem);
   }
 
+  async findCartItemByProductDetailId(userId: string, productDetailId: number): Promise<CartItem | null> {
+    const cartItem = await this.cartItemRepo.findOne({
+        where: {
+            productDetails: { id: productDetailId },
+            cart: {
+                user: { id: userId },
+            },
+        },
+        relations: ['cart', 'cart.user'], // Tải quan hệ cart và user
+    });
+    return cartItem || null;
+}
+
   // Xóa toàn bộ giỏ hàng
   async clearCart(user: User) {
     const cart = await this.cartRepo.findOne({ where: { user }, relations: ["cartItems"] });
@@ -134,7 +147,7 @@ export class CartService {
     const user_cart = await this.userRepo.findOne({ where: { id: user.userId } })
     // Lấy giỏ hàng của user
     const cart = await this.cartRepo.findOne({
-      where: { user:user_cart },
+      where: { user: user_cart },
       relations: ["cartItems", "cartItems.productDetails", "cartItems.productDetails.product"],
     });
 
@@ -152,6 +165,8 @@ export class CartService {
         throw new BadRequestException(`Sản phẩm ${item.productId} không có trong giỏ hàng`);
       }
 
+      console.log(cartItem.quantity)
+      console.log(item.quantity)
       if (cartItem.quantity < item.quantity) {
         throw new BadRequestException(`Sản phẩm ${item.productId} số lượng không đủ`);
       }
@@ -180,7 +195,7 @@ export class CartService {
         totalPrice,
       });
     }
-    const usercheckout = await this.userRepo.findOne({ where: { id: user.userId } , relations:["profile","addresses"] })
+    const usercheckout = await this.userRepo.findOne({ where: { id: user.userId }, relations: ["profile", "addresses"] })
     return {
       message: "Xác nhận đơn hàng thành công",
       usercheckout,
