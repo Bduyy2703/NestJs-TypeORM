@@ -90,45 +90,40 @@ export class CartService {
     return cartItem.quantity, cartItem.productDetails;
   }
 
-  // Cập nhật số lượng sản phẩm trong giỏ hàng
-  async updateCartItem(cartItemId: number, dto: UpdateCartItemDto) {
+
+  async updateCartItem(cartItemId: number, dto: UpdateCartItemDto): Promise<{ message: string; cartItem?: CartItem }> {
     const cartItem = await this.cartItemRepo.findOne({ where: { id: cartItemId }, relations: ["productDetails"] });
-    if (!cartItem) throw new NotFoundException("Sản phẩm không có trong giỏ hàng");
+    if (!cartItem) {
+        throw new NotFoundException("Sản phẩm không có trong giỏ hàng");
+    }
+
+    if (dto.quantity < 0) {
+        throw new BadRequestException("Số lượng không được nhỏ hơn 0");
+    }
 
     if (dto.quantity > cartItem.productDetails.stock) {
-      throw new BadRequestException(`Không thể cập nhật, số lượng vượt quá kho`);
+        throw new BadRequestException(`Không thể cập nhật, số lượng vượt quá kho`);
+    }
+
+    if (dto.quantity === 0) {
+        await this.cartItemRepo.remove(cartItem);
+        return { message: "Sản phẩm đã được xóa khỏi giỏ hàng vì số lượng bằng 0" };
     }
 
     cartItem.quantity = dto.quantity;
-    return this.cartItemRepo.save(cartItem);
-  }
+    const updatedCartItem = await this.cartItemRepo.save(cartItem);
+    return { message: "Đã cập nhật số lượng sản phẩm", cartItem: updatedCartItem };
+}
 
   // Xóa sản phẩm khỏi giỏ hàng
-  async removeCartItem(cartItemId: number, quantityToRemove: number): Promise<{ message: string; newQuantity?: number }> {
-    // Tìm CartItem theo ID
+  async removeCartItem(cartItemId: number): Promise<{ message: string; newQuantity?: number }>{
     const cartItem = await this.cartItemRepo.findOne({ where: { id: cartItemId } });
     if (!cartItem) {
         throw new NotFoundException("Sản phẩm không tồn tại");
     }
 
-    // Kiểm tra quantityToRemove có hợp lệ không
-    if (quantityToRemove <= 0) {
-        throw new BadRequestException("Số lượng cần giảm phải lớn hơn 0");
-    }
-
-    // Tính số lượng mới sau khi giảm
-    const newQuantity = cartItem.quantity - quantityToRemove;
-
-    if (newQuantity <= 0) {
-        // Nếu số lượng mới <= 0, xóa CartItem
-        await this.cartItemRepo.remove(cartItem);
-        return { message: "Sản phẩm đã được xóa khỏi giỏ hàng vì số lượng bằng 0" };
-    } else {
-        // Nếu số lượng mới > 0, cập nhật quantity và lưu lại
-        cartItem.quantity = newQuantity;
-        await this.cartItemRepo.save(cartItem);
-        return { message: "Đã giảm số lượng sản phẩm", newQuantity: cartItem.quantity };
-    }
+    await this.cartItemRepo.remove(cartItem);
+    return { message: "Sản phẩm đã được xóa khỏi giỏ hàng" };
 }
 
   async findCartItemByProductDetailId(userId: string, productDetailId: number): Promise<CartItem | null> {

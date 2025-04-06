@@ -11,6 +11,7 @@ import { CreateInvoiceDto, InvoiceResponseDto } from "./dto/invoice.dto";
 import { VnpayService } from "./service/vnpay.service";
 import { PaymentMethod } from "./dto/payment.dto";
 import { CartService } from "../cart/cart.service";
+import { UpdateCartItemDto } from "../cart/dto/update-cartItem.dto";
 
 @Injectable()
 export class PaymentService {
@@ -256,9 +257,11 @@ export class PaymentService {
             for (const item of productDetails) {
                 const cartItem = await this.cartService.findCartItemByProductDetailId(userId, item.productDetailId);
                 if (cartItem) {
-                    // Truyền quantity từ productDetails vào removeCartItem
-                    await this.cartService.removeCartItem(cartItem.id, item.quantity);
-                    this.logger.log(`Processed cart item with ID ${cartItem.id} for user ${userId}. Quantity removed: ${item.quantity}`);
+                    // Tính số lượng mới: số lượng hiện tại trừ đi số lượng đặt hàng
+                    const newQuantity = cartItem.quantity - item.quantity;
+                    const dto: UpdateCartItemDto = { quantity: newQuantity };
+                    await this.cartService.updateCartItem(cartItem.id, dto);
+                    this.logger.log(`Updated cart item with ID ${cartItem.id} for user ${userId}. New quantity: ${newQuantity}`);
                 }
             }
             // 9. Xử lý thanh toán
