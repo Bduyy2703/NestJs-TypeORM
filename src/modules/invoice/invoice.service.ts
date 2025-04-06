@@ -132,7 +132,7 @@ export class InvoiceService {
         };
     }
 
-    // 7. Thống kê sản phẩm bán chạy
+    // 7. Thống kê sản phẩm bán chạy (fix Best selling product statistics)
     async getTopProducts(startDate: string, endDate: string, limit: number): Promise<TopProductStatisticsDto[]> {
         const start = new Date(startDate);
         const end = new Date(endDate);
@@ -168,7 +168,7 @@ export class InvoiceService {
         }));
     }
 
-    // 8. Thống kê khách hàng chi tiêu nhiều nhất
+    // 8. Thống kê khách hàng chi tiêu nhiều nhất (fix and caculatormoney of userIduserId , use stock,sold of productproduct)
     async getTopCustomers(startDate: string, endDate: string, limit: number): Promise<TopCustomerStatisticsDto[]> {
         const start = new Date(startDate);
         const end = new Date(endDate);
@@ -202,7 +202,7 @@ export class InvoiceService {
         }));
     }
 
-    // 9. Thống kê doanh thu theo phương thức thanh toán
+    // 9. Thống kê doanh thu theo phương thức thanh toán(fix get all statusstatus)
     async getPaymentMethodStatistics(startDate: string, endDate: string): Promise<PaymentMethodStatisticsDto[]> {
         const start = new Date(startDate);
         const end = new Date(endDate);
