@@ -7,7 +7,7 @@ import { Address } from "../address/entity/address.entity";
 import { User } from "../users/entities/user.entity";
 import { Invoice } from "../invoice/entity/invoice.entity";
 import { InvoiceItem } from "../invoice/entity/invoiceItem.entity";
-import { CreateInvoiceDto, InvoiceResponseDto } from "../invoice/dto/invoice.dto";
+import { CreateInvoiceDto, InvoiceResponseDto } from "./dto/invoice.dto";
 import { VnpayService } from "./service/vnpay.service";
 import { PaymentMethod } from "./dto/payment.dto";
 import { CartService } from "../cart/cart.service";
@@ -249,6 +249,7 @@ export class PaymentService {
             invoiceItems.forEach(item => {
                 item.invoiceId = invoice.id;
                 item.price = parseInt(item.price.toString());
+                item.subTotal = item.price * item.quantity
             });
             await transactionalEntityManager.save(InvoiceItem, invoiceItems);
             // 9. Xóa các sản phẩm trong giỏ hàng của người dùng
@@ -282,7 +283,13 @@ export class PaymentService {
         });
     }
 
-    async processVnpayIpn(params: any): Promise<{ rspCode: string; message: string; invoice: Invoice }> {
+    async processVnpayIpn(params: any): Promise<{ 
+        rspCode: string; 
+        message: string; 
+        invoice: Invoice; 
+        redirectUrl: string;
+      }> {
+      
         return this.vnpayService.processVnpayIpn(params);
     }
 

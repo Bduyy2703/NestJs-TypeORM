@@ -395,7 +395,7 @@ export class RightObjectSeeder implements Seeder {
                 rightId: rights[1].id,
                 objectId: objects[18].id,
                 createYn: false,
-                readYn: true,
+                readYn: false,
                 updateYn: false,
                 deleteYn: false,
                 executeYn: true,

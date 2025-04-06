@@ -12,11 +12,12 @@ export class VnpayService {
     private readonly vnp_HashSecret = process.env.VNP_HASHSECRET;
     private readonly vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
     private readonly vnp_ReturnUrl = "http://localhost:3000/api/v1/payment/vnpay-ipn"; // Cần thay đổi theo môi trường thực tế
-
+    private readonly frontendSuccessUrl = "http://localhost:3000/payment-success";
+    private readonly frontendFailUrl = "http://localhost:3000/payment-fail"
     constructor(
         @InjectRepository(Invoice)
         private invoiceRepo: Repository<Invoice>
-    ) {}
+    ) { }
 
     async processVnpayPayment(invoice: Invoice, amount: number): Promise<string> {
         const date = new Date();
@@ -49,13 +50,13 @@ export class VnpayService {
         return vnpUrl;
     }
 
-    async processVnpayIpn(params: any): Promise<{ rspCode: string; message: string; invoice: Invoice }> {
+    async processVnpayIpn(params: any): Promise<{ rspCode: string; message: string; invoice: Invoice; redirectUrl: string; }> {
         const { secureHash, signed, vnp_Params } = this.signedParams(params);
 
         // Kiểm tra tính hợp lệ của mã hash
         if (secureHash !== signed) {
             this.logger.error('Invalid hash in VNPay IPN');
-            return { rspCode: '97', message: 'Mã hash không hợp lệ', invoice: null };
+            return { rspCode: '97', message: 'Mã hash không hợp lệ', invoice: null ,redirectUrl:null};
         }
 
         const rspCode = vnp_Params['vnp_ResponseCode'];
@@ -65,32 +66,37 @@ export class VnpayService {
         const invoice = await this.invoiceRepo.findOne({ where: { id: parseInt(orderId) } });
         if (!invoice) {
             this.logger.error(`Invoice ${orderId} not found in VNPay IPN`);
-            return { rspCode: '01', message: 'Hóa đơn không tồn tại', invoice: null };
+            return { rspCode: '01', message: 'Hóa đơn không tồn tại', invoice: null,redirectUrl:null };
         }
 
         // Kiểm tra số tiền
         if (amount !== invoice.finalTotal) {
             this.logger.error(`Amount mismatch in VNPay IPN for invoice ${orderId}`);
-            return { rspCode: '04', message: 'Số tiền không khớp', invoice };
+            return { rspCode: '04', message: 'Số tiền không khớp', invoice ,redirectUrl:null};
         }
 
         let message = '';
+        let redirectUrl = '';
         switch (rspCode) {
             case '00': // Thanh toán thành công
                 message = "Thanh toán thành công";
                 invoice.status = "PAID";
+                redirectUrl = `${this.frontendSuccessUrl}?invoiceId=${invoice.id}`;
                 break;
             case '24': // Giao dịch đã bị hủy
                 message = "Giao dịch đã bị hủy";
                 invoice.status = "CANCELLED";
+                redirectUrl = this.frontendFailUrl;
                 break;
             case '01': // Giao dịch đang chờ xử lý
                 message = "Giao dịch đang chờ xử lý";
                 invoice.status = "PENDING";
+                redirectUrl = this.frontendFailUrl;
                 break;
             default: // Các trường hợp khác
                 message = "Thanh toán thất bại";
                 invoice.status = "FAILED";
+                redirectUrl = this.frontendFailUrl;
                 break;
         }
 
@@ -98,7 +104,7 @@ export class VnpayService {
         await this.invoiceRepo.save(invoice);
         this.logger.log(`Invoice ${orderId} updated to status ${invoice.status} via VNPay IPN`);
 
-        return { rspCode, message, invoice };
+        return { rspCode, message, invoice, redirectUrl };
     }
 
     private sortObject(obj: { [key: string]: any }): { [key: string]: any } {

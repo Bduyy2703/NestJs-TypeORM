@@ -26,4 +26,7 @@ export class InvoiceItem {
 
   @Column()
   price: number;
+
+  @Column()
+  subTotal: number
 }

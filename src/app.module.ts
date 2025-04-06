@@ -32,6 +32,7 @@ import { CartModule } from './modules/cart/cart.module';
 import { SaleStrategyModule } from './modules/strategySale/sale.module';
 import { ShippingModule } from './modules/shipping/shipping.module';
 import { PaymentModule } from './modules/payment/paymentmodule';
+import { InvoiceModule } from './modules/invoice/invoice.module';
 @Module({
   imports: [
     AuthModule,
@@ -60,6 +61,7 @@ import { PaymentModule } from './modules/payment/paymentmodule';
     SaleStrategyModule,
     ShippingModule,
     PaymentModule,
+    InvoiceModule,
   ],
   controllers: [AppController],
   providers: [

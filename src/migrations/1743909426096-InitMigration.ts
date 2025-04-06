@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class InitMigration1743761629413 implements MigrationInterface {
-    name = 'InitMigration1743761629413'
+export class InitMigration1743909426096 implements MigrationInterface {
+    name = 'InitMigration1743909426096'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`CREATE TABLE "object_entity" ("id" SERIAL NOT NULL, "code" character varying(30), "name" character varying(30), "createdDate" TIMESTAMP, "createdBy" character varying(50), "updatedDate" TIMESTAMP, "updatedBy" character varying(50), "isActive" boolean NOT NULL DEFAULT true, CONSTRAINT "UQ_492d3c96261431a899e894a8088" UNIQUE ("code"), CONSTRAINT "PK_48c917693356ae868326dda8c47" PRIMARY KEY ("id"))`);
@@ -31,7 +31,7 @@ export class InitMigration1743761629413 implements MigrationInterface {
         await queryRunner.query(`CREATE TYPE "public"."discount_discounttype_enum" AS ENUM('PERCENTAGE', 'FIXED')`);
         await queryRunner.query(`CREATE TABLE "discount" ("id" SERIAL NOT NULL, "name" character varying(255) NOT NULL, "condition" "public"."discount_condition_enum" NOT NULL DEFAULT 'TOTAL', "discountValue" numeric(10,2) NOT NULL, "discountType" "public"."discount_discounttype_enum" NOT NULL DEFAULT 'FIXED', "quantity" integer NOT NULL DEFAULT '0', "startDate" TIMESTAMP, "endDate" TIMESTAMP, "isActive" boolean NOT NULL DEFAULT true, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "UQ_e62a209370bcee8a188dbc4aeb4" UNIQUE ("name"), CONSTRAINT "PK_d05d8712e429673e459e7f1cddb" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "invoice" ("id" SERIAL NOT NULL, "userId" uuid NOT NULL, "addressId" integer NOT NULL, "paymentMethod" character varying NOT NULL, "totalProductAmount" integer NOT NULL, "shippingFee" integer NOT NULL, "shippingFeeDiscount" integer NOT NULL, "productDiscount" integer NOT NULL, "finalTotal" integer NOT NULL, "status" character varying NOT NULL, "createdAt" TIMESTAMP NOT NULL, "updatedAt" TIMESTAMP NOT NULL, CONSTRAINT "PK_15d25c200d9bcd8a33f698daf18" PRIMARY KEY ("id"))`);
-        await queryRunner.query(`CREATE TABLE "invoice_item" ("id" SERIAL NOT NULL, "invoiceId" integer NOT NULL, "productDetailId" integer NOT NULL, "quantity" integer NOT NULL, "price" integer NOT NULL, CONSTRAINT "PK_621317346abdf61295516f3cb76" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "invoice_item" ("id" SERIAL NOT NULL, "invoiceId" integer NOT NULL, "productDetailId" integer NOT NULL, "quantity" integer NOT NULL, "price" integer NOT NULL, "subTotal" integer NOT NULL, CONSTRAINT "PK_621317346abdf61295516f3cb76" PRIMARY KEY ("id"))`);
         await queryRunner.query(`ALTER TABLE "right_object" ADD CONSTRAINT "FK_823b3940be0dcf3d94f7af9ebaa" FOREIGN KEY ("rightId") REFERENCES "right"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
         await queryRunner.query(`ALTER TABLE "right_object" ADD CONSTRAINT "FK_cf3620793a485b2edbe27810552" FOREIGN KEY ("objectId") REFERENCES "object_entity"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
         await queryRunner.query(`ALTER TABLE "role_right" ADD CONSTRAINT "FK_e23a99abf5e82f31facf7efc1a4" FOREIGN KEY ("roleId") REFERENCES "role"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);

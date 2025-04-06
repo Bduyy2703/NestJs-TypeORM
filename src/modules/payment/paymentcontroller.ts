@@ -1,6 +1,6 @@
 import { Controller, Post, Body, Get, Query } from "@nestjs/common";
 import { ApiOperation, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
-import { CreateInvoiceDto, InvoiceResponseDto } from "../invoice/dto/invoice.dto";
+import { CreateInvoiceDto, InvoiceResponseDto } from "./dto/invoice.dto";
 import { RetryPaymentDto } from "./dto/retry-payment.dto";
 import { PaymentService } from './paymentservice';
 import { Objectcode } from "src/cores/decorators/objectcode.decorator";
