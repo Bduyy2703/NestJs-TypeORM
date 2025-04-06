@@ -53,7 +53,6 @@ export class VnpayService {
     async processVnpayIpn(params: any): Promise<{ rspCode: string; message: string; invoice: Invoice | null; redirectUrl: string | null }> {
         const { secureHash, signed, vnp_Params } = this.signedParams(params);
     
-        // Kiểm tra tính hợp lệ của mã hash
         if (secureHash !== signed) {
             this.logger.error('Invalid hash in VNPay IPN');
             return { rspCode: '97', message: 'Mã hash không hợp lệ', invoice: null, redirectUrl: null };
@@ -63,25 +62,20 @@ export class VnpayService {
         const orderId = vnp_Params['vnp_OrderInfo'];
         const amount = parseFloat(vnp_Params['vnp_Amount']) / 100;
     
-        // Log giá trị vnp_Params và orderId
         this.logger.log(`vnp_Params: ${JSON.stringify(vnp_Params)}`);
         this.logger.log(`orderId: ${orderId}, type: ${typeof orderId}`);
     
-        // Kiểm tra orderId hợp lệ
         if (!orderId) {
             this.logger.error('Missing orderId in VNPay IPN');
             return { rspCode: '99', message: 'Thiếu thông tin hóa đơn', invoice: null, redirectUrl: null };
         }
     
-        // Chuyển orderId thành số
         const idinvoice = parseInt(orderId);
         this.logger.log(`idinvoice: ${idinvoice}, type: ${typeof idinvoice}`);
     
-        // Thử tìm hóa đơn bằng findOne
         let invoice = await this.invoiceRepo.findOne({ where: { id: idinvoice } });
         this.logger.log(`Invoice (findOne): ${JSON.stringify(invoice)}`);
     
-        // Nếu không tìm thấy, thử truy vấn thủ công bằng createQueryBuilder
         if (!invoice) {
             this.logger.log(`Trying to find invoice with createQueryBuilder...`);
             invoice = await this.invoiceRepo
@@ -91,13 +85,21 @@ export class VnpayService {
             this.logger.log(`Invoice (createQueryBuilder): ${JSON.stringify(invoice)}`);
         }
     
-        // Nếu vẫn không tìm thấy
+        // Thử raw query
+        if (!invoice) {
+            this.logger.log(`Trying raw query...`);
+            const rawResult = await this.invoiceRepo.query(`SELECT * FROM invoice WHERE id = $1`, [idinvoice]);
+            this.logger.log(`Raw query result: ${JSON.stringify(rawResult)}`);
+            if (rawResult && rawResult.length > 0) {
+                invoice = rawResult[0]; // Cần ánh xạ thủ công nếu cần
+            }
+        }
+    
         if (!invoice) {
             this.logger.error(`Invoice ${orderId} not found in VNPay IPN`);
             return { rspCode: '01', message: 'Hóa đơn không tồn tại', invoice: null, redirectUrl: null };
         }
     
-        // Kiểm tra trạng thái hóa đơn để tránh xử lý trùng lặp
         if (invoice.status === 'PAID') {
             this.logger.warn(`Invoice ${orderId} already processed (status: PAID)`);
             return {
@@ -108,7 +110,6 @@ export class VnpayService {
             };
         }
     
-        // Kiểm tra số tiền
         if (amount !== invoice.finalTotal) {
             this.logger.error(`Amount mismatch in VNPay IPN for invoice ${orderId}. Expected: ${invoice.finalTotal}, Received: ${amount}`);
             return { rspCode: '04', message: 'Số tiền không khớp', invoice, redirectUrl: null };
@@ -117,22 +118,22 @@ export class VnpayService {
         let message = '';
         let redirectUrl: string | null = null;
         switch (rspCode) {
-            case '00': // Thanh toán thành công
+            case '00':
                 message = "Thanh toán thành công";
                 invoice.status = "PAID";
                 redirectUrl = `${this.frontendSuccessUrl}?invoiceId=${invoice.id}`;
                 break;
-            case '24': // Giao dịch đã bị hủy
+            case '24':
                 message = "Giao dịch đã bị hủy";
                 invoice.status = "CANCELLED";
                 redirectUrl = this.frontendFailUrl;
                 break;
-            case '01': // Giao dịch đang chờ xử lý
+            case '01':
                 message = "Giao dịch đang chờ xử lý";
                 invoice.status = "PENDING";
                 redirectUrl = this.frontendFailUrl;
                 break;
-            default: // Các trường hợp khác
+            default:
                 message = "Thanh toán thất bại";
                 invoice.status = "FAILED";
                 redirectUrl = this.frontendFailUrl;
