@@ -104,12 +104,32 @@ export class CartService {
   }
 
   // Xóa sản phẩm khỏi giỏ hàng
-  async removeCartItem(cartItemId: number) {
+  async removeCartItem(cartItemId: number, quantityToRemove: number): Promise<{ message: string; newQuantity?: number }> {
+    // Tìm CartItem theo ID
     const cartItem = await this.cartItemRepo.findOne({ where: { id: cartItemId } });
-    if (!cartItem) throw new NotFoundException("Sản phẩm không tồn tại");
+    if (!cartItem) {
+        throw new NotFoundException("Sản phẩm không tồn tại");
+    }
 
-    return this.cartItemRepo.remove(cartItem);
-  }
+    // Kiểm tra quantityToRemove có hợp lệ không
+    if (quantityToRemove <= 0) {
+        throw new BadRequestException("Số lượng cần giảm phải lớn hơn 0");
+    }
+
+    // Tính số lượng mới sau khi giảm
+    const newQuantity = cartItem.quantity - quantityToRemove;
+
+    if (newQuantity <= 0) {
+        // Nếu số lượng mới <= 0, xóa CartItem
+        await this.cartItemRepo.remove(cartItem);
+        return { message: "Sản phẩm đã được xóa khỏi giỏ hàng vì số lượng bằng 0" };
+    } else {
+        // Nếu số lượng mới > 0, cập nhật quantity và lưu lại
+        cartItem.quantity = newQuantity;
+        await this.cartItemRepo.save(cartItem);
+        return { message: "Đã giảm số lượng sản phẩm", newQuantity: cartItem.quantity };
+    }
+}
 
   async findCartItemByProductDetailId(userId: string, productDetailId: number): Promise<CartItem | null> {
     const cartItem = await this.cartItemRepo.findOne({

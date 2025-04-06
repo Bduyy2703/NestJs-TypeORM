@@ -64,6 +64,7 @@ export class VnpayService {
         const amount = parseFloat(vnp_Params['vnp_Amount']) / 100;
 
         const invoice = await this.invoiceRepo.findOne({ where: { id: parseInt(orderId) } });
+        console.log('invoice',invoice)
         if (!invoice) {
             this.logger.error(`Invoice ${orderId} not found in VNPay IPN`);
             return { rspCode: '01', message: 'Hóa đơn không tồn tại', invoice: null,redirectUrl:null };

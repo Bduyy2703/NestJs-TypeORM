@@ -256,8 +256,9 @@ export class PaymentService {
             for (const item of productDetails) {
                 const cartItem = await this.cartService.findCartItemByProductDetailId(userId, item.productDetailId);
                 if (cartItem) {
-                    await this.cartService.removeCartItem(cartItem.id);
-                    this.logger.log(`Removed cart item with ID ${cartItem.id} for user ${userId}`);
+                    // Truyền quantity từ productDetails vào removeCartItem
+                    await this.cartService.removeCartItem(cartItem.id, item.quantity);
+                    this.logger.log(`Processed cart item with ID ${cartItem.id} for user ${userId}. Quantity removed: ${item.quantity}`);
                 }
             }
             // 9. Xử lý thanh toán
