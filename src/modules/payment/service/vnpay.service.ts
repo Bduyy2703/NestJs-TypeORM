@@ -68,7 +68,7 @@ export class VnpayService {
 
         console.log('orderId',parseInt(orderId),typeof parseInt(orderId))
         const idinvoice = parseInt(orderId)
-
+        console.log('orderId',idinvoice,typeof idinvoice)
         const invoice = await this.invoiceRepo.findOne({ where: { id: idinvoice } });
         console.log('invoice',invoice)
         if (!invoice) {
