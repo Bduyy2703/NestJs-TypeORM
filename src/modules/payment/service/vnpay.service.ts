@@ -50,39 +50,72 @@ export class VnpayService {
         return vnpUrl;
     }
 
-    async processVnpayIpn(params: any): Promise<{ rspCode: string; message: string; invoice: Invoice; redirectUrl: string; }> {
+    async processVnpayIpn(params: any): Promise<{ rspCode: string; message: string; invoice: Invoice | null; redirectUrl: string | null }> {
         const { secureHash, signed, vnp_Params } = this.signedParams(params);
-
+    
         // Kiểm tra tính hợp lệ của mã hash
         if (secureHash !== signed) {
             this.logger.error('Invalid hash in VNPay IPN');
-            return { rspCode: '97', message: 'Mã hash không hợp lệ', invoice: null ,redirectUrl:null};
+            return { rspCode: '97', message: 'Mã hash không hợp lệ', invoice: null, redirectUrl: null };
         }
-
+    
         const rspCode = vnp_Params['vnp_ResponseCode'];
         const orderId = vnp_Params['vnp_OrderInfo'];
         const amount = parseFloat(vnp_Params['vnp_Amount']) / 100;
-        console.log('vnp_Params',vnp_Params['vnp_OrderInfo'],typeof vnp_Params['vnp_OrderInfo'])
-
-        console.log('orderId',orderId,typeof orderId)
-
-        console.log('orderId',parseInt(orderId),typeof parseInt(orderId))
-        const idinvoice = parseInt(orderId)
-        console.log('orderId',idinvoice,typeof idinvoice)
-        const invoice = await this.invoiceRepo.findOne({ where: { id: idinvoice } });
-        console.log('invoice',invoice)
+    
+        // Log giá trị vnp_Params và orderId
+        this.logger.log(`vnp_Params: ${JSON.stringify(vnp_Params)}`);
+        this.logger.log(`orderId: ${orderId}, type: ${typeof orderId}`);
+    
+        // Kiểm tra orderId hợp lệ
+        if (!orderId) {
+            this.logger.error('Missing orderId in VNPay IPN');
+            return { rspCode: '99', message: 'Thiếu thông tin hóa đơn', invoice: null, redirectUrl: null };
+        }
+    
+        // Chuyển orderId thành số
+        const idinvoice = parseInt(orderId);
+        this.logger.log(`idinvoice: ${idinvoice}, type: ${typeof idinvoice}`);
+    
+        // Thử tìm hóa đơn bằng findOne
+        let invoice = await this.invoiceRepo.findOne({ where: { id: idinvoice } });
+        this.logger.log(`Invoice (findOne): ${JSON.stringify(invoice)}`);
+    
+        // Nếu không tìm thấy, thử truy vấn thủ công bằng createQueryBuilder
+        if (!invoice) {
+            this.logger.log(`Trying to find invoice with createQueryBuilder...`);
+            invoice = await this.invoiceRepo
+                .createQueryBuilder('invoice')
+                .where('invoice.id = :id', { id: idinvoice })
+                .getOne();
+            this.logger.log(`Invoice (createQueryBuilder): ${JSON.stringify(invoice)}`);
+        }
+    
+        // Nếu vẫn không tìm thấy
         if (!invoice) {
             this.logger.error(`Invoice ${orderId} not found in VNPay IPN`);
-            return { rspCode: '01', message: 'Hóa đơn không tồn tại', invoice: null,redirectUrl:null };
+            return { rspCode: '01', message: 'Hóa đơn không tồn tại', invoice: null, redirectUrl: null };
         }
+    
+        // Kiểm tra trạng thái hóa đơn để tránh xử lý trùng lặp
+        if (invoice.status === 'PAID') {
+            this.logger.warn(`Invoice ${orderId} already processed (status: PAID)`);
+            return {
+                rspCode: '02',
+                message: 'Hóa đơn đã được xử lý trước đó',
+                invoice,
+                redirectUrl: `${this.frontendSuccessUrl}?invoiceId=${invoice.id}`
+            };
+        }
+    
         // Kiểm tra số tiền
         if (amount !== invoice.finalTotal) {
-            this.logger.error(`Amount mismatch in VNPay IPN for invoice ${orderId}`);
-            return { rspCode: '04', message: 'Số tiền không khớp', invoice ,redirectUrl:null};
+            this.logger.error(`Amount mismatch in VNPay IPN for invoice ${orderId}. Expected: ${invoice.finalTotal}, Received: ${amount}`);
+            return { rspCode: '04', message: 'Số tiền không khớp', invoice, redirectUrl: null };
         }
-
+    
         let message = '';
-        let redirectUrl = '';
+        let redirectUrl: string | null = null;
         switch (rspCode) {
             case '00': // Thanh toán thành công
                 message = "Thanh toán thành công";
@@ -105,11 +138,11 @@ export class VnpayService {
                 redirectUrl = this.frontendFailUrl;
                 break;
         }
-
+    
         invoice.updatedAt = new Date();
         await this.invoiceRepo.save(invoice);
         this.logger.log(`Invoice ${orderId} updated to status ${invoice.status} via VNPay IPN`);
-
+    
         return { rspCode, message, invoice, redirectUrl };
     }
 
