@@ -69,7 +69,6 @@ export class VnpayService {
             this.logger.error(`Invoice ${orderId} not found in VNPay IPN`);
             return { rspCode: '01', message: 'Hóa đơn không tồn tại', invoice: null,redirectUrl:null };
         }
-
         // Kiểm tra số tiền
         if (amount !== invoice.finalTotal) {
             this.logger.error(`Amount mismatch in VNPay IPN for invoice ${orderId}`);
