@@ -11,7 +11,7 @@ export class VnpayService {
     private readonly vnp_TmnCode = process.env.VNP_TMNCODE;
     private readonly vnp_HashSecret = process.env.VNP_HASHSECRET;
     private readonly vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-    private readonly vnp_ReturnUrl = "http://localhost:3000/api/v1/payment/vnpay-ipn"; // Cần thay đổi theo môi trường thực tế
+    private readonly vnp_ReturnUrl = "http://35.247.185.8/api/v1/payment/vnpay-ipn"; // Cần thay đổi theo môi trường thực tế
     private readonly frontendSuccessUrl = "http://localhost:3000/payment-success";
     private readonly frontendFailUrl = "http://localhost:3000/payment-fail"
     constructor(
