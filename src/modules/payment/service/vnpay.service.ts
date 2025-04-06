@@ -62,6 +62,12 @@ export class VnpayService {
         const rspCode = vnp_Params['vnp_ResponseCode'];
         const orderId = vnp_Params['vnp_OrderInfo'];
         const amount = parseFloat(vnp_Params['vnp_Amount']) / 100;
+        console.log('vnp_Params',vnp_Params['vnp_OrderInfo'],typeof vnp_Params['vnp_OrderInfo'])
+
+        console.log('orderId',orderId,typeof orderId)
+        
+        console.log('orderId',parseInt(orderId),typeof parseInt(orderId))
+
 
         const invoice = await this.invoiceRepo.findOne({ where: { id: parseInt(orderId) } });
         console.log('invoice',invoice)
