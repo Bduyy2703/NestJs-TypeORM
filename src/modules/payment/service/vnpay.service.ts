@@ -65,11 +65,11 @@ export class VnpayService {
         console.log('vnp_Params',vnp_Params['vnp_OrderInfo'],typeof vnp_Params['vnp_OrderInfo'])
 
         console.log('orderId',orderId,typeof orderId)
-        
+
         console.log('orderId',parseInt(orderId),typeof parseInt(orderId))
+        const idinvoice = parseInt(orderId)
 
-
-        const invoice = await this.invoiceRepo.findOne({ where: { id: parseInt(orderId) } });
+        const invoice = await this.invoiceRepo.findOne({ where: { id: idinvoice } });
         console.log('invoice',invoice)
         if (!invoice) {
             this.logger.error(`Invoice ${orderId} not found in VNPay IPN`);
