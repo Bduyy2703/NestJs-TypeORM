@@ -5,7 +5,7 @@ import { Invoice } from "./entity/invoice.entity";
 import { InvoiceItem } from "./entity/invoiceItem.entity";
 import { User } from "../users/entities/user.entity";
 import { ProductDetails } from "../product-details/entity/productDetail.entity";
-import { CreateInvoiceDto, InvoiceResponseDto, RevenueStatisticsDto, StatusStatisticsDto, TopProductStatisticsDto, TopCustomerStatisticsDto, PaymentMethodStatisticsDto, InvoiceCountStatisticsDto, PaymentMethod, InvoiceStatus } from "./dto/invoice.dto";
+import { CreateInvoiceDto, InvoiceResponseDto, RevenueStatisticsDto, StatusStatisticsDto, TopProductStatisticsDto, TopCustomerStatisticsDto, PaymentMethodStatisticsDto, InvoiceCountStatisticsDto, PaymentMethod, InvoiceStatus, UpdateInvoiceStatusDto } from "./dto/invoice.dto";
 
 @Injectable()
 export class InvoiceService {
@@ -39,11 +39,30 @@ export class InvoiceService {
         return this.mapToInvoiceResponseDto(invoice);
     }
 
+    // Hàm mới: Cập nhật trạng thái hóa đơn
+    async updateInvoiceStatus(id: number, updateInvoiceStatusDto: UpdateInvoiceStatusDto): Promise<InvoiceResponseDto> {
+        // Tìm hóa đơn theo ID
+        const invoice = await this.invoiceRepo.findOne({ where: { id } });
+        if (!invoice) {
+            throw new NotFoundException(`Hóa đơn với ID ${id} không tồn tại`);
+        }
+
+        // Cập nhật trạng thái
+        invoice.status = updateInvoiceStatusDto.status;
+        invoice.updatedAt = new Date();
+
+        // Lưu thay đổi
+        const updatedInvoice = await this.invoiceRepo.save(invoice);
+
+        // Trả về DTO
+        return this.mapToInvoiceResponseDto(updatedInvoice);
+    }
+
     // 2. Lấy chi tiết 1 invoice theo ID
     async getInvoiceById(id: number): Promise<InvoiceResponseDto> {
         const invoice = await this.invoiceRepo.findOne({
             where: { id },
-            relations: ["user", "user.profile", "address", "items", "items.productDetail", "items.productDetail.product"],
+            relations: ["user", "user.profile", "address", "items","discount", "items.productDetail", "items.productDetail.product"],
         });
         if (!invoice) {
             throw new NotFoundException(`Hóa đơn với ID ${id} không tồn tại`);
@@ -60,7 +79,7 @@ export class InvoiceService {
 
         const invoices = await this.invoiceRepo.find({
             where: { userId },
-            relations: ["user", "user.profile", "address", "items", "items.productDetail", "items.productDetail.product"],
+            relations: ["user", "user.profile", "address", "items", "discount",  "items.productDetail", "items.productDetail.product"],
             order: { createdAt: "DESC" },
         });
 
@@ -70,14 +89,14 @@ export class InvoiceService {
     // 4. Lấy danh sách tất cả invoices
     async getAllInvoices(): Promise<InvoiceResponseDto[]> {
         const invoices = await this.invoiceRepo.find({
-            relations: ["user", "user.profile", "address", "items", "items.productDetail", "items.productDetail.product"],
+            relations: ["user", "user.profile", "address", "items", "discount","items.productDetail", "items.productDetail.product"],
             order: { createdAt: "DESC" },
         });
         return invoices.map(invoice => this.mapToInvoiceResponseDto(invoice));
     }
 
     // 5. Thống kê doanh thu theo khoảng thời gian
-    async getRevenueStatistics(startDate: string, endDate: string): Promise<RevenueStatisticsDto> {
+    async getRevenueStatistics(startDate: string, endDate: string, onlyPaid: boolean = true): Promise<RevenueStatisticsDto> {
         const start = new Date(startDate);
         const end = new Date(endDate);
         if (isNaN(start.getTime()) || isNaN(end.getTime())) {
@@ -86,15 +105,19 @@ export class InvoiceService {
         if (start > end) {
             throw new BadRequestException("Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc");
         }
-
-        const result = await this.invoiceRepo
+    
+        const queryBuilder = this.invoiceRepo
             .createQueryBuilder("invoice")
             .select("SUM(invoice.finalTotal)", "totalRevenue")
             .addSelect("COUNT(invoice.id)", "totalInvoices")
-            .where("invoice.createdAt BETWEEN :start AND :end", { start, end })
-            .andWhere("invoice.status = :status", { status: "PAID" })
-            .getRawOne();
-
+            .where("invoice.createdAt BETWEEN :start AND :end", { start, end });
+    
+        if (onlyPaid) {
+            queryBuilder.andWhere("invoice.status = :status", { status: "PAID" });
+        }
+    
+        const result = await queryBuilder.getRawOne();
+    
         return {
             totalRevenue: parseFloat(result.totalRevenue) || 0,
             totalInvoices: parseInt(result.totalInvoices) || 0,
@@ -113,7 +136,7 @@ export class InvoiceService {
         if (start > end) {
             throw new BadRequestException("Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc");
         }
-
+    
         const result = await this.invoiceRepo
             .createQueryBuilder("invoice")
             .select("invoice.status", "status")
@@ -121,19 +144,25 @@ export class InvoiceService {
             .where("invoice.createdAt BETWEEN :start AND :end", { start, end })
             .groupBy("invoice.status")
             .getRawMany();
-
+    
+        const allStatuses = Object.values(InvoiceStatus); // Lấy tất cả trạng thái từ enum
+        const statistics = allStatuses.map(status => {
+            const found = result.find(item => item.status === status);
+            return {
+                status,
+                count: found ? parseInt(found.count) : 0,
+            };
+        });
+    
         return {
             startDate,
             endDate,
-            statistics: result.map(item => ({
-                status: item.status,
-                count: parseInt(item.count),
-            })),
+            statistics,
         };
     }
 
     // 7. Thống kê sản phẩm bán chạy (fix Best selling product statistics)
-    async getTopProducts(startDate: string, endDate: string, limit: number): Promise<TopProductStatisticsDto[]> {
+    async getTopProducts(startDate: string, endDate: string, limit: number, onlyPaid: boolean = true): Promise<TopProductStatisticsDto[]> {
         const start = new Date(startDate);
         const end = new Date(endDate);
         if (isNaN(start.getTime()) || isNaN(end.getTime())) {
@@ -142,8 +171,8 @@ export class InvoiceService {
         if (start > end) {
             throw new BadRequestException("Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc");
         }
-
-        const result = await this.invoiceItemRepo
+    
+        const queryBuilder = this.invoiceItemRepo
             .createQueryBuilder("invoiceItem")
             .innerJoin("invoiceItem.invoice", "invoice")
             .innerJoin("invoiceItem.productDetail", "productDetail")
@@ -153,13 +182,17 @@ export class InvoiceService {
             .addSelect("SUM(invoiceItem.quantity)", "totalQuantity")
             .addSelect("SUM(invoiceItem.quantity * invoiceItem.price)", "totalRevenue")
             .where("invoice.createdAt BETWEEN :start AND :end", { start, end })
-            .andWhere("invoice.status = :status", { status: "PAID" })
             .groupBy("productDetail.id")
             .addGroupBy("product.name")
-            .orderBy("totalQuantity", "DESC")
-            .limit(limit)
-            .getRawMany();
-
+            .orderBy("SUM(invoiceItem.quantity)", "DESC")
+            .limit(limit);
+    
+        if (onlyPaid) {
+            queryBuilder.andWhere("invoice.status = :status", { status: "PAID" });
+        }
+    
+        const result = await queryBuilder.getRawMany();
+    
         return result.map(item => ({
             productDetailId: item.productDetailId,
             productName: item.productName,
@@ -168,8 +201,8 @@ export class InvoiceService {
         }));
     }
 
-    // 8. Thống kê khách hàng chi tiêu nhiều nhất (fix and caculatormoney of userIduserId , use stock,sold of productproduct)
-    async getTopCustomers(startDate: string, endDate: string, limit: number): Promise<TopCustomerStatisticsDto[]> {
+    // 8. Thống kê khách hàng chi tiêu nhiều nhất (fix and caculatormoney of userIduserId)
+    async getTopCustomers(startDate: string, endDate: string, limit: number, onlyPaid: boolean = true): Promise<TopCustomerStatisticsDto[]> {
         const start = new Date(startDate);
         const end = new Date(endDate);
         if (isNaN(start.getTime()) || isNaN(end.getTime())) {
@@ -178,8 +211,8 @@ export class InvoiceService {
         if (start > end) {
             throw new BadRequestException("Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc");
         }
-
-        const result = await this.invoiceRepo
+    
+        const queryBuilder = this.invoiceRepo
             .createQueryBuilder("invoice")
             .innerJoin("invoice.user", "user")
             .select("user.id", "userId")
@@ -187,13 +220,17 @@ export class InvoiceService {
             .addSelect("SUM(invoice.finalTotal)", "totalSpent")
             .addSelect("COUNT(invoice.id)", "totalInvoices")
             .where("invoice.createdAt BETWEEN :start AND :end", { start, end })
-            .andWhere("invoice.status = :status", { status: "PAID" })
             .groupBy("user.id")
             .addGroupBy("user.username")
-            .orderBy("totalSpent", "DESC")
-            .limit(limit)
-            .getRawMany();
-
+            .orderBy("SUM(invoice.finalTotal)", "DESC")
+            .limit(limit);
+    
+        if (onlyPaid) {
+            queryBuilder.andWhere("invoice.status = :status", { status: "PAID" });
+        }
+    
+        const result = await queryBuilder.getRawMany();
+    
         return result.map(item => ({
             userId: item.userId,
             username: item.username,
@@ -203,7 +240,7 @@ export class InvoiceService {
     }
 
     // 9. Thống kê doanh thu theo phương thức thanh toán(fix get all statusstatus)
-    async getPaymentMethodStatistics(startDate: string, endDate: string): Promise<PaymentMethodStatisticsDto[]> {
+    async getPaymentMethodStatistics(startDate: string, endDate: string, onlyPaid: boolean = false): Promise<PaymentMethodStatisticsDto[]> {
         const start = new Date(startDate);
         const end = new Date(endDate);
         if (isNaN(start.getTime()) || isNaN(end.getTime())) {
@@ -212,19 +249,28 @@ export class InvoiceService {
         if (start > end) {
             throw new BadRequestException("Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc");
         }
-
-        const result = await this.invoiceRepo
+    
+        const queryBuilder = this.invoiceRepo
             .createQueryBuilder("invoice")
             .select("invoice.paymentMethod", "paymentMethod")
+            .addSelect("invoice.status", "status")
             .addSelect("SUM(invoice.finalTotal)", "totalRevenue")
             .addSelect("COUNT(invoice.id)", "totalInvoices")
             .where("invoice.createdAt BETWEEN :start AND :end", { start, end })
-            .andWhere("invoice.status = :status", { status: "PAID" })
             .groupBy("invoice.paymentMethod")
-            .getRawMany();
-
+            .addGroupBy("invoice.status")
+            .orderBy("invoice.paymentMethod", "ASC")
+            .addOrderBy("invoice.status", "ASC");
+    
+        if (onlyPaid) {
+            queryBuilder.andWhere("invoice.status = :status", { status: "PAID" });
+        }
+    
+        const result = await queryBuilder.getRawMany();
+    
         return result.map(item => ({
             paymentMethod: item.paymentMethod,
+            status: item.status,
             totalRevenue: parseFloat(item.totalRevenue) || 0,
             totalInvoices: parseInt(item.totalInvoices) || 0,
         }));
@@ -235,18 +281,34 @@ export class InvoiceService {
         if (type === 'daily' && !month) {
             throw new BadRequestException("Tháng là bắt buộc khi thống kê theo ngày");
         }
-
+    
         const query = this.invoiceRepo.createQueryBuilder("invoice");
-
+        let result: any[];
+    
         if (type === 'daily') {
             const start = new Date(year, month! - 1, 1);
-            const end = new Date(year, month!, 0); // Ngày cuối cùng của tháng
+            const end = new Date(year, month!, 0);
             query
                 .select("TO_CHAR(invoice.createdAt, 'YYYY-MM-DD')", "date")
                 .addSelect("COUNT(invoice.id)", "count")
                 .where("invoice.createdAt BETWEEN :start AND :end", { start, end })
                 .groupBy("TO_CHAR(invoice.createdAt, 'YYYY-MM-DD')")
                 .orderBy("date", "ASC");
+    
+            result = await query.getRawMany();
+    
+            // Tạo danh sách tất cả các ngày trong tháng
+            const daysInMonth = end.getDate();
+            const allDays: InvoiceCountStatisticsDto[] = [];
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const found = result.find(item => item.date === date);
+                allDays.push({
+                    period: date,
+                    count: found ? parseInt(found.count) : 0,
+                });
+            }
+            return allDays;
         } else {
             const start = new Date(year, 0, 1);
             const end = new Date(year, 11, 31);
@@ -256,14 +318,20 @@ export class InvoiceService {
                 .where("invoice.createdAt BETWEEN :start AND :end", { start, end })
                 .groupBy("EXTRACT(MONTH FROM invoice.createdAt)")
                 .orderBy("month", "ASC");
+    
+            result = await query.getRawMany();
+    
+            // Tạo danh sách tất cả các tháng (1-12)
+            const allMonths: InvoiceCountStatisticsDto[] = [];
+            for (let m = 1; m <= 12; m++) {
+                const found = result.find(item => parseInt(item.month) === m);
+                allMonths.push({
+                    period: m.toString(),
+                    count: found ? parseInt(found.count) : 0,
+                });
+            }
+            return allMonths;
         }
-
-        const result = await query.getRawMany();
-
-        return result.map(item => ({
-            period: type === 'daily' ? item.date : item.month.toString(),
-            count: parseInt(item.count),
-        }));
     }
 
     private mapToInvoiceResponseDto(invoice: Invoice): InvoiceResponseDto {

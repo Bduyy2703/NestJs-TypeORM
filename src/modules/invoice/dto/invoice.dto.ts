@@ -2,6 +2,7 @@ import { ApiProperty } from "@nestjs/swagger";
 import {
     IsArray,
     IsEnum,
+    IsNotEmpty,
     IsNumber,
     IsOptional,
     IsString,
@@ -24,6 +25,17 @@ export enum PaymentMethod {
     COD = "COD",
     VNPAY = "VNPAY",
     PAYPAL = "PAYPAL",
+}
+
+export class UpdateInvoiceStatusDto {
+    @ApiProperty({
+        description: 'Trạng thái mới của hóa đơn',
+        enum: InvoiceStatus,
+        example: InvoiceStatus.PAID,
+    })
+    @IsNotEmpty({ message: 'Trạng thái không được để trống' })
+    @IsEnum(InvoiceStatus, { message: 'Trạng thái không hợp lệ' })
+    status: InvoiceStatus;
 }
 
 // DTO cho thông tin người dùng

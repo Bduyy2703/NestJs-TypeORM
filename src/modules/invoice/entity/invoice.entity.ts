@@ -2,6 +2,7 @@ import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMan
 import { User } from "../../users/entities/user.entity";
 import { Address } from "../../address/entity/address.entity";
 import { InvoiceItem } from "./invoiceItem.entity";
+import { InvoiceDiscount } from "./invoice-discount.entity";
 
 @Entity()
 export class Invoice {
@@ -17,6 +18,9 @@ export class Invoice {
 
   @OneToMany(() => InvoiceItem, item => item.invoice, { cascade: true })
   items: InvoiceItem[]; // Danh sách sản phẩm
+
+  @OneToMany(() => InvoiceDiscount, itemDiscount => itemDiscount.invoice, { cascade: true })
+  discount: InvoiceDiscount[]; 
 
   @ManyToOne(() => Address)
   @JoinColumn({ name: "addressId" })

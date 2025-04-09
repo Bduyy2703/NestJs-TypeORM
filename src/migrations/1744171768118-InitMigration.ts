@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class InitMigration1743909426096 implements MigrationInterface {
-    name = 'InitMigration1743909426096'
+export class InitMigration1744171768118 implements MigrationInterface {
+    name = 'InitMigration1744171768118'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`CREATE TABLE "object_entity" ("id" SERIAL NOT NULL, "code" character varying(30), "name" character varying(30), "createdDate" TIMESTAMP, "createdBy" character varying(50), "updatedDate" TIMESTAMP, "updatedBy" character varying(50), "isActive" boolean NOT NULL DEFAULT true, CONSTRAINT "UQ_492d3c96261431a899e894a8088" UNIQUE ("code"), CONSTRAINT "PK_48c917693356ae868326dda8c47" PRIMARY KEY ("id"))`);
@@ -30,6 +30,7 @@ export class InitMigration1743909426096 implements MigrationInterface {
         await queryRunner.query(`CREATE TYPE "public"."discount_condition_enum" AS ENUM('SHIPPING', 'TOTAL')`);
         await queryRunner.query(`CREATE TYPE "public"."discount_discounttype_enum" AS ENUM('PERCENTAGE', 'FIXED')`);
         await queryRunner.query(`CREATE TABLE "discount" ("id" SERIAL NOT NULL, "name" character varying(255) NOT NULL, "condition" "public"."discount_condition_enum" NOT NULL DEFAULT 'TOTAL', "discountValue" numeric(10,2) NOT NULL, "discountType" "public"."discount_discounttype_enum" NOT NULL DEFAULT 'FIXED', "quantity" integer NOT NULL DEFAULT '0', "startDate" TIMESTAMP, "endDate" TIMESTAMP, "isActive" boolean NOT NULL DEFAULT true, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "UQ_e62a209370bcee8a188dbc4aeb4" UNIQUE ("name"), CONSTRAINT "PK_d05d8712e429673e459e7f1cddb" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "invoice_discount" ("id" SERIAL NOT NULL, "invoiceId" integer NOT NULL, "discountId" integer NOT NULL, CONSTRAINT "PK_6d752e7eacfba615f9e18f49c25" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "invoice" ("id" SERIAL NOT NULL, "userId" uuid NOT NULL, "addressId" integer NOT NULL, "paymentMethod" character varying NOT NULL, "totalProductAmount" integer NOT NULL, "shippingFee" integer NOT NULL, "shippingFeeDiscount" integer NOT NULL, "productDiscount" integer NOT NULL, "finalTotal" integer NOT NULL, "status" character varying NOT NULL, "createdAt" TIMESTAMP NOT NULL, "updatedAt" TIMESTAMP NOT NULL, CONSTRAINT "PK_15d25c200d9bcd8a33f698daf18" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "invoice_item" ("id" SERIAL NOT NULL, "invoiceId" integer NOT NULL, "productDetailId" integer NOT NULL, "quantity" integer NOT NULL, "price" integer NOT NULL, "subTotal" integer NOT NULL, CONSTRAINT "PK_621317346abdf61295516f3cb76" PRIMARY KEY ("id"))`);
         await queryRunner.query(`ALTER TABLE "right_object" ADD CONSTRAINT "FK_823b3940be0dcf3d94f7af9ebaa" FOREIGN KEY ("rightId") REFERENCES "right"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
@@ -51,6 +52,8 @@ export class InitMigration1743909426096 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "cart_item" ADD CONSTRAINT "FK_e452cf776d8918d757d12bae63c" FOREIGN KEY ("productDetailsId") REFERENCES "product_details"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "cart" ADD CONSTRAINT "FK_756f53ab9466eb52a52619ee019" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "user" ADD CONSTRAINT "FK_c28e52f758e7bbc53828db92194" FOREIGN KEY ("roleId") REFERENCES "role"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "invoice_discount" ADD CONSTRAINT "FK_9176ab6bb2ba20da258270d4ba3" FOREIGN KEY ("invoiceId") REFERENCES "invoice"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "invoice_discount" ADD CONSTRAINT "FK_9c8f76f975c14d57f7d1d9a86c9" FOREIGN KEY ("discountId") REFERENCES "discount"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "invoice" ADD CONSTRAINT "FK_f8e849201da83b87f78c7497dde" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "invoice" ADD CONSTRAINT "FK_6aaa2def19d4a823e5b10cfb92a" FOREIGN KEY ("addressId") REFERENCES "address"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "invoice_item" ADD CONSTRAINT "FK_553d5aac210d22fdca5c8d48ead" FOREIGN KEY ("invoiceId") REFERENCES "invoice"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
@@ -62,6 +65,8 @@ export class InitMigration1743909426096 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "invoice_item" DROP CONSTRAINT "FK_553d5aac210d22fdca5c8d48ead"`);
         await queryRunner.query(`ALTER TABLE "invoice" DROP CONSTRAINT "FK_6aaa2def19d4a823e5b10cfb92a"`);
         await queryRunner.query(`ALTER TABLE "invoice" DROP CONSTRAINT "FK_f8e849201da83b87f78c7497dde"`);
+        await queryRunner.query(`ALTER TABLE "invoice_discount" DROP CONSTRAINT "FK_9c8f76f975c14d57f7d1d9a86c9"`);
+        await queryRunner.query(`ALTER TABLE "invoice_discount" DROP CONSTRAINT "FK_9176ab6bb2ba20da258270d4ba3"`);
         await queryRunner.query(`ALTER TABLE "user" DROP CONSTRAINT "FK_c28e52f758e7bbc53828db92194"`);
         await queryRunner.query(`ALTER TABLE "cart" DROP CONSTRAINT "FK_756f53ab9466eb52a52619ee019"`);
         await queryRunner.query(`ALTER TABLE "cart_item" DROP CONSTRAINT "FK_e452cf776d8918d757d12bae63c"`);
@@ -83,6 +88,7 @@ export class InitMigration1743909426096 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "right_object" DROP CONSTRAINT "FK_823b3940be0dcf3d94f7af9ebaa"`);
         await queryRunner.query(`DROP TABLE "invoice_item"`);
         await queryRunner.query(`DROP TABLE "invoice"`);
+        await queryRunner.query(`DROP TABLE "invoice_discount"`);
         await queryRunner.query(`DROP TABLE "discount"`);
         await queryRunner.query(`DROP TYPE "public"."discount_discounttype_enum"`);
         await queryRunner.query(`DROP TYPE "public"."discount_condition_enum"`);

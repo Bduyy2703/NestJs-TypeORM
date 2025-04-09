@@ -10,10 +10,11 @@ import { User } from "../users/entities/user.entity";
 import { Invoice } from "../invoice/entity/invoice.entity";
 import { InvoiceItem } from "../invoice/entity/invoiceItem.entity";
 import { CartModule } from "../cart/cart.module";
+import { InvoiceDiscount } from "../invoice/entity/invoice-discount.entity";
 
 @Module({
     imports: [
-        TypeOrmModule.forFeature([Discount, ProductDetails, Address, User, Invoice, InvoiceItem]),
+        TypeOrmModule.forFeature([Discount, ProductDetails, Address, User, Invoice, InvoiceItem ,InvoiceDiscount]),
         CartModule
     ],
     providers: [PaymentService, VnpayService ],

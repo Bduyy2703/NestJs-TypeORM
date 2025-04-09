@@ -25,6 +25,7 @@ import { ProductStrategySale } from 'src/modules/strategySale/entity/productSale
 import { CategoryStrategySale } from 'src/modules/strategySale/entity/categorySale.entity';
 import { Invoice } from 'src/modules/invoice/entity/invoice.entity';
 import { InvoiceItem } from 'src/modules/invoice/entity/invoiceItem.entity';
+import { InvoiceDiscount } from 'src/modules/invoice/entity/invoice-discount.entity';
 
 @Module({
   imports: [
@@ -46,7 +47,7 @@ import { InvoiceItem } from 'src/modules/invoice/entity/invoiceItem.entity';
             type: 'postgres',
             url: databaseUrl,
             entities: [
-              Invoice,InvoiceItem,Cart, CartItem, StrategySale, ProductStrategySale, CategoryStrategySale,
+              InvoiceDiscount,Invoice,InvoiceItem,Cart, CartItem, StrategySale, ProductStrategySale, CategoryStrategySale,
               Discount, ProductDetails, Inventory, Product, Category, Address, User,
               Role, Blog, Notification, Object_entity, Profile, Right, RightObject,
               RoleRight, Token, File,

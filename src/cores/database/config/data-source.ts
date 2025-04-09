@@ -24,6 +24,7 @@ import { ProductStrategySale } from 'src/modules/strategySale/entity/productSale
 import { CategoryStrategySale } from 'src/modules/strategySale/entity/categorySale.entity';
 import { InvoiceItem } from 'src/modules/invoice/entity/invoiceItem.entity';
 import { Invoice } from 'src/modules/invoice/entity/invoice.entity';
+import { InvoiceDiscount } from 'src/modules/invoice/entity/invoice-discount.entity';
 
 // Tự động chọn file môi trường dựa trên NODE_ENV
 dotenv.config({ path: process.env.NODE_ENV === 'production' ? '.env.prod' : '.env.development' });
@@ -37,7 +38,7 @@ const AppDataSource = new DataSource({
   password: process.env.DATABASE_URL ? undefined : process.env.DEV_DB_PASSWORD,
   database: process.env.DATABASE_URL ? undefined : process.env.DEV_DB_DATABASE,
   entities: [
-    Invoice,InvoiceItem,Cart, CartItem, StrategySale, ProductStrategySale, CategoryStrategySale,
+    InvoiceDiscount,Invoice,InvoiceItem,Cart, CartItem, StrategySale, ProductStrategySale, CategoryStrategySale,
     Discount, ProductDetails, Inventory, Product, Category, Address, User,
     Role, Blog, Notification, Object_entity, Profile, Right, RightObject,
     RoleRight, Token, File,

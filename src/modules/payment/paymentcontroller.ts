@@ -1,5 +1,5 @@
-import { Controller, Post, Body, Get, Query } from "@nestjs/common";
-import { ApiOperation, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
+import { Controller, Post, Body, Get, Query, Put, ParseIntPipe, Param } from "@nestjs/common";
+import { ApiBody, ApiOperation, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { CreateInvoiceDto, InvoiceResponseDto } from "./dto/invoice.dto";
 import { RetryPaymentDto } from "./dto/retry-payment.dto";
 import { PaymentService } from './paymentservice';
@@ -9,9 +9,9 @@ import { Public } from "src/cores/decorators/public.decorator";
 
 @ApiTags("payment")
 @Controller("payment")
-@ApiSecurity("JWT-auth") 
+@ApiSecurity("JWT-auth")
 export class PaymentController {
-  constructor(private readonly paymentService: PaymentService) {}
+  constructor(private readonly paymentService: PaymentService) { }
 
   @Post("checkout")
   @Objectcode('PAYMENT01')
@@ -43,10 +43,34 @@ export class PaymentController {
   }
 
   @Get("vnpay-ipn")
-@Public()
-    @ApiOperation({ summary: "Xử lý callback từ VNPay" })
-    @ApiResponse({ status: 200, description: "Callback processed" })
-    async handleVnpayIpn(@Query() params: any) {
-        return this.paymentService.processVnpayIpn(params);
-    }
+  @Public()
+  @ApiOperation({ summary: "Xử lý callback từ VNPay" })
+  @ApiResponse({ status: 200, description: "Callback processed" })
+  async handleVnpayIpn(@Query() params: any) {
+    return this.paymentService.processVnpayIpn(params);
+  }
+
+  @Put('invoice/:invoiceId')
+  @Actions('update')
+  @Objectcode('PAYMENT01')
+  @ApiOperation({ summary: "Cập nhật trạng thái hóa đơn COD" })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'string',
+          enum: ['PAID', 'CANCELLED'],
+          example: 'PAID',
+        },
+      },
+      required: ['status'],
+    },
+  })
+  async updateInvoice(
+    @Param('invoiceId', ParseIntPipe) invoiceId: number,
+    @Body('status') status: "PAID" | "CANCELLED"
+  ) {
+    return this.paymentService.updateInvoice(invoiceId, status);
+  }
 }

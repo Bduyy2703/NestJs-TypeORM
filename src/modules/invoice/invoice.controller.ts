@@ -1,6 +1,6 @@
-import { Controller, Post, Body, Get, Param, Query } from "@nestjs/common";
+import { Controller, Post, Body, Get, Param, Query, Patch } from "@nestjs/common";
 import { InvoiceService } from "./invoice.service";
-import { CreateInvoiceDto, InvoiceResponseDto, RevenueStatisticsDto, StatusStatisticsDto, TopProductStatisticsDto, TopCustomerStatisticsDto, PaymentMethodStatisticsDto, InvoiceCountStatisticsDto } from "./dto/invoice.dto";
+import { CreateInvoiceDto, InvoiceResponseDto, RevenueStatisticsDto, StatusStatisticsDto, TopProductStatisticsDto, TopCustomerStatisticsDto, PaymentMethodStatisticsDto, InvoiceCountStatisticsDto, UpdateInvoiceStatusDto } from "./dto/invoice.dto";
 import { ApiSecurity, ApiTags, ApiOperation, ApiResponse, ApiQuery } from "@nestjs/swagger";
 import { Actions } from "src/cores/decorators/action.decorator";
 import { Objectcode } from "src/cores/decorators/objectcode.decorator";
@@ -9,9 +9,8 @@ import { Objectcode } from "src/cores/decorators/objectcode.decorator";
 @Controller("invoices")
 @ApiSecurity("JWT-auth")
 export class InvoiceController {
-    constructor(private readonly invoiceService: InvoiceService) {}
+    constructor(private readonly invoiceService: InvoiceService) { }
 
-    // 1. Tạo invoice
     @Post()
     @Actions('create')
     @Objectcode('INVOICE01')
@@ -21,7 +20,6 @@ export class InvoiceController {
         return this.invoiceService.createInvoice(createInvoiceDto);
     }
 
-    // 2. Lấy chi tiết 1 invoice theo ID
     @Get(":id")
     @Actions('execute')
     @Objectcode('INVOICE01')
@@ -31,7 +29,6 @@ export class InvoiceController {
         return this.invoiceService.getInvoiceById(id);
     }
 
-    // 3. Lấy danh sách invoices theo userId
     @Get("user/:userId")
     @Actions('execute')
     @Objectcode('INVOICE01')
@@ -41,7 +38,6 @@ export class InvoiceController {
         return this.invoiceService.getInvoicesByUserId(userId);
     }
 
-    // 4. Lấy danh sách tất cả invoices (dành cho admin)
     @Get()
     @Actions('read')
     @Objectcode('INVOICE01')
@@ -51,22 +47,23 @@ export class InvoiceController {
         return this.invoiceService.getAllInvoices();
     }
 
-    // 5. Thống kê doanh thu theo khoảng thời gian
     @Get("statistics/revenue")
     @Actions('read')
     @Objectcode('INVOICE01')
     @ApiOperation({ summary: "Thống kê doanh thu theo khoảng thời gian (admin)" })
     @ApiQuery({ name: "startDate", type: String, required: true, description: "Ngày bắt đầu (YYYY-MM-DD)" })
     @ApiQuery({ name: "endDate", type: String, required: true, description: "Ngày kết thúc (YYYY-MM-DD)" })
+    @ApiQuery({ name: "onlyPaid", type: Boolean, required: false, description: "Chỉ tính hóa đơn PAID (mặc định true)" })
     @ApiResponse({ status: 200, description: "Thống kê doanh thu", type: RevenueStatisticsDto })
     async getRevenueStatistics(
         @Query("startDate") startDate: string,
         @Query("endDate") endDate: string,
+        @Query("onlyPaid") onlyPaid: string = "true",
     ): Promise<RevenueStatisticsDto> {
-        return this.invoiceService.getRevenueStatistics(startDate, endDate);
+        const onlyPaidBool = onlyPaid.toLowerCase() === "true";
+        return this.invoiceService.getRevenueStatistics(startDate, endDate, onlyPaidBool);
     }
 
-    // 6. Thống kê số lượng hóa đơn theo trạng thái
     @Get("statistics/status")
     @Actions('read')
     @Objectcode('INVOICE01')
@@ -81,7 +78,6 @@ export class InvoiceController {
         return this.invoiceService.getStatusStatistics(startDate, endDate);
     }
 
-    // 7. Thống kê sản phẩm bán chạy
     @Get("statistics/top-products")
     @Actions('read')
     @Objectcode('INVOICE01')
@@ -89,16 +85,18 @@ export class InvoiceController {
     @ApiQuery({ name: "startDate", type: String, required: true, description: "Ngày bắt đầu (YYYY-MM-DD)" })
     @ApiQuery({ name: "endDate", type: String, required: true, description: "Ngày kết thúc (YYYY-MM-DD)" })
     @ApiQuery({ name: "limit", type: Number, required: false, description: "Số lượng sản phẩm tối đa (mặc định 10)" })
+    @ApiQuery({ name: "onlyPaid", type: Boolean, required: false, description: "Chỉ tính hóa đơn PAID (mặc định true)" })
     @ApiResponse({ status: 200, description: "Danh sách sản phẩm bán chạy", type: [TopProductStatisticsDto] })
     async getTopProducts(
         @Query("startDate") startDate: string,
         @Query("endDate") endDate: string,
         @Query("limit") limit: string = "10",
+        @Query("onlyPaid") onlyPaid: string = "true",
     ): Promise<TopProductStatisticsDto[]> {
-        return this.invoiceService.getTopProducts(startDate, endDate, parseInt(limit));
+        const onlyPaidBool = onlyPaid.toLowerCase() === "true";
+        return this.invoiceService.getTopProducts(startDate, endDate, parseInt(limit), onlyPaidBool);
     }
 
-    // 8. Thống kê khách hàng chi tiêu nhiều nhất
     @Get("statistics/top-customers")
     @Actions('read')
     @Objectcode('INVOICE01')
@@ -106,31 +104,40 @@ export class InvoiceController {
     @ApiQuery({ name: "startDate", type: String, required: true, description: "Ngày bắt đầu (YYYY-MM-DD)" })
     @ApiQuery({ name: "endDate", type: String, required: true, description: "Ngày kết thúc (YYYY-MM-DD)" })
     @ApiQuery({ name: "limit", type: Number, required: false, description: "Số lượng khách hàng tối đa (mặc định 10)" })
+    @ApiQuery({ name: "onlyPaid", type: Boolean, required: false, description: "Chỉ tính hóa đơn PAID (mặc định true)" })
     @ApiResponse({ status: 200, description: "Danh sách khách hàng chi tiêu nhiều nhất", type: [TopCustomerStatisticsDto] })
     async getTopCustomers(
         @Query("startDate") startDate: string,
         @Query("endDate") endDate: string,
         @Query("limit") limit: string = "10",
+        @Query("onlyPaid") onlyPaid: string = "true",
     ): Promise<TopCustomerStatisticsDto[]> {
-        return this.invoiceService.getTopCustomers(startDate, endDate, parseInt(limit));
+        const onlyPaidBool = onlyPaid.toLowerCase() === "true";
+        return this.invoiceService.getTopCustomers(startDate, endDate, parseInt(limit), onlyPaidBool);
     }
 
-    // 9. Thống kê doanh thu theo phương thức thanh toán
     @Get("statistics/payment-methods")
     @Actions('read')
     @Objectcode('INVOICE01')
     @ApiOperation({ summary: "Thống kê doanh thu theo phương thức thanh toán (admin)" })
     @ApiQuery({ name: "startDate", type: String, required: true, description: "Ngày bắt đầu (YYYY-MM-DD)" })
     @ApiQuery({ name: "endDate", type: String, required: true, description: "Ngày kết thúc (YYYY-MM-DD)" })
+    @ApiQuery({ 
+        name: "onlyPaid", 
+        type: Boolean, 
+        required: false, 
+        description: "Chỉ tính hóa đơn PAID để phản ánh doanh thu thực tế (mặc định true)" 
+    })
     @ApiResponse({ status: 200, description: "Thống kê doanh thu theo phương thức thanh toán", type: [PaymentMethodStatisticsDto] })
     async getPaymentMethodStatistics(
         @Query("startDate") startDate: string,
         @Query("endDate") endDate: string,
+        @Query("onlyPaid") onlyPaid: string = "true", // Đổi từ "false" thành "true"
     ): Promise<PaymentMethodStatisticsDto[]> {
-        return this.invoiceService.getPaymentMethodStatistics(startDate, endDate);
+        const onlyPaidBool = onlyPaid.toLowerCase() === "true";
+        return this.invoiceService.getPaymentMethodStatistics(startDate, endDate, onlyPaidBool);
     }
 
-    // 10. Thống kê số lượng hóa đơn theo ngày/tháng
     @Get("statistics/invoice-count")
     @Actions('read')
     @Objectcode('INVOICE01')

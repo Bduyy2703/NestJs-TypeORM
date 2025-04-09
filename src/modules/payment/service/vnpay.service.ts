@@ -1,9 +1,13 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { In, Repository } from "typeorm";
 import * as crypto from "crypto";
 import * as querystring from "qs";
 import { Invoice } from "../../invoice/entity/invoice.entity";
+import { InvoiceItem } from "src/modules/invoice/entity/invoiceItem.entity";
+import { ProductDetails } from "src/modules/product-details/entity/productDetail.entity";
+import { InvoiceDiscount } from "src/modules/invoice/entity/invoice-discount.entity";
+import { Discount } from "src/modules/discount/entity/discount.entity";
 
 @Injectable()
 export class VnpayService {
@@ -11,7 +15,7 @@ export class VnpayService {
     private readonly vnp_TmnCode = process.env.VNP_TMNCODE;
     private readonly vnp_HashSecret = process.env.VNP_HASHSECRET;
     private readonly vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-    private readonly vnp_ReturnUrl = "http://35.247.185.8/api/v1/payment/vnpay-ipn"; // Cần thay đổi theo môi trường thực tế
+    private readonly vnp_ReturnUrl = "http://localhost:3000/api/v1/payment/vnpay-ipn"; // Cần thay đổi theo môi trường thực tế "http://35.247.185.8/api/v1/payment/vnpay-ipn"
     private readonly frontendSuccessUrl = "http://localhost:3000/payment-success";
     private readonly frontendFailUrl = "http://localhost:3000/payment-fail"
     constructor(
@@ -73,28 +77,7 @@ export class VnpayService {
         const idinvoice = parseInt(orderId);
         this.logger.log(`idinvoice: ${idinvoice}, type: ${typeof idinvoice}`);
     
-        let invoice = await this.invoiceRepo.findOne({ where: { id: idinvoice } });
-        this.logger.log(`Invoice (findOne): ${JSON.stringify(invoice)}`);
-    
-        if (!invoice) {
-            this.logger.log(`Trying to find invoice with createQueryBuilder...`);
-            invoice = await this.invoiceRepo
-                .createQueryBuilder('invoice')
-                .where('invoice.id = :id', { id: idinvoice })
-                .getOne();
-            this.logger.log(`Invoice (createQueryBuilder): ${JSON.stringify(invoice)}`);
-        }
-    
-        // Thử raw query
-        if (!invoice) {
-            this.logger.log(`Trying raw query...`);
-            const rawResult = await this.invoiceRepo.query(`SELECT * FROM invoice WHERE id = $1`, [idinvoice]);
-            this.logger.log(`Raw query result: ${JSON.stringify(rawResult)}`);
-            if (rawResult && rawResult.length > 0) {
-                invoice = rawResult[0]; // Cần ánh xạ thủ công nếu cần
-            }
-        }
-    
+        let invoice = await this.invoiceRepo.findOne({ where: { id: idinvoice }, relations: ["items"] });
         if (!invoice) {
             this.logger.error(`Invoice ${orderId} not found in VNPay IPN`);
             return { rspCode: '01', message: 'Hóa đơn không tồn tại', invoice: null, redirectUrl: null };
@@ -115,36 +98,87 @@ export class VnpayService {
             return { rspCode: '04', message: 'Số tiền không khớp', invoice, redirectUrl: null };
         }
     
-        let message = '';
-        let redirectUrl: string | null = null;
-        switch (rspCode) {
-            case '00':
-                message = "Thanh toán thành công";
-                invoice.status = "PAID";
-                redirectUrl = `${this.frontendSuccessUrl}?invoiceId=${invoice.id}`;
-                break;
-            case '24':
-                message = "Giao dịch đã bị hủy";
-                invoice.status = "CANCELLED";
-                redirectUrl = this.frontendFailUrl;
-                break;
-            case '01':
-                message = "Giao dịch đang chờ xử lý";
-                invoice.status = "PENDING";
-                redirectUrl = this.frontendFailUrl;
-                break;
-            default:
-                message = "Thanh toán thất bại";
-                invoice.status = "FAILED";
-                redirectUrl = this.frontendFailUrl;
-                break;
-        }
+        return await this.invoiceRepo.manager.transaction(async transactionalEntityManager => {
+            let message = '';
+            let redirectUrl: string | null = null;
     
-        invoice.updatedAt = new Date();
-        await this.invoiceRepo.save(invoice);
-        this.logger.log(`Invoice ${orderId} updated to status ${invoice.status} via VNPay IPN`);
+            switch (rspCode) {
+                case '00':
+                    // Thanh toán thành công
+                    message = "Thanh toán thành công";
+                    invoice.status = "PAID";
+                    redirectUrl = `${this.frontendSuccessUrl}?invoiceId=${invoice.id}`;
     
-        return { rspCode, message, invoice, redirectUrl };
+                    // Lấy thông tin sản phẩm và discount
+                    const invoiceItems = await transactionalEntityManager.find(InvoiceItem, { where: { invoiceId: invoice.id } });
+                    const productDetailIds = invoiceItems.map(item => item.productDetailId);
+                    const productDetails = await transactionalEntityManager.find(ProductDetails, { where: { id: In(productDetailIds) } });
+                    const productDetailsMap = new Map(productDetails.map(pd => [pd.id, pd]));
+                    console.log('invoiceId',invoice.id , typeof invoice.id)
+                    const invoiceDiscounts = await transactionalEntityManager.find(InvoiceDiscount, { where: { invoiceId: invoice.id } });
+                    console.log('invoiceDiscounts',invoiceDiscounts)
+
+                    const discountIds = invoiceDiscounts.map(id => id.discountId);
+                    console.log('discountIds',discountIds)
+                    const discountMap = new Map<number, Discount>();
+                    if (discountIds.length > 0) {
+                        const discounts = await transactionalEntityManager.find(Discount, { where: { id: In(discountIds) } });
+                        discounts.forEach(discount => discountMap.set(discount.id, discount));
+                    }
+    
+                    // Trừ stock và tăng sold
+                    for (const item of invoiceItems) {
+                        const productDetail = productDetailsMap.get(item.productDetailId)!;
+                        if (productDetail.stock < item.quantity) {
+                            throw new BadRequestException(`Sản phẩm với ID ${item.productDetailId} không đủ tồn kho khi thanh toán`);
+                        }
+                        productDetail.stock -= item.quantity;
+                        productDetail.sold = (productDetail.sold || 0) + item.quantity;
+                        await transactionalEntityManager.save(ProductDetails, productDetail);
+                    }
+    
+                    // Trừ discount.quantity
+                    if (discountIds.length > 0) {
+                        console.log('invoiceDiscounts sub',invoiceDiscounts)
+                        for (const discountId of discountIds) {
+                            const discount = discountMap.get(discountId)!;
+                            if (discount.quantity <= 0) {
+                                throw new BadRequestException(`Mã giảm giá với ID ${discountId} đã hết số lượng khi thanh toán`);
+                            }
+                            discount.quantity -= 1;
+                            await transactionalEntityManager.save(Discount, discount);
+                        }
+                    }
+                    break;
+    
+                case '24':
+                    // Giao dịch bị hủy
+                    message = "Giao dịch đã bị hủy";
+                    invoice.status = "CANCELLED";
+                    redirectUrl = this.frontendFailUrl;
+                    break;
+    
+                case '01':
+                    // Giao dịch đang chờ xử lý
+                    message = "Giao dịch đang chờ xử lý";
+                    invoice.status = "PENDING";
+                    redirectUrl = this.frontendFailUrl;
+                    break;
+    
+                default:
+                    // Thanh toán thất bại
+                    message = "Thanh toán thất bại";
+                    invoice.status = "FAILED";
+                    redirectUrl = this.frontendFailUrl;
+                    break;
+            }
+    
+            invoice.updatedAt = new Date();
+            await transactionalEntityManager.save(Invoice, invoice);
+            this.logger.log(`Invoice ${orderId} updated to status ${invoice.status} via VNPay IPN`);
+    
+            return { rspCode, message, invoice, redirectUrl };
+        });
     }
 
     private sortObject(obj: { [key: string]: any }): { [key: string]: any } {
