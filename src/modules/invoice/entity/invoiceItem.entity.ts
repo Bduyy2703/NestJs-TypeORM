@@ -14,7 +14,7 @@ export class InvoiceItem {
   @Column()
   invoiceId: number;
 
-  @ManyToOne(() => ProductDetails)
+  @ManyToOne(() => ProductDetails, { onDelete: 'CASCADE' }) // Thêm onDelete: 'CASCADE'
   @JoinColumn({ name: "productDetailId" })
   productDetail: ProductDetails;
 

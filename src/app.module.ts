@@ -33,6 +33,7 @@ import { SaleStrategyModule } from './modules/strategySale/sale.module';
 import { ShippingModule } from './modules/shipping/shipping.module';
 import { PaymentModule } from './modules/payment/paymentmodule';
 import { InvoiceModule } from './modules/invoice/invoice.module';
+import { ReviewModule } from './modules/review/review.module';
 @Module({
   imports: [
     AuthModule,
@@ -62,6 +63,7 @@ import { InvoiceModule } from './modules/invoice/invoice.module';
     ShippingModule,
     PaymentModule,
     InvoiceModule,
+    ReviewModule,
   ],
   controllers: [AppController],
   providers: [
