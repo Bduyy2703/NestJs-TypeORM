@@ -1,6 +1,8 @@
 import { ApiProperty } from "@nestjs/swagger";
 import {
     IsArray,
+    IsBoolean,
+    IsDate,
     IsEnum,
     IsNotEmpty,
     IsNumber,
@@ -75,6 +77,40 @@ export class ProductDetailResponseDto {
     price: number;
 }
 
+export class DiscountDTO {
+    @ApiProperty({ description: "Tên mã giảm giá", example: "SALE2025" })
+    @IsString()
+    name: string;
+  
+    @ApiProperty({ description: "Điều kiện áp dụng: SHIPPING (vận chuyển) hoặc TOTAL (tổng tiền)", example: "TOTAL", enum: ["SHIPPING", "TOTAL"] })
+    @IsEnum(["SHIPPING", "TOTAL"])
+    condition: "SHIPPING" | "TOTAL";
+  
+    @ApiProperty({ description: "Giá trị giảm", example: 100000 })
+    @IsNumber()
+    discountValue: number;
+  
+    @ApiProperty({ description: "Loại giảm giá: PERCENTAGE (theo phần trăm) hoặc FIXED (cố định)", example: "FIXED", enum: ["PERCENTAGE", "FIXED"] })
+    @IsEnum(["PERCENTAGE", "FIXED"])
+    discountType: "PERCENTAGE" | "FIXED";
+  
+    @ApiProperty({ description: "Số lượng mã giảm giá", example: 50 })
+    @IsNumber()
+    quantity: number;
+  
+    @ApiProperty({ description: "Ngày bắt đầu hiệu lực", example: "2025-04-11T00:00:00.000Z", required: false })
+    @IsOptional()
+    @IsDate()
+    @Type(() => Date)
+    startDate?: Date;
+  
+    @ApiProperty({ description: "Ngày kết thúc hiệu lực", example: "2025-05-11T00:00:00.000Z", required: false })
+    @IsOptional()
+    @IsDate()
+    @Type(() => Date)
+    endDate?: Date;
+  }
+
 // DTO cho Address (dùng trong CreateInvoiceDto và InvoiceResponseDto)
 export class AddressDto {
     @ApiProperty({ description: "ID của địa chỉ (nếu có)", example: 1, required: false })
@@ -118,6 +154,18 @@ export class InvoiceItemResponseDto {
 
     @ApiProperty({ description: "Tổng phụ", example: 8100000 })
     subtotal: number;
+}
+
+export class discountitemdto {
+    @ApiProperty({ description: "ID của invoice item", example: 1 })
+    id: number;
+
+    @ApiProperty({ description: "ID của ProductDetails", example: 1 })
+    discountId: number;
+
+    @ApiProperty({ description: "Thông tin mã giảm giá", type: DiscountDTO })
+    discount: DiscountDTO | null;
+
 }
 
 // DTO để tạo một invoice
@@ -220,6 +268,8 @@ export class InvoiceResponseDto {
 
     @ApiProperty({ description: "Danh sách sản phẩm trong hóa đơn", type: [InvoiceItemResponseDto] })
     items: InvoiceItemResponseDto[];
+    @ApiProperty({ description: "Danh sách mã giảm giá trong hóa đơn", type: [InvoiceItemResponseDto] })
+    discount: discountitemdto[];
 }
 
 // DTO cho thống kê doanh thu

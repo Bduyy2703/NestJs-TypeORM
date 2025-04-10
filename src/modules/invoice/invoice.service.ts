@@ -62,7 +62,7 @@ export class InvoiceService {
     async getInvoiceById(id: number): Promise<InvoiceResponseDto> {
         const invoice = await this.invoiceRepo.findOne({
             where: { id },
-            relations: ["user", "user.profile", "address", "items","discount", "items.productDetail", "items.productDetail.product"],
+            relations: ["user", "user.profile", "address", "items","discount","discount.discount", "items.productDetail", "items.productDetail.product"],
         });
         if (!invoice) {
             throw new NotFoundException(`Hóa đơn với ID ${id} không tồn tại`);
@@ -79,7 +79,7 @@ export class InvoiceService {
 
         const invoices = await this.invoiceRepo.find({
             where: { userId },
-            relations: ["user", "user.profile", "address", "items", "discount",  "items.productDetail", "items.productDetail.product"],
+            relations: ["user", "user.profile", "address", "items", "discount", "discount.discount", "items.productDetail", "items.productDetail.product"],
             order: { createdAt: "DESC" },
         });
 
@@ -89,7 +89,7 @@ export class InvoiceService {
     // 4. Lấy danh sách tất cả invoices
     async getAllInvoices(): Promise<InvoiceResponseDto[]> {
         const invoices = await this.invoiceRepo.find({
-            relations: ["user", "user.profile", "address", "items", "discount","items.productDetail", "items.productDetail.product"],
+            relations: ["user", "user.profile", "address", "items", "discount","items.productDetail","discount.discount", "items.productDetail.product"],
             order: { createdAt: "DESC" },
         });
         return invoices.map(invoice => this.mapToInvoiceResponseDto(invoice));
@@ -379,6 +379,21 @@ export class InvoiceService {
                 quantity: item.quantity,
                 price: item.price,
                 subtotal: item.quantity * item.price,
+            })) || [],
+            discount: invoice.discount?.map(discountItem => ({
+                id: discountItem.id,
+                discountId: discountItem.discountId,
+                discount: discountItem.discount
+                    ? {
+                          name: discountItem.discount.name,
+                          condition: discountItem.discount.condition,
+                          discountValue: +discountItem.discount.discountValue,
+                          discountType: discountItem.discount.discountType,
+                          quantity: discountItem.discount.quantity,
+                          startDate: discountItem.discount.startDate,
+                          endDate: discountItem.discount.endDate,
+                      }
+                    : null,
             })) || [],
         };
     }
