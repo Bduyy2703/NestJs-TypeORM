@@ -19,6 +19,57 @@ export class UsersService {
     private roleService: RoleService
   ) { }
 
+  async createByAdmin(registerDto: RegisterDto): Promise<User> {
+    // Kiểm tra email đã tồn tại chưa
+    const existingUser = await this.userRepository.findOneBy({
+      email: registerDto.email,
+    });
+    if (existingUser) {
+      throw new BadRequestException('Email đã được sử dụng');
+    }
+
+    // Tìm kiếm role
+    const role = await this.roleService.findByName(registerDto.roleName ? registerDto.roleName : 'USER');
+    if (!role) {
+      throw new BadRequestException('Role không hợp lệ');
+    }
+
+    // Mã hóa password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(registerDto.password, salt);
+
+    // Tạo user mới
+    const newUser = this.userRepository.create({
+      email: registerDto.email,
+      password: hashedPassword,
+      username: registerDto.username,
+      isVerified: true, // Không cần xác minh, set isVerified là true
+      role: role,
+    });
+
+    await this.userRepository.save(newUser);
+
+    // Tạo profile
+    const [firstname, lastname] = registerDto.username.split(' ');
+    const profile = this.profileRepository.create({
+      phoneNumber: registerDto.phoneNumber,
+      firstName: firstname,
+      lastName: lastname,
+      userId: newUser.id,
+      user: newUser,
+    });
+
+    await this.profileRepository.save(profile);
+
+    // Trả về user với role
+    const userWithRole = await this.userRepository.findOne({
+      where: { id: newUser.id },
+      relations: ['role'],
+    });
+
+    return userWithRole;
+  }
+
   async create(registerDto: RegisterDto, tokenOTP: string): Promise<User> {
 
     const [firstname, lastname] = registerDto.username.split(' ');
@@ -42,7 +93,7 @@ export class UsersService {
       phoneNumber: registerDto.phoneNumber,
       firstName: firstname,
       lastName: lastname,
-      userId : newUser.id,
+      userId: newUser.id,
       user: newUser, // Liên kết profile với user
     });
 
@@ -182,7 +233,7 @@ export class UsersService {
 
   async findByOtp(otp: string): Promise<User | null> {
     return this.userRepository.findOne({
-      where: { tokenOTP : otp },
+      where: { tokenOTP: otp },
     });
   }
 
