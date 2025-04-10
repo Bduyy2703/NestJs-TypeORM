@@ -9,14 +9,14 @@ export class Review {
     @Column()
     userId: string;
 
-    @ManyToOne(() => User)
+    @ManyToOne(() => User, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'userId' })
     user: User;
 
     @Column()
     productId: number;
 
-    @ManyToOne(() => Product)
+    @ManyToOne(() => Product, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'productId' })
     product: Product;
 
