@@ -14,6 +14,24 @@ import { Public } from 'src/cores/decorators/public.decorator';
 export class ReviewController {
     constructor(private readonly reviewService: ReviewService) { }
 
+    @Get('my-reviews')
+    @Actions('read')
+    @Objectcode('REVIEW01')
+    @ApiOperation({ summary: 'Lấy danh sách sản phẩm và đánh giá của người dùng hiện tại' })
+    @ApiQuery({ name: 'page', required: false, type: Number })
+    @ApiQuery({ name: 'limit', required: false, type: Number })
+    @ApiResponse({ status: 200, description: 'List of reviews by the current user', type: [ReviewResponseDto] })
+    async getMyReviews(
+        @Request() req,
+        @Query('page') page: number = 1,
+        @Query('limit') limit: number = 10
+    ) {
+        const userId = req.user?.userId;
+        if (!userId) throw new BadRequestException('User ID is required');
+
+        return this.reviewService.getMyReviews(userId, page, limit);
+    }
+
     @Post()
     @Actions('create')
     @Objectcode('REVIEW01')
@@ -184,16 +202,15 @@ export class ReviewController {
     async getProductReviewStatistics(@Param('productId') productId: number) {
         return this.reviewService.getProductReviewStatistics(productId);
     }
-
-    @Patch(':id/hide')
+    @Patch(':id/toggle-hidden')
     @Actions('update')
     @Objectcode('REVIEW01')
-    @ApiOperation({ summary: 'Admin ẩn đánh giá' })
-    async hideReview(@Param('id') id: number) {
-        await this.reviewService.hideReview(id);
-        return { message: 'Review hidden successfully' };
+    @ApiOperation({ summary: 'Admin bật/tắt ẩn đánh giá' })
+    @ApiResponse({ status: 200, description: 'Review hidden or unhidden successfully' })
+    async toggleHiddenReview(@Param('id') id: number) {
+        const result = await this.reviewService.toggleHiddenReview(id);
+        return result; // Trả về { message, isHidden }
     }
-
     @Delete(':id/admin')
     @Actions('delete')
     @Objectcode('REVIEW01')

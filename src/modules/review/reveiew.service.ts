@@ -31,6 +31,7 @@ export class ReviewService {
         private readonly fileRepository: FileRepository,
     ) { }
 
+
     // Tạo đánh giá
     async createReview(
         userId: string,
@@ -109,7 +110,46 @@ export class ReviewService {
             images: uploadedImages,
         };
     }
-
+    async getMyReviews(userId: string, page: number = 1, limit: number = 10) {
+        const skip = (page - 1) * limit;
+    
+        const [reviews, total] = await this.reviewRepo.findAndCount({
+            where: { userId },
+            relations: ['product', 'user'], // Load cả product và user
+            skip,
+            take: limit,
+            order: { createdAt: 'DESC' },
+        });
+    
+        const reviewsWithImages = await Promise.all(
+            reviews.map(async (review) => {
+                const images = await this.fileRepo.find({
+                    where: { targetId: review.id, targetType: 'review' },
+                });
+                return {
+                    id: review.id,
+                    userId: review.userId,
+                    user: review.user, // Thêm user
+                    productId: review.productId,
+                    product: review.product,
+                    rating: review.rating,
+                    comment: review.comment,
+                    createdAt: review.createdAt,
+                    updatedAt: review.updatedAt,
+                    isHidden: review.isHidden,
+                    images,
+                } as ReviewResponseDto;
+            })
+        );
+    
+        return {
+            reviews: reviewsWithImages,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+        };
+    }
     // Kiểm tra xem người dùng đã mua sản phẩm chưa
     private async checkIfUserPurchased(userId: string, productId: number): Promise<boolean> {
         const invoices = await this.invoiceRepo.find({
@@ -134,14 +174,13 @@ export class ReviewService {
     async getReviewsByProductId(productId: number, page: number = 1, limit: number = 10) {
         const skip = (page - 1) * limit;
         const [reviews, total] = await this.reviewRepo.findAndCount({
-            where: { productId },
-            relations: ['user'],
+            where: { productId , isHidden: false},
+            relations: ['user', 'product'], // Load cả user và product
             skip,
             take: limit,
             order: { createdAt: 'DESC' },
         });
-
-        // Lấy hình ảnh cho từng đánh giá
+    
         const reviewsWithImages = await Promise.all(
             reviews.map(async (review) => {
                 const images = await this.fileRepo.find({
@@ -150,17 +189,19 @@ export class ReviewService {
                 return {
                     id: review.id,
                     userId: review.userId,
-                    user: review.user,
+                    user: review.user, // Thêm user
                     productId: review.productId,
+                    product: review.product,
                     rating: review.rating,
                     comment: review.comment,
                     createdAt: review.createdAt,
                     updatedAt: review.updatedAt,
+                    isHidden: review.isHidden,
                     images,
                 } as ReviewResponseDto;
             })
         );
-
+    
         return {
             reviews: reviewsWithImages,
             total,
@@ -267,7 +308,7 @@ export class ReviewService {
         await this.reviewRepo.remove(review);
     }
 
-    async getTopRatedProduct(minReviews: number = 5): Promise<{ product: Product; averageRating: number; totalReviews: number }> {
+    async getTopRatedProduct(minReviews: number = 1): Promise<{ product: Product; averageRating: number; totalReviews: number }> {
         const result = await this.reviewRepo
             .createQueryBuilder('review')
             .select('review.productId', 'productId')
@@ -276,19 +317,19 @@ export class ReviewService {
             .where('review.isHidden = :isHidden', { isHidden: false })
             .groupBy('review.productId')
             .having('COUNT(review.id) >= :minReviews', { minReviews })
-            .orderBy('averageRating', 'DESC')
+            .orderBy('AVG(review.rating)', 'DESC') // Sửa: Dùng biểu thức gốc thay vì alias
             .limit(1)
             .getRawOne();
-
+    
         if (!result) {
             throw new NotFoundException('Không tìm thấy sản phẩm nào đáp ứng điều kiện');
         }
-
+    
         const product = await this.productRepo.findOne({ where: { id: result.productId } });
         if (!product) {
             throw new NotFoundException('Sản phẩm không tồn tại');
         }
-
+    
         return {
             product,
             averageRating: parseFloat(result.averageRating),
@@ -297,7 +338,7 @@ export class ReviewService {
     }
 
     // Lấy sản phẩm được đánh giá thấp nhất
-    async getLowestRatedProduct(minReviews: number = 5): Promise<{ product: Product; averageRating: number; totalReviews: number }> {
+    async getLowestRatedProduct(minReviews: number = 1): Promise<{ product: Product; averageRating: number; totalReviews: number }> {
         const result = await this.reviewRepo
             .createQueryBuilder('review')
             .select('review.productId', 'productId')
@@ -306,19 +347,19 @@ export class ReviewService {
             .where('review.isHidden = :isHidden', { isHidden: false })
             .groupBy('review.productId')
             .having('COUNT(review.id) >= :minReviews', { minReviews })
-            .orderBy('averageRating', 'ASC')
+            .orderBy('AVG(review.rating)', 'ASC') // Sửa: Dùng biểu thức gốc thay vì alias
             .limit(1)
             .getRawOne();
-
+    
         if (!result) {
             throw new NotFoundException('Không tìm thấy sản phẩm nào đáp ứng điều kiện');
         }
-
+    
         const product = await this.productRepo.findOne({ where: { id: result.productId } });
         if (!product) {
             throw new NotFoundException('Sản phẩm không tồn tại');
         }
-
+    
         return {
             product,
             averageRating: parseFloat(result.averageRating),
@@ -334,29 +375,28 @@ export class ReviewService {
             .addSelect('COUNT(review.id)', 'totalReviews')
             .where('review.isHidden = :isHidden', { isHidden: false })
             .groupBy('review.productId')
-            .orderBy('totalReviews', 'DESC')
+            .orderBy('COUNT(review.id)', 'DESC') // Sửa: Dùng biểu thức gốc thay vì alias
             .limit(1)
             .getRawOne();
-
+    
         if (!result) {
             throw new NotFoundException('Không tìm thấy sản phẩm nào có đánh giá');
         }
-
+    
         const product = await this.productRepo.findOne({ where: { id: result.productId } });
         if (!product) {
             throw new NotFoundException('Sản phẩm không tồn tại');
         }
-
+    
         return {
             product,
             totalReviews: parseInt(result.totalReviews),
         };
     }
-
     // Lấy danh sách sản phẩm theo thứ tự đánh giá
     async getProductsByRating(order: 'ASC' | 'DESC' = 'DESC', page: number = 1, limit: number = 10, minReviews: number = 5) {
         const skip = (page - 1) * limit;
-
+    
         const query = this.reviewRepo
             .createQueryBuilder('review')
             .select('review.productId', 'productId')
@@ -365,13 +405,13 @@ export class ReviewService {
             .where('review.isHidden = :isHidden', { isHidden: false })
             .groupBy('review.productId')
             .having('COUNT(review.id) >= :minReviews', { minReviews })
-            .orderBy('averageRating', order)
+            .orderBy('AVG(review.rating)', order) // Sửa: Dùng biểu thức gốc thay vì alias
             .skip(skip)
             .take(limit);
-
+    
         const results = await query.getRawMany();
         const total = await query.getCount();
-
+    
         const productsWithStats = await Promise.all(
             results.map(async (result) => {
                 const product = await this.productRepo.findOne({ where: { id: result.productId } });
@@ -382,7 +422,7 @@ export class ReviewService {
                 };
             })
         );
-
+    
         return {
             products: productsWithStats,
             total,
@@ -431,13 +471,18 @@ export class ReviewService {
     }
 
     // Admin ẩn đánh giá
-    async hideReview(reviewId: number): Promise<void> {
+    async toggleHiddenReview(reviewId: number): Promise<{ message: string; isHidden: boolean }> {
         const review = await this.reviewRepo.findOne({ where: { id: reviewId } });
         if (!review) throw new NotFoundException('Đánh giá không tồn tại');
-
-        review.isHidden = true;
+    
+        // Toggle trạng thái isHidden
+        review.isHidden = !review.isHidden;
         review.updatedAt = new Date();
         await this.reviewRepo.save(review);
+    
+        // Trả về thông điệp phù hợp
+        const message = review.isHidden ? 'Review hidden successfully' : 'Review unhidden successfully';
+        return { message, isHidden: review.isHidden };
     }
 
     // Admin xóa đánh giá
