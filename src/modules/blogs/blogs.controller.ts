@@ -28,13 +28,15 @@ import { FileRepository } from '../files/file.repository';
 @ApiTags('Blogs')
 @ApiSecurity('JWT-auth')
 export class BlogsController {
-  constructor(private readonly blogsService: BlogsService,
+  constructor(
+    private readonly blogsService: BlogsService,
     private readonly minioService: MinioService,
-    private readonly fileRepository: FileRepository
-  ) { }
+    private readonly fileRepository: FileRepository,
+  ) {}
 
   /** 
-   * 1 . api đăng bài viết , có thể up load nhiều hình ảnh , khi up thì gọi qua minio service hoặc api minio controller để đăng bài */
+   * 1. API đăng bài viết, có thể upload nhiều hình ảnh, khi upload thì gọi qua MinIO service
+   */
   @Post('create')
   @Actions('create')
   @Objectcode('BLOG01')
@@ -48,6 +50,7 @@ export class BlogsController {
       type: 'object',
       properties: {
         title: { type: 'string' },
+        excerpt: { type: 'string' }, // Thêm excerpt vào schema
         content: { type: 'string' },
         files: {
           type: 'array',
@@ -74,11 +77,12 @@ export class BlogsController {
     // Tạo blog mới trong database
     const blog = await this.blogsService.create({
       ...createBlogDto,
+      thumbnail: null, // Sẽ cập nhật sau khi upload ảnh
     });
 
-    // Upload ảnh lên Minio
+    // Upload ảnh lên MinIO
     const uploadResults = await Promise.all(
-      files.map(async (file) => {
+      files.map(async (file, index) => {
         const uuid = uuidv4();
         const objectName = `blog-${blog.id}/${uuid}-${file.originalname}`;
 
@@ -92,7 +96,7 @@ export class BlogsController {
         const fileUrl = await this.minioService.getUrlByName('public', [objectName]);
 
         // Lưu vào bảng files
-        return this.fileRepository.createFile({
+        const fileData = await this.fileRepository.createFile({
           fileId: uuid,
           bucketName: 'public',
           fileName: objectName,
@@ -100,19 +104,28 @@ export class BlogsController {
           targetId: blog.id,
           targetType: 'blog',
         });
+
+        // Nếu là ảnh đầu tiên, lưu làm thumbnail
+        if (index === 0) {
+          await this.blogsService.update(blog.id, { thumbnail: fileUrl[0] });
+        }
+
+        return fileData;
       })
     );
 
+    // Lấy lại blog sau khi cập nhật thumbnail
+    const updatedBlog = await this.blogsService.findById(blog.id);
+
     return {
       message: 'Blog created successfully',
-      blog,
+      blog: updatedBlog,
       images: uploadResults,
     };
   }
 
-
   /*
-   * 2. lấy 1 bài viết ra thì phải lấy tất cả các ảnh mà bài viết đó có 
+   * 2. Lấy 1 bài viết ra thì phải lấy tất cả các ảnh mà bài viết đó có 
    */
   @Get(':id')
   @Public()
@@ -131,7 +144,7 @@ export class BlogsController {
   }
 
   /*
-   * 3. lấy tất cả các bài viết thì cũng lấy tất cả các ảnh mà mỗi bài viết có 
+   * 3. Lấy tất cả các bài viết thì cũng lấy tất cả các ảnh mà mỗi bài viết có 
    */
   @Get()
   @Public()
@@ -151,7 +164,7 @@ export class BlogsController {
   }
 
   /*
-   * 4. cập nhật chỉnh sửa bài viết hay là hình ảnh trên bài viết thì gọi lại upload minio như thế nào (phần này chưa hiểu lắm)
+   * 4. Cập nhật chỉnh sửa bài viết hoặc hình ảnh trên bài viết
    */
   @Put('update/:id')
   @Actions('update')
@@ -166,8 +179,9 @@ export class BlogsController {
       type: 'object',
       properties: {
         title: { type: 'string' },
+        excerpt: { type: 'string' }, // Thêm excerpt vào schema
         content: { type: 'string' },
-        keepFiles: { // Danh sách file giữ lại với đủ thông tin
+        keepFiles: {
           type: 'array',
           items: {
             type: 'object',
@@ -176,10 +190,10 @@ export class BlogsController {
               fileName: { type: 'string' },
               bucketName: { type: 'string' },
             },
-            required: ['fileId', 'fileName', 'bucketName']
-          }
+            required: ['fileId', 'fileName', 'bucketName'],
+          },
         },
-        files: { // Upload file mới
+        files: {
           type: 'array',
           items: { type: 'string', format: 'binary' },
         },
@@ -197,6 +211,7 @@ export class BlogsController {
       throw new BadRequestException('Blog not found');
     }
 
+    // Cập nhật thông tin blog
     await this.blogsService.update(id, updateBlogDto);
 
     const oldImages = await this.fileRepository.findFilesByTarget(id, 'blog');
@@ -249,17 +264,27 @@ export class BlogsController {
           targetType: 'blog',
         });
 
-        newUploadedFiles.push(fileData.fileUrl);
+        newUploadedFiles.push(fileData);
+      }
+
+      // Nếu không còn ảnh nào được giữ lại và có ảnh mới, chọn ảnh đầu tiên làm thumbnail
+      if (keepFiles.length === 0 && newUploadedFiles.length > 0) {
+        await this.blogsService.update(id, { thumbnail: newUploadedFiles[0].fileUrl });
       }
     }
+
+    // Lấy lại blog sau khi cập nhật
+    const updatedBlog = await this.blogsService.findById(id);
+
     return {
       message: 'Blog updated successfully',
-      updatedImages: [...keepFiles.map(f => f.fileName), ...newUploadedFiles], 
+      blog: updatedBlog,
+      updatedImages: [...keepFiles.map(f => f.fileName), ...newUploadedFiles.map(f => f.fileUrl)],
     };
   }
 
   /*
-   * 5. xóa bài viết thì xóa cả phần hình ảnh của bài viết đó trên minio 
+   * 5. Xóa bài viết thì xóa cả phần hình ảnh của bài viết đó trên MinIO 
    */
   @Delete('delete/:id')
   @Actions('delete')
@@ -270,7 +295,7 @@ export class BlogsController {
       throw new BadRequestException('Blog not found');
     }
 
-    // Xóa ảnh trên Minio
+    // Xóa ảnh trên MinIO
     const images = await this.fileRepository.findFilesByTarget(id, 'blog');
     for (const image of images) {
       await this.minioService.deleteFile(image.bucketName, image.fileName);
@@ -282,6 +307,4 @@ export class BlogsController {
 
     return { message: 'Blog deleted successfully' };
   }
-
-
 }
