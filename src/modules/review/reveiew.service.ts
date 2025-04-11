@@ -32,6 +32,27 @@ export class ReviewService {
     ) { }
 
 
+    async getAllReviews(page: number, limit: number, isHidden?: boolean, productId?: number, userId?: number) {
+        const query = this.reviewRepo.createQueryBuilder('review')
+            .leftJoinAndSelect('review.product', 'product')
+            .leftJoinAndSelect('review.images', 'images')
+            .skip((page - 1) * limit)
+            .take(limit);
+    
+        if (isHidden !== undefined) {
+            query.andWhere('review.isHidden = :isHidden', { isHidden });
+        }
+        if (productId) {
+            query.andWhere('review.productId = :productId', { productId });
+        }
+        if (userId) {
+            query.andWhere('review.userId = :userId', { userId });
+        }
+    
+        const [reviews, total] = await query.getManyAndCount();
+        return { reviews, total };
+    }
+
     // Tạo đánh giá
     async createReview(
         userId: string,

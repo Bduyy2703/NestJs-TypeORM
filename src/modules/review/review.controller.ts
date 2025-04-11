@@ -14,6 +14,27 @@ import { Public } from 'src/cores/decorators/public.decorator';
 export class ReviewController {
     constructor(private readonly reviewService: ReviewService) { }
 
+    // API mới: Lấy tất cả đánh giá (dành cho admin)
+    @Get()
+    @Actions('read')
+    @Objectcode('REVIEW01')
+    @ApiOperation({ summary: 'Lấy tất cả đánh giá trên hệ thống (dành cho admin)' })
+    @ApiQuery({ name: 'page', required: false, type: Number })
+    @ApiQuery({ name: 'limit', required: false, type: Number })
+    @ApiQuery({ name: 'isHidden', required: false, type: Boolean, description: 'Lọc theo trạng thái ẩn/hiện' })
+    @ApiQuery({ name: 'productId', required: false, type: Number, description: 'Lọc theo sản phẩm' })
+    @ApiQuery({ name: 'userId', required: false, type: Number, description: 'Lọc theo người dùng' })
+    @ApiResponse({ status: 200, description: 'List of all reviews', type: [ReviewResponseDto] })
+    async getAllReviews(
+        @Query('page') page: number = 1,
+        @Query('limit') limit: number = 10,
+        @Query('isHidden') isHidden?: boolean,
+        @Query('productId') productId?: number,
+        @Query('userId') userId?: number
+    ) {
+        return this.reviewService.getAllReviews(page, limit, isHidden, productId, userId);
+    }
+
     @Get('my-reviews')
     @Actions('read')
     @Objectcode('REVIEW01')
