@@ -33,12 +33,12 @@ export class ReviewService {
 
 
     async getAllReviews(page: number, limit: number, isHidden?: boolean, productId?: number, userId?: number) {
+        // Bước 1: Lấy danh sách đánh giá
         const query = this.reviewRepo.createQueryBuilder('review')
             .leftJoinAndSelect('review.product', 'product')
-            .leftJoinAndSelect('review.images', 'images')
             .skip((page - 1) * limit)
             .take(limit);
-    
+
         if (isHidden !== undefined) {
             query.andWhere('review.isHidden = :isHidden', { isHidden });
         }
@@ -48,10 +48,33 @@ export class ReviewService {
         if (userId) {
             query.andWhere('review.userId = :userId', { userId });
         }
-    
+
         const [reviews, total] = await query.getManyAndCount();
-        return { reviews, total };
+
+        // Bước 2: Lấy hình ảnh từ bảng File cho từng review
+        const reviewIds = reviews.map(review => review.id);
+        let images: File[] = [];
+        if (reviewIds.length > 0) {
+            images = await this.fileRepo.find({
+                where: {
+                    targetId: In(reviewIds),
+                    targetType: 'review',
+                },
+            });
+        }
+
+        // Bước 3: Gộp hình ảnh vào từng review
+        const reviewsWithImages = reviews.map(review => {
+            const reviewImages = images.filter(image => image.targetId === review.id);
+            return {
+                ...review,
+                images: reviewImages,
+            };
+        });
+
+        return { reviews: reviewsWithImages, total };
     }
+    
     async createReview(
         userId: string,
         createReviewDto: CreateReviewDto,
