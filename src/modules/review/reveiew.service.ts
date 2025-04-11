@@ -350,129 +350,175 @@ export class ReviewService {
         await this.reviewRepo.remove(review);
     }
 
-    async getTopRatedProduct(minReviews: number = 1): Promise<{ product: Product; averageRating: number; totalReviews: number }> {
-        const result = await this.reviewRepo
-            .createQueryBuilder('review')
-            .select('review.productId', 'productId')
-            .addSelect('AVG(review.rating)', 'averageRating')
-            .addSelect('COUNT(review.id)', 'totalReviews')
-            .where('review.isHidden = :isHidden', { isHidden: false })
-            .groupBy('review.productId')
-            .having('COUNT(review.id) >= :minReviews', { minReviews })
-            .orderBy('AVG(review.rating)', 'DESC') // Sửa: Dùng biểu thức gốc thay vì alias
-            .limit(1)
-            .getRawOne();
-    
-        if (!result) {
-            throw new NotFoundException('Không tìm thấy sản phẩm nào đáp ứng điều kiện');
-        }
-    
-        const product = await this.productRepo.findOne({ where: { id: result.productId } });
-        if (!product) {
-            throw new NotFoundException('Sản phẩm không tồn tại');
-        }
-    
-        return {
-            product,
-            averageRating: parseFloat(result.averageRating),
-            totalReviews: parseInt(result.totalReviews),
-        };
+  // Lấy sản phẩm được đánh giá cao nhất
+async getTopRatedProduct(minReviews: number = 1): Promise<{ product: Product; averageRating: number; totalReviews: number; images: File[] }> {
+    const result = await this.reviewRepo
+        .createQueryBuilder('review')
+        .select('review.productId', 'productId')
+        .addSelect('AVG(review.rating)', 'averageRating')
+        .addSelect('COUNT(review.id)', 'totalReviews')
+        .where('review.isHidden = :isHidden', { isHidden: false })
+        .groupBy('review.productId')
+        .having('COUNT(review.id) >= :minReviews', { minReviews })
+        .orderBy('AVG(review.rating)', 'DESC')
+        .limit(1)
+        .getRawOne();
+
+    if (!result) {
+        throw new NotFoundException('Không tìm thấy sản phẩm nào đáp ứng điều kiện');
     }
 
-    // Lấy sản phẩm được đánh giá thấp nhất
-    async getLowestRatedProduct(minReviews: number = 1): Promise<{ product: Product; averageRating: number; totalReviews: number }> {
-        const result = await this.reviewRepo
-            .createQueryBuilder('review')
-            .select('review.productId', 'productId')
-            .addSelect('AVG(review.rating)', 'averageRating')
-            .addSelect('COUNT(review.id)', 'totalReviews')
-            .where('review.isHidden = :isHidden', { isHidden: false })
-            .groupBy('review.productId')
-            .having('COUNT(review.id) >= :minReviews', { minReviews })
-            .orderBy('AVG(review.rating)', 'ASC') // Sửa: Dùng biểu thức gốc thay vì alias
-            .limit(1)
-            .getRawOne();
-    
-        if (!result) {
-            throw new NotFoundException('Không tìm thấy sản phẩm nào đáp ứng điều kiện');
-        }
-    
-        const product = await this.productRepo.findOne({ where: { id: result.productId } });
-        if (!product) {
-            throw new NotFoundException('Sản phẩm không tồn tại');
-        }
-    
-        return {
-            product,
-            averageRating: parseFloat(result.averageRating),
-            totalReviews: parseInt(result.totalReviews),
-        };
+    const product = await this.productRepo.findOne({ where: { id: result.productId } });
+    if (!product) {
+        throw new NotFoundException('Sản phẩm không tồn tại');
     }
 
-    // Lấy sản phẩm có nhiều đánh giá nhất
-    async getMostReviewedProduct(): Promise<{ product: Product; totalReviews: number }> {
-        const result = await this.reviewRepo
-            .createQueryBuilder('review')
-            .select('review.productId', 'productId')
-            .addSelect('COUNT(review.id)', 'totalReviews')
-            .where('review.isHidden = :isHidden', { isHidden: false })
-            .groupBy('review.productId')
-            .orderBy('COUNT(review.id)', 'DESC') // Sửa: Dùng biểu thức gốc thay vì alias
-            .limit(1)
-            .getRawOne();
-    
-        if (!result) {
-            throw new NotFoundException('Không tìm thấy sản phẩm nào có đánh giá');
-        }
-    
-        const product = await this.productRepo.findOne({ where: { id: result.productId } });
-        if (!product) {
-            throw new NotFoundException('Sản phẩm không tồn tại');
-        }
-    
-        return {
-            product,
-            totalReviews: parseInt(result.totalReviews),
-        };
+    // Lấy hình ảnh của sản phẩm
+    const images = await this.fileRepo.find({
+        where: {
+            targetId: product.id,
+            targetType: 'product',
+        },
+    });
+
+    return {
+        product,
+        averageRating: parseFloat(result.averageRating),
+        totalReviews: parseInt(result.totalReviews),
+        images, // Thêm trường images
+    };
+}
+
+// Lấy sản phẩm được đánh giá thấp nhất
+async getLowestRatedProduct(minReviews: number = 1): Promise<{ product: Product; averageRating: number; totalReviews: number; images: File[] }> {
+    const result = await this.reviewRepo
+        .createQueryBuilder('review')
+        .select('review.productId', 'productId')
+        .addSelect('AVG(review.rating)', 'averageRating')
+        .addSelect('COUNT(review.id)', 'totalReviews')
+        .where('review.isHidden = :isHidden', { isHidden: false })
+        .groupBy('review.productId')
+        .having('COUNT(review.id) >= :minReviews', { minReviews })
+        .orderBy('AVG(review.rating)', 'ASC')
+        .limit(1)
+        .getRawOne();
+
+    if (!result) {
+        throw new NotFoundException('Không tìm thấy sản phẩm nào đáp ứng điều kiện');
     }
-    // Lấy danh sách sản phẩm theo thứ tự đánh giá
-    async getProductsByRating(order: 'ASC' | 'DESC' = 'DESC', page: number = 1, limit: number = 10, minReviews: number = 5) {
-        const skip = (page - 1) * limit;
-    
-        const query = this.reviewRepo
-            .createQueryBuilder('review')
-            .select('review.productId', 'productId')
-            .addSelect('AVG(review.rating)', 'averageRating')
-            .addSelect('COUNT(review.id)', 'totalReviews')
-            .where('review.isHidden = :isHidden', { isHidden: false })
-            .groupBy('review.productId')
-            .having('COUNT(review.id) >= :minReviews', { minReviews })
-            .orderBy('AVG(review.rating)', order) // Sửa: Dùng biểu thức gốc thay vì alias
-            .skip(skip)
-            .take(limit);
-    
-        const results = await query.getRawMany();
-        const total = await query.getCount();
-    
-        const productsWithStats = await Promise.all(
-            results.map(async (result) => {
-                const product = await this.productRepo.findOne({ where: { id: result.productId } });
-                return {
-                    product,
-                    averageRating: parseFloat(result.averageRating),
-                    totalReviews: parseInt(result.totalReviews),
-                };
-            })
-        );
-    
-        return {
-            products: productsWithStats,
-            total,
-            page,
-            limit,
-            totalPages: Math.ceil(total / limit),
-        };
+
+    const product = await this.productRepo.findOne({ where: { id: result.productId } });
+    if (!product) {
+        throw new NotFoundException('Sản phẩm không tồn tại');
     }
+
+    // Lấy hình ảnh của sản phẩm
+    const images = await this.fileRepo.find({
+        where: {
+            targetId: product.id,
+            targetType: 'product',
+        },
+    });
+
+    return {
+        product,
+        averageRating: parseFloat(result.averageRating),
+        totalReviews: parseInt(result.totalReviews),
+        images, // Thêm trường images
+    };
+}
+
+// Lấy sản phẩm có nhiều đánh giá nhất
+async getMostReviewedProduct(): Promise<{ product: Product; totalReviews: number; images: File[] }> {
+    const result = await this.reviewRepo
+        .createQueryBuilder('review')
+        .select('review.productId', 'productId')
+        .addSelect('COUNT(review.id)', 'totalReviews')
+        .where('review.isHidden = :isHidden', { isHidden: false })
+        .groupBy('review.productId')
+        .orderBy('COUNT(review.id)', 'DESC')
+        .limit(1)
+        .getRawOne();
+
+    if (!result) {
+        throw new NotFoundException('Không tìm thấy sản phẩm nào có đánh giá');
+    }
+
+    const product = await this.productRepo.findOne({ where: { id: result.productId } });
+    if (!product) {
+        throw new NotFoundException('Sản phẩm không tồn tại');
+    }
+
+    // Lấy hình ảnh của sản phẩm
+    const images = await this.fileRepo.find({
+        where: {
+            targetId: product.id,
+            targetType: 'product',
+        },
+    });
+
+    return {
+        product,
+        totalReviews: parseInt(result.totalReviews),
+        images, // Thêm trường images
+    };
+}
+
+// Lấy danh sách sản phẩm theo thứ tự đánh giá
+async getProductsByRating(order: 'ASC' | 'DESC' = 'DESC', page: number = 1, limit: number = 10, minReviews: number = 5) {
+    const skip = (page - 1) * limit;
+
+    const query = this.reviewRepo
+        .createQueryBuilder('review')
+        .select('review.productId', 'productId')
+        .addSelect('AVG(review.rating)', 'averageRating')
+        .addSelect('COUNT(review.id)', 'totalReviews')
+        .where('review.isHidden = :isHidden', { isHidden: false })
+        .groupBy('review.productId')
+        .having('COUNT(review.id) >= :minReviews', { minReviews })
+        .orderBy('AVG(review.rating)', order)
+        .skip(skip)
+        .take(limit);
+
+    const results = await query.getRawMany();
+    const total = await query.getCount();
+
+    // Lấy danh sách productId
+    const productIds = results.map(result => result.productId);
+
+    // Lấy hình ảnh của tất cả sản phẩm
+    let images: File[] = [];
+    if (productIds.length > 0) {
+        images = await this.fileRepo.find({
+            where: {
+                targetId: In(productIds),
+                targetType: 'product',
+            },
+        });
+    }
+
+    // Gộp sản phẩm và hình ảnh
+    const productsWithStats = await Promise.all(
+        results.map(async (result) => {
+            const product = await this.productRepo.findOne({ where: { id: result.productId } });
+            const productImages = images.filter(image => image.targetId === result.productId);
+            return {
+                product,
+                averageRating: parseFloat(result.averageRating),
+                totalReviews: parseInt(result.totalReviews),
+                images: productImages, // Thêm trường images
+            };
+        })
+    );
+
+    return {
+        products: productsWithStats,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+    };
+}
 
     // Lấy thống kê đánh giá của một sản phẩm
     async getProductReviewStatistics(productId: number) {
