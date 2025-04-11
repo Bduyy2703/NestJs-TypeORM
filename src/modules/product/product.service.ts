@@ -110,9 +110,25 @@ export class ProductService {
     const totalStock = product.productDetails.reduce((sum, detail) => sum + detail.stock, 0);
     const totalSold = product.productDetails.reduce((sum, detail) => sum + detail.sold, 0);
 
+    const formattedImages = await Promise.all(
+      images.map(async (image) => {
+        // Lấy URL của ảnh từ Minio
+        const fileUrl = await this.minioService.getUrlByName(image.bucketName, [
+          image.fileName,
+        ]);
+
+        return {
+          fileId: image.fileId,
+          fileName: image.fileName,
+          fileUrl: fileUrl[0], // Giả sử getUrlByName trả về mảng, lấy URL đầu tiên
+          bucketName: image.bucketName,
+        };
+      })
+    );
+
     return {
       ...product,
-      images: images.map((img) => img.fileUrl),
+      images:formattedImages,
       totalStock,
       totalSold,
     };
