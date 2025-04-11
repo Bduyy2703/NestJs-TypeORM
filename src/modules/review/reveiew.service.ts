@@ -52,8 +52,6 @@ export class ReviewService {
         const [reviews, total] = await query.getManyAndCount();
         return { reviews, total };
     }
-
-    // Tạo đánh giá
     async createReview(
         userId: string,
         createReviewDto: CreateReviewDto,
