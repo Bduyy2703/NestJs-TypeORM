@@ -21,14 +21,14 @@ export class ProductDetailsService {
 
     @InjectRepository(File) // Inject bảng File
     private readonly fileRepository: Repository<File>
-  ) {}
+  ) { }
 
   async create(productId: number, createDto: CreateProductDetailsDto) {
     const product = await this.productRepository.findOne({ where: { id: productId } });
     if (!product) {
       throw new NotFoundException("Product not found");
     }
-    
+
     let inventory = null;
     if (createDto.inventoryId) {
       inventory = await this.inventoryRepository.findOne({ where: { id: createDto.inventoryId } });
@@ -41,11 +41,11 @@ export class ProductDetailsService {
     if (!Object.values(ProductSize).includes(createDto.size as ProductSize)) {
       throw new Error("Invalid size value");
     }
-  
+
     if (!Object.values(ProductColor).includes(createDto.color as ProductColor)) {
       throw new Error("Invalid color value");
     }
-  
+
     if (!Object.values(ProductMaterial).includes(createDto.material as ProductMaterial)) {
       throw new Error("Invalid material value");
     }
@@ -58,16 +58,20 @@ export class ProductDetailsService {
       product,
       inventory,
     });
-  
+
     return this.productDetailsRepository.save(productDetails);
   }
-  
+
 
   async findAll(productId: number) {
     const productDetails = await this.productDetailsRepository.find({
       where: { product: { id: productId } },
-      relations: ["product" , "inventory"], // Lấy thông tin product
+      relations: ["product", "inventory"], // Lấy thông tin product
     });
+
+    // Tính totalStock và totalSold
+    const totalStock = productDetails.reduce((sum, detail) => sum + (detail.stock || 0), 0);
+    const totalSold = productDetails.reduce((sum, detail) => sum + (detail.sold || 0), 0);
 
     // Lấy ảnh từ bảng File theo targetId = productId, targetType = 'product'
     const images = await this.fileRepository.find({
@@ -77,13 +81,15 @@ export class ProductDetailsService {
     return productDetails.map((detail) => ({
       ...detail,
       images, // Gán thêm ảnh lấy từ bảng File
+      totalStock,
+      totalSold
     }));
   }
 
   async findOne(id: number) {
     const productDetails = await this.productDetailsRepository.findOne({
       where: { id },
-      relations: ["product","inventory"], // Lấy thông tin product
+      relations: ["product", "inventory"], // Lấy thông tin product
     });
     console.log(productDetails)
     if (!productDetails) {
@@ -100,33 +106,33 @@ export class ProductDetailsService {
       images, // Gán thêm ảnh lấy từ bảng File
     };
   }
-  
+
   async update(id: number, updateDto: UpdateProductDetailsDto) {
     const productDetails = await this.findOne(id);
-    
+
     let inventory = productDetails.inventory;
 
     if (updateDto.inventoryId) {
-        const foundInventory = await this.inventoryRepository.findOne({ where: { id: updateDto.inventoryId } });
+      const foundInventory = await this.inventoryRepository.findOne({ where: { id: updateDto.inventoryId } });
 
-        if (!foundInventory) {
-            throw new Error(`Inventory with ID ${updateDto.inventoryId} not found`);
-        }
-        
-        inventory = foundInventory;
+      if (!foundInventory) {
+        throw new Error(`Inventory with ID ${updateDto.inventoryId} not found`);
+      }
+
+      inventory = foundInventory;
     }
 
     const updatedData = {
-        ...updateDto,
-        size: updateDto.size as ProductSize,
-        color: updateDto.color as ProductColor,
-        material: updateDto.material as ProductMaterial,
-        inventory,
+      ...updateDto,
+      size: updateDto.size as ProductSize,
+      color: updateDto.color as ProductColor,
+      material: updateDto.material as ProductMaterial,
+      inventory,
     };
 
     await this.productDetailsRepository.save({ ...productDetails, ...updatedData });
     return this.findOne(id);
-}
+  }
 
   async remove(id: number) {
     const productDetails = await this.findOne(id);
