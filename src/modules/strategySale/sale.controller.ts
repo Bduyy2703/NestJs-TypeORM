@@ -109,28 +109,42 @@ export class SaleStrategyController {
     return await this.saleService.endSale(activeSale.id);
   }
 
-  @Put(":id")
-  @Actions("update")
-  @Objectcode("SALE01")
-  @ApiOperation({ summary: "Cập nhật thông tin chương trình giảm giá" })
-  @ApiResponse({ status: 200, description: "Cập nhật thành công." })
-  @ApiResponse({ status: 404, description: "Sale không tồn tại." })
-  async updateSale(@Param("id", ParseIntPipe) id: number, @Body() dto: UpdateSaleDto) {
+  @Put(':id')
+  @Actions('update')
+  @Objectcode('SALE01')
+  @ApiOperation({ summary: 'Cập nhật thông tin chương trình giảm giá' })
+  @ApiResponse({ status: 200, description: 'Cập nhật thành công.' })
+  @ApiResponse({ status: 404, description: 'Sale không tồn tại.' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ.' })
+  async updateSale(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateSaleDto) {
     if (dto.isGlobalSale && (dto.products?.length || dto.categories?.length)) {
-      throw new BadRequestException("Không thể chọn sản phẩm hoặc danh mục khi isGlobalSale = true.");
+      throw new BadRequestException('Không thể chọn sản phẩm hoặc danh mục khi isGlobalSale = true.');
+    }
+    // Validation thêm cho startDate, endDate, discountAmount
+    if (dto.startDate && dto.endDate) {
+      if (dto.startDate > dto.endDate) {
+        throw new BadRequestException('startDate phải nhỏ hơn endDate');
+      }
+      if (dto.endDate.getTime() - dto.startDate.getTime() < 60 * 60 * 1000) {
+        throw new BadRequestException('Thời lượng sale phải ít nhất 1 tiếng');
+      }
+    }
+    if (dto.discountAmount !== undefined && (dto.discountAmount < 0 || dto.discountAmount > 100)) {
+      throw new BadRequestException('discountAmount phải từ 0 đến 100');
     }
     return await this.saleService.updateSale(id, dto);
   }
 
-  @Delete(":id")
-  @Actions("delete")
-  @Objectcode("SALE01")
-  @ApiOperation({ summary: "Xóa chương trình giảm giá" })
-  @ApiResponse({ status: 204, description: "Xóa thành công." })
-  @ApiResponse({ status: 404, description: "Sale không tồn tại." })
+  @Delete(':id')
+  @Actions('delete')
+  @Objectcode('SALE01')
+  @ApiOperation({ summary: 'Xóa chương trình giảm giá' })
+  @ApiResponse({ status: 204, description: 'Xóa thành công.' })
+  @ApiResponse({ status: 404, description: 'Sale không tồn tại.' })
+  @ApiResponse({ status: 400, description: 'Không thể xóa sale đang diễn ra.' })
   @HttpCode(204)
-  async deleteSale(@Param("id", ParseIntPipe) id: number) {
-    await this.validateSale(id);
+  async deleteSale(@Param('id', ParseIntPipe) id: number) {
+    // validateSale có thể kiểm tra sale tồn tại, bỏ nếu không cần
     return await this.saleService.deleteSale(id);
   }
 

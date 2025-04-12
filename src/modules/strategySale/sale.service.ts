@@ -99,80 +99,92 @@ export class SaleStrategyService {
    */
   async updateSale(id: number, dto: UpdateSaleDto): Promise<StrategySale> {
     const sale = await this.getSaleById(id);
-    if (dto.isActive === true) {
-      const existingActiveSale = await this.saleRepository.findOne({
-        where: { isActive: true, id: Not(id) },
-      });
   
-      if (existingActiveSale) {
-        dto.isActive = false;
-        throw new BadRequestException(
-          "Đã có chương trình giảm giá đang diễn ra. Vui lòng kết thúc trước khi kích hoạt chương trình mới."
-        );
+    // Validation
+    if (dto.startDate && dto.endDate) {
+      if (dto.startDate > dto.endDate) {
+        throw new BadRequestException('startDate phải nhỏ hơn endDate');
       }
-  
-      let productIds: number[];
-      
-      if (sale.isGlobalSale) {
-        const allProducts = await this.productRepository.find({ select: ["id"] });
-        productIds = allProducts.map((p) => p.id);
-      } else {
-        const allCategoryIds = sale.categoryStrategySales.map(c => c.categoryId);
-        const allProduct =  sale.productStrategySales.map(c => c.productId)
-        const productsInCategories = await this.productRepository.find({
-          where: {
-            category: { id: In(allCategoryIds) }
-          },
-          select: ["id"]
-        });
-        productIds = [
-         ...allProduct,
-          ...productsInCategories.map(p => p.id)
-        ];
+      if (dto.endDate.getTime() - dto.startDate.getTime() < 60 * 60 * 1000) {
+        throw new BadRequestException('Thời lượng sale phải ít nhất 1 tiếng');
       }
-
-      await this.productRepository.update(
-        { id: In(productIds) },
-        { finalPrice: () => `originalPrice * (1 - ${sale.discountAmount} / 100)` }
-      );
-    } else {
-      let productIds: number[];
-  
-      if (sale.isGlobalSale) {
-        const allProducts = await this.productRepository.find({ select: ["id"] });
-        productIds = allProducts.map((p) => p.id);
-      } else {
-        const allCategoryIds = sale.categoryStrategySales.map(c => c.categoryId)
-        const allProduct =  sale.productStrategySales.map(c => c.productId)
-        const productsInCategories = await this.productRepository.find({
-          where: {
-            category: { id: In(allCategoryIds) }
-          },
-          select: ["id"]
-        });
-        
-
-        productIds = [
-          ...allProduct,
-          ...productsInCategories.map(p => p.id)
-        ];
-      }
-      
-      // 🔥 Đặt lại finalPrice về originalPrice
-      await this.productRepository.update(
-        { id: In(productIds) },
-        { finalPrice: () => "originalPrice" }
-      );
+    }
+    if (dto.discountAmount !== undefined && (dto.discountAmount < 0 || dto.discountAmount > 100)) {
+      throw new BadRequestException('discountAmount phải từ 0 đến 100');
     }
   
+    // Lấy danh sách productIds
+    let productIds: number[];
+    if (sale.isGlobalSale) {
+      const allProducts = await this.productRepository.find({ select: ['id'] });
+      productIds = allProducts.map((p) => p.id);
+    } else {
+      const allCategoryIds = sale.categoryStrategySales.map((c) => c.categoryId);
+      const allProduct = sale.productStrategySales.map((c) => c.productId);
+      const productsInCategories = await this.productRepository.find({
+        where: { category: { id: In(allCategoryIds) } },
+        select: ['id'],
+      });
+      productIds = [...allProduct, ...productsInCategories.map((p) => p.id)];
+    }
+  
+    // Case 1: Sale đang diễn ra (isActive = true)
+    if (sale.isActive) {
+      if (dto.isActive === true) {
+        // Cập nhật giá với discountAmount mới (nếu có)
+        await this.productRepository.update(
+          { id: In(productIds) },
+          {
+            finalPrice: () =>
+              `originalPrice * (1 - ${(dto.discountAmount !== undefined ? dto.discountAmount : sale.discountAmount) / 100})`,
+          }
+        );
+      } else if (dto.isActive === false) {
+        // Đặt lại giá gốc
+        await this.productRepository.update(
+          { id: In(productIds) },
+          { finalPrice: () => 'originalPrice' }
+        );
+      }
+      // Cập nhật thông tin sale
+      Object.assign(sale, dto);
+      return await this.saleRepository.save(sale);
+    }
+  
+    // Case 2 & 3: Sale không diễn ra hoặc không có sale nào chạy
+    if (dto.isActive === true) {
+      // Kiểm tra sale đang chạy
+      const existingActiveSale = await this.saleRepository.findOne({
+        where: { isActive: true },
+      });
+      if (existingActiveSale) {
+        throw new BadRequestException(
+          'Đã có chương trình giảm giá đang diễn ra. Vui lòng kết thúc trước khi kích hoạt chương trình mới.'
+        );
+      }
+      // Cập nhật giá
+      await this.productRepository.update(
+        { id: In(productIds) },
+        {
+          finalPrice: () =>
+            `originalPrice * (1 - ${(dto.discountAmount !== undefined ? dto.discountAmount : sale.discountAmount) / 100})`,
+        }
+      );
+    }
+    // Nếu isActive = false hoặc undefined, không đổi giá
+  
+    // Cập nhật thông tin sale
     Object.assign(sale, dto);
     return await this.saleRepository.save(sale);
-  }  
+  }
   /**
    * Xóa chương trình giảm giá
    */
   async deleteSale(id: number): Promise<void> {
     const sale = await this.getSaleById(id);
+    if (sale.isActive) {
+      throw new BadRequestException('Vui lòng kết thúc chương trình giảm giá trước khi xóa.');
+    }
     await this.saleRepository.remove(sale);
   }
 /**
@@ -339,7 +351,7 @@ async endSale(id: number): Promise<StrategySale> {
     if (sale.isActive) {
         await this.productRepository.update(
             { id: dto.productId },
-            { finalPrice: () => `originalPrice * (1 - ${sale.discountPercent} / 100)` }
+            { finalPrice: () => `originalPrice * (1 - ${sale.discountAmount} / 100)` }
         );
     }
 
