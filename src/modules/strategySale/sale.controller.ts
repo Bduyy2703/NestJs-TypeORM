@@ -107,15 +107,6 @@ export class SaleStrategyController {
     if (dto.isGlobalSale && (dto.products?.length || dto.categories?.length)) {
       throw new BadRequestException('Không thể chọn sản phẩm hoặc danh mục khi isGlobalSale = true.');
     }
-    // Validation thêm cho startDate, endDate, discountAmount
-    if (dto.startDate && dto.endDate) {
-      if (dto.startDate > dto.endDate) {
-        throw new BadRequestException('startDate phải nhỏ hơn endDate');
-      }
-      if (dto.endDate.getTime() - dto.startDate.getTime() < 60 * 60 * 1000) {
-        throw new BadRequestException('Thời lượng sale phải ít nhất 1 tiếng');
-      }
-    }
     if (dto.discountAmount !== undefined && (dto.discountAmount < 0 || dto.discountAmount > 100)) {
       throw new BadRequestException('discountAmount phải từ 0 đến 100');
     }
