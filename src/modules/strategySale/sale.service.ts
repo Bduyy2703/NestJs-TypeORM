@@ -99,6 +99,7 @@ export class SaleStrategyService {
 async updateSale(id: number, dto: UpdateSaleDto): Promise<StrategySale> {
   const sale = await this.getSaleById(id);
 
+
   if (dto.discountAmount !== undefined && (dto.discountAmount < 0 || dto.discountAmount > 100)) {
     throw new BadRequestException('discountAmount phải từ 0 đến 100');
   }

@@ -16,7 +16,7 @@ export class SaleSchedulerService {
     private readonly saleService: SaleStrategyService,
   ) {}
 
-  @Cron('*/30 * * * * *') // Chạy mỗi 30 giây để test
+  @Cron('0 0 * * * *') // Chạy mỗi 30 giây để test
   async handleSaleActivation() {
     const now = new Date();
     this.logger.log(`Scheduler chạy lúc ${now.toISOString()}`);
