@@ -94,176 +94,176 @@ export class SaleStrategyService {
   }  
   
   /**
-   * Cập nhật chương trình giảm giá
-   */
-  async updateSale(id: number, dto: UpdateSaleDto): Promise<StrategySale> {
-    const sale = await this.getSaleById(id);
-  
-    // Validation
-    if (dto.startDate && dto.endDate) {
-      if (dto.startDate > dto.endDate) {
-        throw new BadRequestException('startDate phải nhỏ hơn endDate');
-      }
-      if (dto.endDate.getTime() - dto.startDate.getTime() < 60 * 60 * 1000) {
-        throw new BadRequestException('Thời lượng sale phải ít nhất 1 tiếng');
-      }
+ * Cập nhật chương trình giảm giá
+ */
+async updateSale(id: number, dto: UpdateSaleDto): Promise<StrategySale> {
+  const sale = await this.getSaleById(id);
+
+  // Validation
+  if (dto.startDate && dto.endDate) {
+    if (dto.startDate > dto.endDate) {
+      throw new BadRequestException('startDate phải nhỏ hơn endDate');
     }
-    if (dto.discountAmount !== undefined && (dto.discountAmount < 0 || dto.discountAmount > 100)) {
-      throw new BadRequestException('discountAmount phải từ 0 đến 100');
+    if (dto.endDate.getTime() - dto.startDate.getTime() < 60 * 60 * 1000) {
+      throw new BadRequestException('Thời lượng sale phải ít nhất 1 tiếng');
     }
-  
-    // Lưu discountAmount mới (nếu có)
-    const newDiscountAmount = dto.discountAmount !== undefined ? dto.discountAmount : sale.discountAmount;
-  
-    // Lấy productIds của sale hiện tại
-    let productIds: number[];
-    if (sale.isGlobalSale) {
-      const allProducts = await this.productRepository.find({ select: ['id'] });
-      productIds = allProducts.map((p) => p.id);
-    } else {
-      const allCategoryIds = sale.categoryStrategySales.map((c) => c.categoryId);
-      const allProduct = sale.productStrategySales.map((c) => c.productId);
-      const productsInCategories = await this.productRepository.find({
-        where: { category: { id: In(allCategoryIds) } },
-        select: ['id'],
-      });
-      productIds = [...new Set([...allProduct, ...productsInCategories.map((p) => p.id)])]; // Loại trùng
-    }
-  
-    // Cập nhật thông tin sale trước
-    Object.assign(sale, dto);
-    await this.saleRepository.save(sale);
-  
-    // Xử lý giá sản phẩm
-    if (dto.isActive === true || (dto.isActive === undefined && sale.isActive)) {
-      // Sale sẽ active (bật mới hoặc giữ active)
-      // Lấy tất cả sale đang chạy (bao gồm sale hiện tại nếu active)
-      const activeSales = await this.saleRepository.find({
-        where: { isActive: true },
-        relations: ['productStrategySales', 'categoryStrategySales'],
-      });
-  
-      // Nếu sale hiện tại không có trong activeSales và được bật
-      if (dto.isActive === true && !activeSales.some((s) => s.id === sale.id)) {
-        activeSales.push({ ...sale, discountAmount: newDiscountAmount });
-      }
-  
-      // Tạo map: productId -> sale có discountAmount lớn nhất
-      const productSaleMap = new Map<number, { saleId: number; discountAmount: number }>();
-  
-      for (const activeSale of activeSales) {
-        let saleProductIds: number[];
-        if (activeSale.isGlobalSale) {
-          const allProducts = await this.productRepository.find({ select: ['id'] });
-          saleProductIds = allProducts.map((p) => p.id);
-        } else {
-          let saleProductIds = activeSale.productStrategySales.map((c) => c.productId);
-          const saleCategoryIds = activeSale.categoryStrategySales.map((c) => c.categoryId);
-          const productsInCategories = await this.productRepository.find({
-            where: { category: { id: In(saleCategoryIds) } },
-            select: ['id'],
-          });
-          saleProductIds = [...new Set([...saleProductIds, ...productsInCategories.map((p) => p.id)])];
-        }
-  
-        // Cập nhật map với discountAmount lớn nhất
-        for (const productId of saleProductIds) {
-          const current = productSaleMap.get(productId);
-          if (!current || activeSale.discountAmount > current.discountAmount) {
-            productSaleMap.set(productId, {
-              saleId: activeSale.id,
-              discountAmount: activeSale.discountAmount,
-            });
-          }
-        }
-      }
-  
-      // Cập nhật giá cho tất cả sản phẩm
-      const updatePromises: Promise<any>[] = [];
-      for (const [productId, { discountAmount }] of productSaleMap) {
-        updatePromises.push(
-          this.productRepository.update(
-            { id: productId },
-            {
-              finalPrice: () => `originalPrice * (1 - ${discountAmount} / 100)`,
-            }
-          )
-        );
-      }
-      await Promise.all(updatePromises);
-  
-      // Đặt lại giá gốc cho sản phẩm không thuộc sale nào
-      const allActiveProductIds = [...productSaleMap.keys()];
-      if (allActiveProductIds.length > 0) {
-        await this.productRepository
-          .createQueryBuilder()
-          .update()
-          .set({ finalPrice: () => 'originalPrice' })
-          .where('id NOT IN (:...ids)', { ids: allActiveProductIds })
-          .execute();
-      }
-    } else if (dto.isActive === false) {
-      // Sale bị tắt
-      // Tính lại giá cho sản phẩm của sale này, dựa trên các sale còn lại
-      const activeSales = await this.saleRepository.find({
-        where: { isActive: true },
-        relations: ['productStrategySales', 'categoryStrategySales'],
-      });
-  
-      const productSaleMap = new Map<number, { saleId: number; discountAmount: number }>();
-      for (const activeSale of activeSales) {
-        let saleProductIds: number[];
-        if (activeSale.isGlobalSale) {
-          const allProducts = await this.productRepository.find({ select: ['id'] });
-          saleProductIds = allProducts.map((p) => p.id);
-        } else {
-          let saleProductIds = activeSale.productStrategySales.map((c) => c.productId);
-          const saleCategoryIds = activeSale.categoryStrategySales.map((c) => c.categoryId);
-          const productsInCategories = await this.productRepository.find({
-            where: { category: { id: In(saleCategoryIds) } },
-            select: ['id'],
-          });
-          saleProductIds = [...new Set([...saleProductIds, ...productsInCategories.map((p) => p.id)])];
-        }
-  
-        for (const productId of saleProductIds) {
-          const current = productSaleMap.get(productId);
-          if (!current || activeSale.discountAmount > current.discountAmount) {
-            productSaleMap.set(productId, {
-              saleId: activeSale.id,
-              discountAmount: activeSale.discountAmount,
-            });
-          }
-        }
-      }
-  
-      // Cập nhật giá
-      const updatePromises: Promise<any>[] = [];
-      for (const [productId, { discountAmount }] of productSaleMap) {
-        updatePromises.push(
-          this.productRepository.update(
-            { id: productId },
-            {
-              finalPrice: () => `originalPrice * (1 - ${discountAmount} / 100)`,
-            }
-          )
-        );
-      }
-      await Promise.all(updatePromises);
-  
-      // Đặt lại giá gốc cho sản phẩm của sale này nếu không còn sale nào áp dụng
-      const allActiveProductIds = [...productSaleMap.keys()];
-      const resetProductIds = productIds.filter((id) => !allActiveProductIds.includes(id));
-      if (resetProductIds.length > 0) {
-        await this.productRepository.update(
-          { id: In(resetProductIds) },
-          { finalPrice: () => 'originalPrice' }
-        );
-      }
-    }
-  
-    return sale;
   }
+  if (dto.discountAmount !== undefined && (dto.discountAmount < 0 || dto.discountAmount > 100)) {
+    throw new BadRequestException('discountAmount phải từ 0 đến 100');
+  }
+
+  // Lưu discountAmount mới (nếu có)
+  const newDiscountAmount = dto.discountAmount !== undefined ? dto.discountAmount : sale.discountAmount;
+
+  // Lấy productIds của sale hiện tại
+  let productIds: number[];
+  if (sale.isGlobalSale) {
+    const allProducts = await this.productRepository.find({ select: ['id'] });
+    productIds = allProducts.map((p) => p.id);
+  } else {
+    const allCategoryIds = sale.categoryStrategySales.map((c) => c.categoryId);
+    const allProduct = sale.productStrategySales.map((c) => c.productId);
+    const productsInCategories = await this.productRepository.find({
+      where: { category: { id: In(allCategoryIds) } },
+      select: ['id'],
+    });
+    productIds = [...new Set([...allProduct, ...productsInCategories.map((p) => p.id)])]; // Loại trùng
+  }
+
+  // Cập nhật thông tin sale trước
+  Object.assign(sale, dto);
+  await this.saleRepository.save(sale);
+
+  // Xử lý giá sản phẩm
+  if (dto.isActive === true || (dto.isActive === undefined && sale.isActive)) {
+    // Sale sẽ active (bật mới hoặc giữ active)
+    // Lấy tất cả sale đang chạy (bao gồm sale hiện tại nếu active)
+    const activeSales = await this.saleRepository.find({
+      where: { isActive: true },
+      relations: ['productStrategySales', 'categoryStrategySales'],
+    });
+
+    // Nếu sale hiện tại không có trong activeSales và được bật
+    if (dto.isActive === true && !activeSales.some((s) => s.id === sale.id)) {
+      activeSales.push({ ...sale, discountAmount: newDiscountAmount });
+    }
+
+    // Tạo map: productId -> sale có discountAmount lớn nhất
+    const productSaleMap = new Map<number, { saleId: number; discountAmount: number }>();
+
+    for (const activeSale of activeSales) {
+      let saleProductIds: number[] = [];
+      if (activeSale.isGlobalSale) {
+        const allProducts = await this.productRepository.find({ select: ['id'] });
+        saleProductIds = allProducts.map((p) => p.id);
+      } else {
+        saleProductIds = activeSale.productStrategySales.map((c) => c.productId); // Xóa khai báo trùng
+        const saleCategoryIds = activeSale.categoryStrategySales.map((c) => c.categoryId);
+        const productsInCategories = await this.productRepository.find({
+          where: { category: { id: In(saleCategoryIds) } },
+          select: ['id'],
+        });
+        saleProductIds = [...new Set([...saleProductIds, ...productsInCategories.map((p) => p.id)])];
+      }
+
+      // Cập nhật map với discountAmount lớn nhất
+      for (const productId of saleProductIds) {
+        const current = productSaleMap.get(productId);
+        if (!current || activeSale.discountAmount > current.discountAmount) {
+          productSaleMap.set(productId, {
+            saleId: activeSale.id,
+            discountAmount: activeSale.discountAmount,
+          });
+        }
+      }
+    }
+
+    // Cập nhật giá cho tất cả sản phẩm
+    const updatePromises: Promise<any>[] = [];
+    for (const [productId, { discountAmount }] of productSaleMap) {
+      updatePromises.push(
+        this.productRepository.update(
+          { id: productId },
+          {
+            finalPrice: () => `originalPrice * (1 - ${discountAmount} / 100)`,
+          }
+        )
+      );
+    }
+    await Promise.all(updatePromises);
+
+    // Đặt lại giá gốc cho sản phẩm không thuộc sale nào
+    const allActiveProductIds = [...productSaleMap.keys()];
+    if (allActiveProductIds.length > 0) {
+      await this.productRepository
+        .createQueryBuilder()
+        .update()
+        .set({ finalPrice: () => 'originalPrice' })
+        .where('id NOT IN (:...ids)', { ids: allActiveProductIds })
+        .execute();
+    }
+  } else if (dto.isActive === false) {
+    // Sale bị tắt
+    // Tính lại giá cho sản phẩm của sale này, dựa trên các sale còn lại
+    const activeSales = await this.saleRepository.find({
+      where: { isActive: true },
+      relations: ['productStrategySales', 'categoryStrategySales'],
+    });
+
+    const productSaleMap = new Map<number, { saleId: number; discountAmount: number }>();
+    for (const activeSale of activeSales) {
+      let saleProductIds: number[] = [];
+      if (activeSale.isGlobalSale) {
+        const allProducts = await this.productRepository.find({ select: ['id'] });
+        saleProductIds = allProducts.map((p) => p.id);
+      } else {
+        saleProductIds = activeSale.productStrategySales.map((c) => c.productId); // Xóa khai báo trùng
+        const saleCategoryIds = activeSale.categoryStrategySales.map((c) => c.categoryId);
+        const productsInCategories = await this.productRepository.find({
+          where: { category: { id: In(saleCategoryIds) } },
+          select: ['id'],
+        });
+        saleProductIds = [...new Set([...saleProductIds, ...productsInCategories.map((p) => p.id)])];
+      }
+
+      for (const productId of saleProductIds) {
+        const current = productSaleMap.get(productId);
+        if (!current || activeSale.discountAmount > current.discountAmount) {
+          productSaleMap.set(productId, {
+            saleId: activeSale.id,
+            discountAmount: activeSale.discountAmount,
+          });
+        }
+      }
+    }
+
+    // Cập nhật giá
+    const updatePromises: Promise<any>[] = [];
+    for (const [productId, { discountAmount }] of productSaleMap) {
+      updatePromises.push(
+        this.productRepository.update(
+          { id: productId },
+          {
+            finalPrice: () => `originalPrice * (1 - ${discountAmount} / 100)`,
+          }
+        )
+      );
+    }
+    await Promise.all(updatePromises);
+
+    // Đặt lại giá gốc cho sản phẩm của sale này nếu không còn sale nào áp dụng
+    const allActiveProductIds = [...productSaleMap.keys()];
+    const resetProductIds = productIds.filter((id) => !allActiveProductIds.includes(id));
+    if (resetProductIds.length > 0) {
+      await this.productRepository.update(
+        { id: In(resetProductIds) },
+        { finalPrice: () => 'originalPrice' }
+      );
+    }
+  }
+
+  return sale;
+}
   /**
    * Xóa chương trình giảm giá
    */

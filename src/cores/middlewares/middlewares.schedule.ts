@@ -34,8 +34,12 @@ export class SaleSchedulerService {
     } else {
       this.logger.log(`Tìm thấy ${expiredSales.length} sale hết hạn: ${expiredSales.map(s => s.id).join(', ')}`);
       for (const sale of expiredSales) {
-        this.logger.log(`Tắt sale ${sale.id} (hết hạn)`);
-        await this.saleService.updateSale(sale.id, { isActive: false });
+        try {
+          this.logger.log(`Tắt sale ${sale.id} (hết hạn)`);
+          await this.saleService.updateSale(sale.id, { isActive: false });
+        } catch (error) {
+          this.logger.error(`Lỗi khi tắt sale ${sale.id}: ${error}`, error);
+        }
       }
     }
 
@@ -53,8 +57,12 @@ export class SaleSchedulerService {
     } else {
       this.logger.log(`Tìm thấy ${validSales.length} sale hợp lệ: ${validSales.map(s => s.id).join(', ')}`);
       for (const sale of validSales) {
-        this.logger.log(`Bật sale ${sale.id}`);
-        await this.saleService.updateSale(sale.id, { isActive: true });
+        try {
+          this.logger.log(`Bật sale ${sale.id}`);
+          await this.saleService.updateSale(sale.id, { isActive: true });
+        } catch (error) {
+          this.logger.error(`Lỗi khi bật sale ${sale.id}: ${error}`, error);
+        }
       }
     }
   }
