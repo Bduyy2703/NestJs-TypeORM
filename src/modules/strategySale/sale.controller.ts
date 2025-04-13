@@ -95,19 +95,6 @@ export class SaleStrategyController {
     return await this.saleService.createSale(dto);
   }
 
-  @Put("/active/end")
-  @Actions("update")
-  @Objectcode("SALE01")
-  @ApiOperation({ summary: "Kết thúc chương trình giảm giá hiện tại" })
-  @ApiResponse({ status: 200, description: "Kết thúc thành công." })
-  @ApiResponse({ status: 404, description: "Không có chương trình giảm giá nào đang diễn ra." })
-  async endCurrentSale() {
-    const activeSale = await this.saleService.getActiveSale();
-    if (!activeSale) {
-      throw new NotFoundException("Không có chương trình giảm giá nào đang diễn ra.");
-    }
-    return await this.saleService.endSale(activeSale.id);
-  }
 
   @Put(':id')
   @Actions('update')
