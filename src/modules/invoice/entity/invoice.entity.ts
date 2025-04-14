@@ -9,7 +9,7 @@ export class Invoice {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { onDelete: 'SET NULL' })
   @JoinColumn({ name: "userId" })
   user: User;
 

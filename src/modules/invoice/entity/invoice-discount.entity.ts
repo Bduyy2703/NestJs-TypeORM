@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from "typeorm";
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from "typeorm";
 import { Invoice } from "./invoice.entity";
 import { Discount } from "../../discount/entity/discount.entity";
 
@@ -16,6 +16,7 @@ export class InvoiceDiscount {
     @Column()
     discountId: number;
 
-    @ManyToOne(() => Discount, discount => discount.id)
+    @ManyToOne(() => Discount, { onDelete: 'SET NULL' })
+    @JoinColumn({ name: "discountId" })
     discount: Discount;
 }

@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class InitMigration1744342349425 implements MigrationInterface {
-    name = 'InitMigration1744342349425'
+export class InitMigration1744627407631 implements MigrationInterface {
+    name = 'InitMigration1744627407631'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`CREATE TABLE "object_entity" ("id" SERIAL NOT NULL, "code" character varying(30), "name" character varying(30), "createdDate" TIMESTAMP, "createdBy" character varying(50), "updatedDate" TIMESTAMP, "updatedBy" character varying(50), "isActive" boolean NOT NULL DEFAULT true, CONSTRAINT "UQ_492d3c96261431a899e894a8088" UNIQUE ("code"), CONSTRAINT "PK_48c917693356ae868326dda8c47" PRIMARY KEY ("id"))`);
@@ -54,11 +54,11 @@ export class InitMigration1744342349425 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "cart" ADD CONSTRAINT "FK_756f53ab9466eb52a52619ee019" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "user" ADD CONSTRAINT "FK_c28e52f758e7bbc53828db92194" FOREIGN KEY ("roleId") REFERENCES "role"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "invoice_discount" ADD CONSTRAINT "FK_9176ab6bb2ba20da258270d4ba3" FOREIGN KEY ("invoiceId") REFERENCES "invoice"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "invoice_discount" ADD CONSTRAINT "FK_9c8f76f975c14d57f7d1d9a86c9" FOREIGN KEY ("discountId") REFERENCES "discount"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "invoice" ADD CONSTRAINT "FK_f8e849201da83b87f78c7497dde" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "invoice_discount" ADD CONSTRAINT "FK_9c8f76f975c14d57f7d1d9a86c9" FOREIGN KEY ("discountId") REFERENCES "discount"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "invoice" ADD CONSTRAINT "FK_f8e849201da83b87f78c7497dde" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "invoice" ADD CONSTRAINT "FK_6aaa2def19d4a823e5b10cfb92a" FOREIGN KEY ("addressId") REFERENCES "address"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "invoice_item" ADD CONSTRAINT "FK_553d5aac210d22fdca5c8d48ead" FOREIGN KEY ("invoiceId") REFERENCES "invoice"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "invoice_item" ADD CONSTRAINT "FK_bb4dbf923e241f36e93b98c6947" FOREIGN KEY ("productDetailId") REFERENCES "product_details"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "invoice_item" ADD CONSTRAINT "FK_bb4dbf923e241f36e93b98c6947" FOREIGN KEY ("productDetailId") REFERENCES "product_details"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "reviews" ADD CONSTRAINT "FK_7ed5659e7139fc8bc039198cc1f" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "reviews" ADD CONSTRAINT "FK_a6b3c434392f5d10ec171043666" FOREIGN KEY ("productId") REFERENCES "product"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
     }
