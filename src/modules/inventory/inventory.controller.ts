@@ -16,6 +16,7 @@ import { CreateInventoryDto } from "./dto/create-inventory.dto";
 import { UpdateInventoryDto } from "./dto/update-inventory.dto";
 import { Actions } from "src/cores/decorators/action.decorator";
 import { Objectcode } from "src/cores/decorators/objectcode.decorator";
+import { Public } from "src/cores/decorators/public.decorator";
 
 @ApiTags("Inventory")
 @Controller("inventory")
@@ -24,8 +25,7 @@ export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) { }
 
   @Get()
-  @Actions('read')
-  @Objectcode('INVENTORY01')
+  @Public()
   @ApiOperation({ summary: "Lấy danh sách tất cả kho" })
   @ApiResponse({ status: HttpStatus.OK, description: "Thành công" })
   async getAllInventories() {
