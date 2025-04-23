@@ -1,11 +1,13 @@
 import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, Between } from "typeorm";
+import { Repository, Between, In } from "typeorm";
 import { Invoice } from "./entity/invoice.entity";
 import { InvoiceItem } from "./entity/invoiceItem.entity";
 import { User } from "../users/entities/user.entity";
 import { ProductDetails } from "../product-details/entity/productDetail.entity";
 import { CreateInvoiceDto, InvoiceResponseDto, RevenueStatisticsDto, StatusStatisticsDto, TopProductStatisticsDto, TopCustomerStatisticsDto, PaymentMethodStatisticsDto, InvoiceCountStatisticsDto, PaymentMethod, InvoiceStatus, UpdateInvoiceStatusDto } from "./dto/invoice.dto";
+import { Discount } from "../discount/entity/discount.entity";
+import { InvoiceDiscount } from "./entity/invoice-discount.entity";
 
 @Injectable()
 export class InvoiceService {

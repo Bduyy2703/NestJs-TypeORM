@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param, Query, Patch } from "@nestjs/common";
+import { Controller, Post, Body, Get, Param, Query, Patch, Req, ParseIntPipe, Put } from "@nestjs/common";
 import { InvoiceService } from "./invoice.service";
 import { CreateInvoiceDto, InvoiceResponseDto, RevenueStatisticsDto, StatusStatisticsDto, TopProductStatisticsDto, TopCustomerStatisticsDto, PaymentMethodStatisticsDto, InvoiceCountStatisticsDto, UpdateInvoiceStatusDto } from "./dto/invoice.dto";
 import { ApiSecurity, ApiTags, ApiOperation, ApiResponse, ApiQuery } from "@nestjs/swagger";
@@ -122,11 +122,11 @@ export class InvoiceController {
     @ApiOperation({ summary: "Thống kê doanh thu theo phương thức thanh toán (admin)" })
     @ApiQuery({ name: "startDate", type: String, required: true, description: "Ngày bắt đầu (YYYY-MM-DD)" })
     @ApiQuery({ name: "endDate", type: String, required: true, description: "Ngày kết thúc (YYYY-MM-DD)" })
-    @ApiQuery({ 
-        name: "onlyPaid", 
-        type: Boolean, 
-        required: false, 
-        description: "Chỉ tính hóa đơn PAID để phản ánh doanh thu thực tế (mặc định true)" 
+    @ApiQuery({
+        name: "onlyPaid",
+        type: Boolean,
+        required: false,
+        description: "Chỉ tính hóa đơn PAID để phản ánh doanh thu thực tế (mặc định true)"
     })
     @ApiResponse({ status: 200, description: "Thống kê doanh thu theo phương thức thanh toán", type: [PaymentMethodStatisticsDto] })
     async getPaymentMethodStatistics(

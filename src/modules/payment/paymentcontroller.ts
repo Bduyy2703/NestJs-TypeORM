@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Query, Put, ParseIntPipe, Param } from "@nestjs/common";
+import { Controller, Post, Body, Get, Query, Put, ParseIntPipe, Param, Request } from "@nestjs/common";
 import { ApiBody, ApiOperation, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { CreateInvoiceDto, InvoiceResponseDto } from "./dto/invoice.dto";
 import { RetryPaymentDto } from "./dto/retry-payment.dto";
@@ -72,5 +72,18 @@ export class PaymentController {
     @Body('status') status: "PAID" | "CANCELLED"
   ) {
     return this.paymentService.updateInvoice(invoiceId, status);
+  }
+
+
+  @Put(":invoiceId/cancel")
+  @Public()
+  @ApiOperation({ summary: "Hủy hóa đơn bởi user" })
+  @ApiResponse({ status: 200, description: "Hủy hóa đơn thành công", type: InvoiceResponseDto })
+  async cancelInvoice(
+    @Request() request,
+    @Param("invoiceId", ParseIntPipe) invoiceId: number,
+  ): Promise<InvoiceResponseDto> {
+    const userId = request.user?.userId;; // Giả sử userId lấy từ JWT
+    return this.paymentService.cancelInvoice(invoiceId, userId);
   }
 }
