@@ -17,9 +17,13 @@ import { Type } from "class-transformer";
 // Enum cho trạng thái hóa đơn
 export enum InvoiceStatus {
     PENDING = "PENDING",
+    CONFIRMED = "CONFIRMED",
+    SHIPPING = "SHIPPING",
+    DELIVERED = "DELIVERED",
     PAID = "PAID",
     FAILED = "FAILED",
     CANCELLED = "CANCELLED",
+    RETURNED = "RETURNED",
 }
 
 // Enum cho phương thức thanh toán
