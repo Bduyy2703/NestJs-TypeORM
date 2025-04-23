@@ -8,6 +8,7 @@ import { InvoiceItem } from "src/modules/invoice/entity/invoiceItem.entity";
 import { ProductDetails } from "src/modules/product-details/entity/productDetail.entity";
 import { InvoiceDiscount } from "src/modules/invoice/entity/invoice-discount.entity";
 import { Discount } from "src/modules/discount/entity/discount.entity";
+import { NotificationService } from "src/modules/notification/notify.service";
 
 @Injectable()
 export class VnpayService {
@@ -20,7 +21,9 @@ export class VnpayService {
     private readonly frontendFailUrl = "http://localhost:3000/payment-fail"
     constructor(
         @InjectRepository(Invoice)
-        private invoiceRepo: Repository<Invoice>
+        private invoiceRepo: Repository<Invoice>,
+        private readonly notificationService: NotificationService,
+        
     ) { }
 
     async processVnpayPayment(invoice: Invoice, amount: number): Promise<string> {
@@ -101,14 +104,14 @@ export class VnpayService {
         return await this.invoiceRepo.manager.transaction(async transactionalEntityManager => {
             let message = '';
             let redirectUrl: string | null = null;
-
+            let notificationMessage = "";
             switch (rspCode) {
                 case '00':
                     // Thanh toán thành công
                     message = "Thanh toán thành công";
                     invoice.status = "PAID";
                     redirectUrl = `${this.frontendSuccessUrl}?invoiceId=${invoice.id}`;
-
+                    notificationMessage = `Người dùng ${invoice.user.username} đã thanh toán thành công đơn hàng #${invoice.id} qua VNPay`;
                     // Lấy thông tin sản phẩm và discount
                     const invoiceItems = await transactionalEntityManager.find(InvoiceItem, { where: { invoiceId: invoice.id } });
                     const productDetailIds = invoiceItems.map(item => item.productDetailId);
@@ -156,6 +159,7 @@ export class VnpayService {
                     message = "Giao dịch đã bị hủy";
                     invoice.status = "CANCELLED";
                     redirectUrl = this.frontendFailUrl;
+                    notificationMessage = `Người dùng ${invoice.user.username} đã hủy thanh toán đơn hàng #${invoice.id} qua VNPay`;
                     break;
 
                 case '01':
@@ -163,6 +167,7 @@ export class VnpayService {
                     message = "Giao dịch đang chờ xử lý";
                     invoice.status = "PENDING";
                     redirectUrl = this.frontendFailUrl;
+                    notificationMessage = `Thanh toán đơn hàng #${invoice.id} của người dùng ${invoice.user.username} đang chờ xử lý qua VNPay`;
                     break;
 
                 default:
@@ -170,12 +175,24 @@ export class VnpayService {
                     message = "Thanh toán thất bại";
                     invoice.status = "FAILED";
                     redirectUrl = this.frontendFailUrl;
+                    notificationMessage = `Thanh toán đơn hàng #${invoice.id} của người dùng ${invoice.user.username} thất bại qua VNPay (mã lỗi: ${rspCode})`;
                     break;
             }
 
             invoice.updatedAt = new Date();
             await transactionalEntityManager.save(Invoice, invoice);
             this.logger.log(`Invoice ${orderId} updated to status ${invoice.status} via VNPay IPN`);
+            try {
+                await this.notificationService.sendNotification({
+                    userId: invoice.userId, // Để backend biết người dùng nào thực hiện
+                    message: notificationMessage,
+                    type: "INVOICE_PAYMENT",
+                    source: "USER",
+                });
+                this.logger.log(`Sent payment notification for invoice ${invoice.id}: ${notificationMessage}`);
+            } catch (error) {
+                this.logger.error(`Failed to send payment notification for invoice ${invoice.id}: ${error}`);
+            }
 
             return { rspCode, message, invoice, redirectUrl };
         });

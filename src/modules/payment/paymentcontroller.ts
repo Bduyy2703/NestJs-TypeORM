@@ -78,7 +78,8 @@ export class PaymentController {
 
 
   @Post(':invoiceId/cancel')
-  @Public()
+  @Actions('update')
+  @Objectcode('PAYMENT01')
   @ApiOperation({ summary: 'Hủy hóa đơn bởi user' })
   @ApiResponse({ status: 200, description: 'Hủy hóa đơn thành công', type: InvoiceResponseDto })
   async cancelInvoice(
