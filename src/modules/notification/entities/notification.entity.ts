@@ -1,5 +1,4 @@
-
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
 export class Notification {
@@ -13,14 +12,17 @@ export class Notification {
   message: string;
 
   @Column()
-  type: string; // e.g., INVOICE_CREATE, INVOICE_UPDATE, INVOICE_CANCELLED
+  type: string;
 
   @Column({ default: false })
   isRead: boolean;
 
-  @CreateDateColumn()
+  @Column()
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @Column()
   updatedAt: Date;
+
+  @Column({ enum: ['ADMIN', 'USER'], default: 'USER' })
+  source: 'ADMIN' | 'USER';
 }

@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class InitMigration1745387622443 implements MigrationInterface {
-    name = 'InitMigration1745387622443'
+export class InitMigration1745398936251 implements MigrationInterface {
+    name = 'InitMigration1745398936251'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`CREATE TABLE "object_entity" ("id" SERIAL NOT NULL, "code" character varying(30), "name" character varying(30), "createdDate" TIMESTAMP, "createdBy" character varying(50), "updatedDate" TIMESTAMP, "updatedBy" character varying(50), "isActive" boolean NOT NULL DEFAULT true, CONSTRAINT "UQ_492d3c96261431a899e894a8088" UNIQUE ("code"), CONSTRAINT "PK_48c917693356ae868326dda8c47" PRIMARY KEY ("id"))`);
@@ -26,7 +26,7 @@ export class InitMigration1745387622443 implements MigrationInterface {
         await queryRunner.query(`CREATE TABLE "cart" ("id" SERIAL NOT NULL, "isActive" boolean NOT NULL DEFAULT true, "userId" uuid, CONSTRAINT "REL_756f53ab9466eb52a52619ee01" UNIQUE ("userId"), CONSTRAINT "PK_c524ec48751b9b5bcfbf6e59be7" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "user" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "email" character varying NOT NULL, "password" character varying NOT NULL, "username" character varying, "roleId" integer NOT NULL, "isVerified" boolean NOT NULL DEFAULT false, "tokenOTP" character varying, CONSTRAINT "UQ_e12875dfb3b1d92d7d7c5377e22" UNIQUE ("email"), CONSTRAINT "PK_cace4a159ff9f2512dd42373760" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "blog" ("id" SERIAL NOT NULL, "title" character varying(255) NOT NULL, "excerpt" text, "content" text NOT NULL, "thumbnail" character varying, "createAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP, CONSTRAINT "PK_85c6532ad065a448e9de7638571" PRIMARY KEY ("id"))`);
-        await queryRunner.query(`CREATE TABLE "notification" ("id" SERIAL NOT NULL, "userId" character varying NOT NULL, "message" character varying NOT NULL, "type" character varying NOT NULL, "isRead" boolean NOT NULL DEFAULT false, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_705b6c7cdf9b2c2ff7ac7872cb7" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "notification" ("id" SERIAL NOT NULL, "userId" character varying NOT NULL, "message" character varying NOT NULL, "type" character varying NOT NULL, "isRead" boolean NOT NULL DEFAULT false, "createdAt" TIMESTAMP NOT NULL, "updatedAt" TIMESTAMP NOT NULL, "source" character varying NOT NULL DEFAULT 'USER', CONSTRAINT "PK_705b6c7cdf9b2c2ff7ac7872cb7" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "files" ("fileId" uuid NOT NULL DEFAULT uuid_generate_v4(), "bucketName" character varying NOT NULL, "fileName" character varying NOT NULL, "fileUrl" character varying NOT NULL, "targetId" integer NOT NULL, "targetType" character varying NOT NULL, CONSTRAINT "PK_25150aaac483703a4ade8353fc3" PRIMARY KEY ("fileId"))`);
         await queryRunner.query(`CREATE TYPE "public"."discount_condition_enum" AS ENUM('SHIPPING', 'TOTAL')`);
         await queryRunner.query(`CREATE TYPE "public"."discount_discounttype_enum" AS ENUM('PERCENTAGE', 'FIXED')`);
