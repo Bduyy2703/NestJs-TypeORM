@@ -256,11 +256,12 @@ export class PaymentService {
             const message = paymentMethod === PaymentMethod.COD
                 ? `Đơn hàng #${invoice.id} đã được tạo thành công (COD)`
                 : `Đang chuyển hướng đến VNPay để thanh toán hóa đơn #${invoice.id}`;
-            await this.notificationService.sendNotification({
-                userId,
-                message,
-                type: 'INVOICE_CREATE',
-            });
+                await this.notificationService.sendNotification({
+                    userId, // Gửi thông báo đến admin, userId để backend biết người dùng nào tạo đơn
+                    message: `Người dùng ${user.username} đã đặt đơn hàng #${invoice.id}`,
+                    type: 'INVOICE_CREATED',
+                    source: 'USER', // Thông báo từ người dùng
+                });
 
             // 10. Xử lý thanh toán và trả về response
             if (paymentMethod === PaymentMethod.COD) {
@@ -474,8 +475,9 @@ export class PaymentService {
             // Gửi thông báo
             await this.notificationService.sendNotification({
                 userId: invoice.userId,
-                message: `Hóa đơn #${invoiceId} đã được cập nhật thành ${newStatus}`,
+                message: `Hóa đơn #${invoiceId} đã được cập nhật thành ${invoice.status}`,
                 type: 'INVOICE_UPDATE',
+                source: 'ADMIN', // Thông báo từ admin
             });
 
             this.logger.log(`Invoice ${invoiceId} updated to ${newStatus}`);
@@ -554,9 +556,10 @@ export class PaymentService {
 
             // Gửi thông báo
             await this.notificationService.sendNotification({
-                userId: invoice.userId,
-                message: `Hóa đơn #${invoiceId} đã được hủy thành công`,
+                userId: invoice.userId, // Gửi thông báo đến admin, userId để backend biết người dùng nào hủy
+                message: `Người dùng ${invoice.userId} đã hủy đơn hàng #${invoiceId}`,
                 type: 'INVOICE_CANCELLED',
+                source: 'USER', // Thông báo từ người dùng
             });
 
             this.logger.log(`Invoice ${invoiceId} cancelled by user ${userId}`);
