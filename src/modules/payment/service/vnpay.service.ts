@@ -9,6 +9,7 @@ import { ProductDetails } from "src/modules/product-details/entity/productDetail
 import { InvoiceDiscount } from "src/modules/invoice/entity/invoice-discount.entity";
 import { Discount } from "src/modules/discount/entity/discount.entity";
 import { NotificationService } from "src/modules/notification/notify.service";
+import { User } from "src/modules/users/entities/user.entity";
 
 @Injectable()
 export class VnpayService {
@@ -16,14 +17,15 @@ export class VnpayService {
     private readonly vnp_TmnCode = process.env.VNP_TMNCODE;
     private readonly vnp_HashSecret = process.env.VNP_HASHSECRET;
     private readonly vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-    private readonly vnp_ReturnUrl = "http://35.247.185.8/api/v1/payment/vnpay-ipn"; // Cần thay đổi theo môi trường thực tế "http://35.247.185.8/api/v1/payment/vnpay-ipn"
+    private readonly vnp_ReturnUrl = "http://localhost:3000/payment-success"; // Cần thay đổi theo môi trường thực tế "http://35.247.185.8/api/v1/payment/vnpay-ipn"
     private readonly frontendSuccessUrl = "http://localhost:3000/payment-success";
     private readonly frontendFailUrl = "http://localhost:3000/payment-fail"
     constructor(
         @InjectRepository(Invoice)
         private invoiceRepo: Repository<Invoice>,
         private readonly notificationService: NotificationService,
-        
+        @InjectRepository(User)
+        private userRepo: Repository<User>,
     ) { }
 
     async processVnpayPayment(invoice: Invoice, amount: number): Promise<string> {
@@ -80,7 +82,7 @@ export class VnpayService {
         const idinvoice = parseInt(orderId);
         this.logger.log(`idinvoice: ${idinvoice}, type: ${typeof idinvoice}`);
 
-        let invoice = await this.invoiceRepo.findOne({ where: { id: idinvoice }, relations: ["items"] });
+        let invoice = await this.invoiceRepo.findOne({ where: { id: idinvoice }, relations: ["items","user"] });
         if (!invoice) {
             this.logger.error(`Invoice ${orderId} not found in VNPay IPN`);
             return { rspCode: '01', message: 'Hóa đơn không tồn tại', invoice: null, redirectUrl: null };
@@ -100,6 +102,13 @@ export class VnpayService {
             this.logger.error(`Amount mismatch in VNPay IPN for invoice ${orderId}. Expected: ${invoice.finalTotal}, Received: ${amount}`);
             return { rspCode: '04', message: 'Số tiền không khớp', invoice, redirectUrl: null };
         }
+         // Nếu không có user trong invoice, truy vấn bổ sung từ userRepo
+         let username = invoice.user?.username;
+         if (!username) {
+             const user = await this.userRepo.findOne({ where: { id: invoice.userId } });
+             username = user?.username || "Unknown";
+         }
+
 
         return await this.invoiceRepo.manager.transaction(async transactionalEntityManager => {
             let message = '';
