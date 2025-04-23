@@ -64,6 +64,7 @@ import { ReviewModule } from './modules/review/review.module';
     PaymentModule,
     InvoiceModule,
     ReviewModule,
+    NotificationModule
   ],
   controllers: [AppController],
   providers: [

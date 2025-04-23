@@ -202,6 +202,15 @@ export class ObjectEntitySeeder implements Seeder {
                 updatedBy: 'admin',
                 isActive: true,
             },
+            {
+                code: 'NOTIFY01',
+                name: 'Object review',
+                createdDate: new Date(),
+                createdBy: 'admin',
+                updatedDate: new Date(),
+                updatedBy: 'admin',
+                isActive: true,
+            },
         ];
 
         await objectRepository.insert(seedData);

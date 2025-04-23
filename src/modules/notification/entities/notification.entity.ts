@@ -1,4 +1,4 @@
-// src/notification/entity/notification.entity.ts
+
 import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 
 @Entity()
