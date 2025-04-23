@@ -120,7 +120,7 @@ export class VnpayService {
                     message = "Thanh toán thành công";
                     invoice.status = "PAID";
                     redirectUrl = `${this.frontendSuccessUrl}?invoiceId=${invoice.id}`;
-                    notificationMessage = `Người dùng ${invoice.user.username} đã thanh toán thành công đơn hàng #${invoice.id} qua VNPay`;
+                    notificationMessage = `Người dùng ${username} đã thanh toán thành công đơn hàng #${invoice.id} qua VNPay`;
                     // Lấy thông tin sản phẩm và discount
                     const invoiceItems = await transactionalEntityManager.find(InvoiceItem, { where: { invoiceId: invoice.id } });
                     const productDetailIds = invoiceItems.map(item => item.productDetailId);
@@ -168,7 +168,7 @@ export class VnpayService {
                     message = "Giao dịch đã bị hủy";
                     invoice.status = "CANCELLED";
                     redirectUrl = this.frontendFailUrl;
-                    notificationMessage = `Người dùng ${invoice.user.username} đã hủy thanh toán đơn hàng #${invoice.id} qua VNPay`;
+                    notificationMessage = `Người dùng ${username} đã hủy thanh toán đơn hàng #${invoice.id} qua VNPay`;
                     break;
 
                 case '01':
@@ -176,7 +176,7 @@ export class VnpayService {
                     message = "Giao dịch đang chờ xử lý";
                     invoice.status = "PENDING";
                     redirectUrl = this.frontendFailUrl;
-                    notificationMessage = `Thanh toán đơn hàng #${invoice.id} của người dùng ${invoice.user.username} đang chờ xử lý qua VNPay`;
+                    notificationMessage = `Thanh toán đơn hàng #${invoice.id} của người dùng ${username} đang chờ xử lý qua VNPay`;
                     break;
 
                 default:
@@ -184,7 +184,7 @@ export class VnpayService {
                     message = "Thanh toán thất bại";
                     invoice.status = "FAILED";
                     redirectUrl = this.frontendFailUrl;
-                    notificationMessage = `Thanh toán đơn hàng #${invoice.id} của người dùng ${invoice.user.username} thất bại qua VNPay (mã lỗi: ${rspCode})`;
+                    notificationMessage = `Thanh toán đơn hàng #${invoice.id} của người dùng ${username} thất bại qua VNPay (mã lỗi: ${rspCode})`;
                     break;
             }
 

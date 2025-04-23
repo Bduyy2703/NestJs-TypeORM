@@ -499,85 +499,94 @@ export class PaymentService {
         });
     }
 
-    async cancelInvoice(invoiceId: number, userId: string): Promise<InvoiceResponseDto> {
-        return await this.invoiceRepo.manager.transaction(async transactionalEntityManager => {
-            const invoice = await transactionalEntityManager.findOne(Invoice, {
-                where: { id: invoiceId, userId },
-                relations: ['items'],
-            });
-            if (!invoice) {
-                throw new NotFoundException(`Hóa đơn với ID ${invoiceId} không tồn tại hoặc không thuộc về bạn`);
-            }
-            if (invoice.status !== InvoiceStatus.PENDING && invoice.status !== InvoiceStatus.CONFIRMED) {
-                throw new BadRequestException(`Hóa đơn không thể hủy (trạng thái hiện tại: ${invoice.status})`);
-            }
-            // Kiểm tra thời gian hủy (30 phút)
-            const createdAt = new Date(invoice.createdAt);
-            const now = new Date();
-            const timeDiff = (now.getTime() - createdAt.getTime()) / 1000 / 60; // Phút
-            if (timeDiff > 30) {
-                throw new BadRequestException('Hóa đơn chỉ có thể hủy trong vòng 30 phút sau khi tạo');
-            }
-
-            // Hoàn lại stock và discount cho COD
-            if (invoice.paymentMethod === PaymentMethod.COD) {
-                const invoiceItems = await transactionalEntityManager.find(InvoiceItem, { where: { invoiceId: invoice.id } });
-                const productDetailIds = invoiceItems.map(item => item.productDetailId);
-                const productDetails = await transactionalEntityManager.find(ProductDetails, { where: { id: In(productDetailIds) } });
-                const productDetailsMap = new Map(productDetails.map(pd => [pd.id, pd]));
-
-                const invoiceDiscounts = await transactionalEntityManager.find(InvoiceDiscount, { where: { invoiceId: invoice.id } });
-                const discountIds = invoiceDiscounts.map(id => id.discountId);
-                const discountMap = new Map<number, Discount>();
-                if (discountIds.length > 0) {
-                    const discounts = await transactionalEntityManager.find(Discount, { where: { id: In(discountIds) } });
-                    discounts.forEach(discount => discountMap.set(discount.id, discount));
-                }
-
-                for (const item of invoiceItems) {
-                    const productDetail = productDetailsMap.get(item.productDetailId)!;
-                    productDetail.stock += item.quantity;
-                    productDetail.sold = Math.max(0, (productDetail.sold || 0) - item.quantity);
-                    await transactionalEntityManager.save(ProductDetails, productDetail);
-                }
-
-                if (discountIds.length > 0) {
-                    for (const discountId of discountIds) {
-                        const discount = discountMap.get(discountId)!;
-                        discount.quantity += 1;
-                        await transactionalEntityManager.save(Discount, discount);
-                    }
-                }
-            }
-
-            invoice.status = InvoiceStatus.CANCELLED;
-            invoice.updatedAt = new Date();
-            await transactionalEntityManager.save(Invoice, invoice);
-
-            // Gửi thông báo
-            await this.notificationService.sendNotification({
-                userId: invoice.userId, // Gửi thông báo đến admin, userId để backend biết người dùng nào hủy
-                message: `Người dùng ${invoice.userId} đã hủy đơn hàng #${invoiceId}`,
-                type: 'INVOICE_CANCELLED',
-                source: 'USER', // Thông báo từ người dùng
-            });
-
-            this.logger.log(`Invoice ${invoiceId} cancelled by user ${userId}`);
-            return {
-                id: invoice.id,
-                userId: invoice.userId,
-                addressId: invoice.addressId,
-                paymentMethod: invoice.paymentMethod,
-                totalProductAmount: invoice.totalProductAmount,
-                shippingFee: invoice.shippingFee,
-                shippingFeeDiscount: invoice.shippingFeeDiscount,
-                productDiscount: invoice.productDiscount,
-                finalTotal: invoice.finalTotal,
-                status: invoice.status,
-                createdAt: invoice.createdAt,
-                updatedAt: invoice.updatedAt,
-                message: 'Hóa đơn đã được hủy thành công',
-            };
+   
+async cancelInvoice(invoiceId: number, userId: string): Promise<InvoiceResponseDto> {
+    return await this.invoiceRepo.manager.transaction(async transactionalEntityManager => {
+        const invoice = await transactionalEntityManager.findOne(Invoice, {
+            where: { id: invoiceId, userId },
+            relations: ["items", "user"], // Thêm quan hệ user để lấy username
         });
-    }
-}
+        if (!invoice) {
+            throw new NotFoundException(`Hóa đơn với ID ${invoiceId} không tồn tại hoặc không thuộc về bạn`);
+        }
+        if (invoice.status !== InvoiceStatus.PENDING && invoice.status !== InvoiceStatus.CONFIRMED) {
+            throw new BadRequestException(`Hóa đơn không thể hủy (trạng thái hiện tại: ${invoice.status})`);
+        }
+        // Kiểm tra thời gian hủy (30 phút)
+        const createdAt = new Date(invoice.createdAt);
+        const now = new Date();
+        const timeDiff = (now.getTime() - createdAt.getTime()) / 1000 / 60; // Phút
+        if (timeDiff > 30) {
+            throw new BadRequestException("Hóa đơn chỉ có thể hủy trong vòng 30 phút sau khi tạo");
+        }
+
+        // Hoàn lại stock và discount cho COD
+        if (invoice.paymentMethod === PaymentMethod.COD) {
+            const invoiceItems = await transactionalEntityManager.find(InvoiceItem, { where: { invoiceId: invoice.id } });
+            const productDetailIds = invoiceItems.map(item => item.productDetailId);
+            const productDetails = await transactionalEntityManager.find(ProductDetails, { where: { id: In(productDetailIds) } });
+            const productDetailsMap = new Map(productDetails.map(pd => [pd.id, pd]));
+
+            const invoiceDiscounts = await transactionalEntityManager.find(InvoiceDiscount, { where: { invoiceId: invoice.id } });
+            const discountIds = invoiceDiscounts.map(id => id.discountId);
+            const discountMap = new Map<number, Discount>();
+            if (discountIds.length > 0) {
+                const discounts = await transactionalEntityManager.find(Discount, { where: { id: In(discountIds) } });
+                discounts.forEach(discount => discountMap.set(discount.id, discount));
+            }
+
+            for (const item of invoiceItems) {
+                const productDetail = productDetailsMap.get(item.productDetailId)!;
+                productDetail.stock += item.quantity;
+                productDetail.sold = Math.max(0, (productDetail.sold || 0) - item.quantity);
+                await transactionalEntityManager.save(ProductDetails, productDetail);
+            }
+
+            if (discountIds.length > 0) {
+                for (const discountId of discountIds) {
+                    const discount = discountMap.get(discountId)!;
+                    discount.quantity += 1;
+                    await transactionalEntityManager.save(Discount, discount);
+                }
+            }
+            this.logger.log(`Restored stock and discount for COD invoice ${invoiceId}`);
+        } else if (invoice.paymentMethod === PaymentMethod.VNPAY) {
+            // Với VNPay, không cần hoàn stock/discount vì chưa trừ (trừ khi PAID)
+            this.logger.log(`Cancelling VNPay invoice ${invoiceId} in ${invoice.status} status`);
+        }
+
+        invoice.status = InvoiceStatus.CANCELLED;
+        invoice.updatedAt = new Date();
+        await transactionalEntityManager.save(Invoice, invoice);
+
+        // Gửi thông báo cho admin
+        try {
+            await this.notificationService.sendNotification({
+                userId: invoice.userId, // Để backend biết người dùng nào hủy
+                message: `Người dùng ${invoice.user.username} đã hủy đơn hàng #${invoiceId} (${invoice.paymentMethod})`,
+                type: "INVOICE_CANCELLED",
+                source: "USER",
+            });
+            this.logger.log(`Sent notification for cancelled invoice ${invoiceId}`);
+        } catch (error) {
+            this.logger.error(`Failed to send notification for invoice ${invoiceId}: ${error}`);
+        }
+
+        this.logger.log(`Invoice ${invoiceId} cancelled by user ${userId}`);
+        return {
+            id: invoice.id,
+            userId: invoice.userId,
+            addressId: invoice.addressId,
+            paymentMethod: invoice.paymentMethod,
+            totalProductAmount: invoice.totalProductAmount,
+            shippingFee: invoice.shippingFee,
+            shippingFeeDiscount: invoice.shippingFeeDiscount,
+            productDiscount: invoice.productDiscount,
+            finalTotal: invoice.finalTotal,
+            status: invoice.status,
+            createdAt: invoice.createdAt,
+            updatedAt: invoice.updatedAt,
+            message: "Hóa đơn đã được hủy thành công",
+        };
+    });
+}}
