@@ -8,7 +8,7 @@ import { Actions } from 'src/cores/decorators/action.decorator';
 import { Objectcode } from 'src/cores/decorators/objectcode.decorator';
 
 @ApiTags('notification')
-@Controller('v1/notification')
+@Controller('notification')
 @ApiSecurity('JWT-auth')
 export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
@@ -61,7 +61,7 @@ export class NotificationController {
     @Query('limit', ParseIntPipe) limit: number = 20,
     @Query('type') type?: string,
   ): Promise<{ notifications: Notification[]; total: number; unreadCount: number }> {
-    const role = request.user?.role;
+    const role = request.user?.roles;
     if (role !== 'ADMIN') {
       throw new UnauthorizedException('Chỉ admin có quyền truy cập');
     }
@@ -74,7 +74,7 @@ export class NotificationController {
   @ApiOperation({ summary: 'Admin đánh dấu thông báo đã đọc' })
   @ApiResponse({ status: 200, description: 'Thông báo đã được đánh dấu đọc' })
   async markAsReadAdmin(@Param('id', ParseIntPipe) id: number, @Request() request): Promise<void> {
-    const role = request.user?.role;
+    const role = request.user?.roles;
     if (role !== 'ADMIN') {
       throw new UnauthorizedException('Chỉ admin có quyền truy cập');
     }
