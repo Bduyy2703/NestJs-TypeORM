@@ -11,11 +11,13 @@ import { Invoice } from "../invoice/entity/invoice.entity";
 import { InvoiceItem } from "../invoice/entity/invoiceItem.entity";
 import { CartModule } from "../cart/cart.module";
 import { InvoiceDiscount } from "../invoice/entity/invoice-discount.entity";
+import { NotificationModule } from "../notification/notification.module";
 
 @Module({
     imports: [
         TypeOrmModule.forFeature([Discount, ProductDetails, Address, User, Invoice, InvoiceItem ,InvoiceDiscount]),
-        CartModule
+        CartModule,
+        NotificationModule,
     ],
     providers: [PaymentService, VnpayService ],
     controllers: [PaymentController],

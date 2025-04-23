@@ -1,17 +1,13 @@
 import { Module } from '@nestjs/common';
-import { NotificationGateway } from './notification.gateway';
-import { JwtModule, JwtService } from '@nestjs/jwt';
-import { BlogsModule } from '../blogs/blog.module';
-import { BlogsService } from '../blogs/blog.service';
-import { AuthModule } from '../auth/auth.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { NotificationService } from './notify.service';
+import { NotificationController } from './notify.controller';
+import { Notification } from './entities/notification.entity';
 
 @Module({
-  imports: [
-    JwtModule.register({
-      secret: process.env.SECRET_KEY,
-    }),
-    AuthModule,
-  ],
-  providers: [NotificationGateway],
+  imports: [TypeOrmModule.forFeature([Notification])],
+  controllers: [NotificationController],
+  providers: [NotificationService],
+  exports: [NotificationService], // Export để PaymentService dùng
 })
 export class NotificationModule {}
