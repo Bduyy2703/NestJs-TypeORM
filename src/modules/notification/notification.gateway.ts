@@ -1,4 +1,3 @@
-
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -37,9 +36,12 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
     }
     const decodeToken = await this.jwtService.verify(AccessToken);
     if (!decodeToken) client.disconnect();
-    const { userId } = decodeToken;
+    const { userId, role } = decodeToken; // Giả sử token có role
     client.data.userId = userId;
-    client.join(userId);
+    client.join(userId); // Join room userId
+    if (role === 'ADMIN') {
+      client.join('admin'); // Admin join channel admin
+    }
     this.server.to(userId).emit('notification', { message: 'You are online' });
   }
 
@@ -49,6 +51,9 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
 
   @OnEvent('notification')
   emitNotification(payload: { userId: string; message: string; type: string; notificationId: number }) {
+    // Gửi tới khách hàng
     this.server.to(payload.userId).emit('notification', payload);
+    // Gửi tới tất cả admin
+    this.server.to('admin').emit('notification', payload);
   }
 }
