@@ -7,6 +7,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../users/entities/user.entity';
 import { StrategySale } from '../strategySale/entity/strategySale.entity';
+import { File } from '../files/file.entity';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -45,7 +46,7 @@ import { StrategySale } from '../strategySale/entity/strategySale.entity';
       
       inject: [ConfigService], // Inject ConfigService để lấy biến môi trường
     }),
-    TypeOrmModule.forFeature([User, StrategySale]),
+    TypeOrmModule.forFeature([User, StrategySale , File]),
   ],
   providers: [MailService],
   exports: [MailService],

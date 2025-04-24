@@ -20,8 +20,12 @@
                 <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
                   {{#each products}}
                   <tr>
-                    <td style="padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
-                      <span style="font-size: 15px;">{{this.name}}</span>
+                    <td style="padding: 12px 0; border-bottom: 1px solid #f0f0f0;">
+                      <img src="{{this.image}}" alt="{{this.name}}" width="60" style="vertical-align: middle; border-radius: 4px; margin-right: 12px;" />
+                      <span style="font-size: 15px; vertical-align: middle;">{{this.name}}</span>
+                      {{#if this.price}}
+                        <span style="color: #e53935; font-weight: bold; margin-left: 10px;">{{this.price}}₫</span>
+                      {{/if}}
                     </td>
                   </tr>
                   {{/each}}
@@ -31,7 +35,7 @@
                 </a>
                 <p style="font-size: 13px; color: #888; margin-top: 32px;">
                   Đừng bỏ lỡ cơ hội này!<br>
-                  <span style="font-size: 12px;">© {{year}} YourShop. All rights reserved.</span>
+                  <span style="font-size: 12px;">© {{year}} Duy Jewelry Server. All rights reserved.</span>
                 </p>
               </td>
             </tr>

@@ -38,6 +38,7 @@ import { WishlistModule } from './modules/wishlist/wishlist.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './modules/users/entities/user.entity';
 import { StrategySale } from './modules/strategySale/entity/strategySale.entity';
+import { File } from './modules/files/file.entity';
 @Module({
   imports: [
     AuthModule,
@@ -70,7 +71,7 @@ import { StrategySale } from './modules/strategySale/entity/strategySale.entity'
     ReviewModule,
     NotificationModule,
     WishlistModule,
-    TypeOrmModule.forFeature([User, StrategySale]),
+    TypeOrmModule.forFeature([User, StrategySale,File]),
   ],
   controllers: [AppController],
   providers: [
