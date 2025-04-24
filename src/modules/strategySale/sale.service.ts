@@ -11,6 +11,8 @@ import { AddSaleCategoryDto } from "./dto/addCategory";
 import { ProductStrategySale } from "./entity/productSale.entity";
 import { CategoryStrategySale } from "./entity/categorySale.entity";
 import { GetSaleDto } from "./dto/get-sale-strategy";
+import { Wishlist } from "../wishlist/entity/wishlist.entity";
+import { MailService } from "../mail/mail.service";
 
 @Injectable()
 export class SaleStrategyService {
@@ -21,7 +23,9 @@ export class SaleStrategyService {
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
     @InjectRepository(Category)
-    private readonly categoryRepository: Repository<Category>
+    private readonly categoryRepository: Repository<Category>,
+    private readonly mailService: MailService, // Inject mailService
+    @InjectRepository(Wishlist) private readonly wishlistRepo: Repository<Wishlist> // Inject wishlistRepo
   ) {}
 
   /**
@@ -654,6 +658,65 @@ async removeCategoryFromSale(saleId: number, categoryId: number): Promise<void> 
       );
     }
     await Promise.all(updatePromises);
+  }
+}
+async getProductIdsOfSale(saleId: number): Promise<number[]> {
+  // Lấy sale và các quan hệ
+  const sale = await this.saleRepository.findOne({
+    where: { id: saleId },
+    relations: ['productStrategySales', 'categoryStrategySales'],
+  });
+  if (!sale) throw new NotFoundException('Sale không tồn tại.');
+
+  let productIds: number[] = [];
+
+  // Nếu là global sale, lấy tất cả sản phẩm
+  if (sale.isGlobalSale) {
+    const allProducts = await this.productRepository.find({ select: ['id'] });
+    productIds = allProducts.map(p => p.id);
+  } else {
+    // Lấy productId trực tiếp
+    const directProductIds = sale.productStrategySales?.map(ps => ps.productId) || [];
+
+    // Lấy productId qua danh mục
+    const categoryIds = sale.categoryStrategySales?.map(cs => cs.categoryId) || [];
+    let categoryProductIds: number[] = [];
+    if (categoryIds.length > 0) {
+      const productsInCategories = await this.productRepository.find({
+        where: { category: { id: In(categoryIds) } },
+        select: ['id'],
+      });
+      categoryProductIds = productsInCategories.map(p => p.id);
+    }
+
+    productIds = [...directProductIds, ...categoryProductIds];
+  }
+
+  // Loại trùng
+  return Array.from(new Set(productIds));
+}
+async notifyUsersForSale(saleId: number) {
+  const productIds = await this.getProductIdsOfSale(saleId);
+  const wishlists = await this.wishlistRepo.find({
+    where: { productDetail: { product: { id: In(productIds) } } },
+    relations: ['user', 'productDetail', 'productDetail.product'],
+  });
+
+  // Gom theo user
+  const userWishlistMap = new Map<number, Wishlist[]>();
+  for (const w of wishlists) {
+    const userId = Number(w.user.id);
+    if (!userWishlistMap.has(userId)) userWishlistMap.set(userId, []);
+    userWishlistMap.get(Number(w.user.id))?.push(w);
+  }
+
+  for (const [userId, items] of userWishlistMap.entries()) {
+    // Không cần kiểm tra log, admin chủ động gửi
+    await this.mailService.sendSaleMail(
+      userId,
+      items.map(i => i.productDetail.product),
+      saleId
+    );
   }
 }
 }

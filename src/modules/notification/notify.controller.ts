@@ -11,7 +11,7 @@ import { Objectcode } from 'src/cores/decorators/objectcode.decorator';
 @Controller('notification')
 @ApiSecurity('JWT-auth')
 export class NotificationController {
-  constructor(private readonly notificationService: NotificationService) {}
+  constructor(private readonly notificationService: NotificationService) { }
 
   @Get()
   @Actions('execute')

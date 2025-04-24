@@ -34,6 +34,7 @@ import { ShippingModule } from './modules/shipping/shipping.module';
 import { PaymentModule } from './modules/payment/paymentmodule';
 import { InvoiceModule } from './modules/invoice/invoice.module';
 import { ReviewModule } from './modules/review/review.module';
+import { WishlistModule } from './modules/wishlist/wishlist.module';
 @Module({
   imports: [
     AuthModule,
@@ -64,7 +65,8 @@ import { ReviewModule } from './modules/review/review.module';
     PaymentModule,
     InvoiceModule,
     ReviewModule,
-    NotificationModule
+    NotificationModule,
+    WishlistModule,
   ],
   controllers: [AppController],
   providers: [

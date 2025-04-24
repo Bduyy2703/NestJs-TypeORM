@@ -204,7 +204,16 @@ export class ObjectEntitySeeder implements Seeder {
             },
             {
                 code: 'NOTIFY01',
-                name: 'Object review',
+                name: 'Object notify',
+                createdDate: new Date(),
+                createdBy: 'admin',
+                updatedDate: new Date(),
+                updatedBy: 'admin',
+                isActive: true,
+            },
+            {
+                code: 'WISHLIST01',
+                name: 'Object wishlist',
                 createdDate: new Date(),
                 createdBy: 'admin',
                 updatedDate: new Date(),

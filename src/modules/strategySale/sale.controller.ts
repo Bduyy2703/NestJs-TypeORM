@@ -175,4 +175,14 @@ export class SaleStrategyController {
   ) {
     return await this.saleService.removeCategoryFromSale(id, categoryId);
   }
+
+  @Post('notify-users/:saleId')
+  @Actions('execute')
+  @Objectcode('SALE01')
+  @ApiOperation({ summary: 'Gửi mail thông báo sale cho user đã wishlist sản phẩm thuộc sale này' })
+  @ApiResponse({ status: 200, description: 'Đã gửi mail' })
+  async notifyUsersForSale(@Param('saleId') saleId: number) {
+    await this.saleService.notifyUsersForSale(saleId);
+    return { message: 'Đã gửi mail cho user wishlist sản phẩm thuộc sale này.' };
+  }
 }
