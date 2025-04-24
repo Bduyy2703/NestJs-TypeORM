@@ -35,6 +35,9 @@ import { PaymentModule } from './modules/payment/paymentmodule';
 import { InvoiceModule } from './modules/invoice/invoice.module';
 import { ReviewModule } from './modules/review/review.module';
 import { WishlistModule } from './modules/wishlist/wishlist.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { User } from './modules/users/entities/user.entity';
+import { StrategySale } from './modules/strategySale/entity/strategySale.entity';
 @Module({
   imports: [
     AuthModule,
@@ -67,6 +70,7 @@ import { WishlistModule } from './modules/wishlist/wishlist.module';
     ReviewModule,
     NotificationModule,
     WishlistModule,
+    TypeOrmModule.forFeature([User, StrategySale]),
   ],
   controllers: [AppController],
   providers: [

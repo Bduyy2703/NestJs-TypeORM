@@ -58,7 +58,7 @@ export class MailService {
   }
 
   async sendSaleMail(userId: number, products: Product[], saleId: number) {
-    const user = await this.userRepo.findOne({ where: { id: userId } });
+    const user = await this.userRepo.findOne({ where: { id: String(userId) } });
     const sale = await this.saleRepo.findOne({ where: { id: saleId } });
     if (!user || !sale) return;
     const productList = products.map(p => `- ${p.name}`).join('\n');

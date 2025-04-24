@@ -5,6 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { LessThan, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import { SaleStrategyService } from 'src/modules/strategySale/sale.service';
 import { StrategySale } from 'src/modules/strategySale/entity/strategySale.entity';
+import { MailSaleCronjob } from 'src/modules/mail/cronjobmail/mail-sale-cronjob';
 
 @Injectable()
 export class SaleSchedulerService {
@@ -14,6 +15,7 @@ export class SaleSchedulerService {
     @InjectRepository(StrategySale)
     private readonly saleRepository: Repository<StrategySale>,
     private readonly saleService: SaleStrategyService,
+    private readonly mailSaleCronjob: MailSaleCronjob,
   ) {}
 
   @Cron('0 0 * * * *') // Chạy mỗi 30 giây để test
@@ -55,7 +57,9 @@ export class SaleSchedulerService {
     if (validSales.length === 0) {
       this.logger.log('Không có sale nào hợp lệ để bật.');
     } else {
+    
       this.logger.log(`Tìm thấy ${validSales.length} sale hợp lệ: ${validSales.map(s => s.id).join(', ')}`);
+      await this.mailSaleCronjob.handle(validSales);
       for (const sale of validSales) {
         try {
           this.logger.log(`Bật sale ${sale.id}`);

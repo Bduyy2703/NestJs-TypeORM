@@ -4,6 +4,9 @@ import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handleba
 import { MailService } from './mail.service';
 import { join } from 'path';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { User } from '../users/entities/user.entity';
+import { StrategySale } from '../strategySale/entity/strategySale.entity';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -39,8 +42,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
           inlineCss: false, // Tắt inline CSS
         },
       }),
+      
       inject: [ConfigService], // Inject ConfigService để lấy biến môi trường
     }),
+    TypeOrmModule.forFeature([User, StrategySale]),
   ],
   providers: [MailService],
   exports: [MailService],
