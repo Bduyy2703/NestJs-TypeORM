@@ -702,12 +702,12 @@ async notifyUsersForSale(saleId: number) {
     relations: ['user', 'productDetail', 'productDetail.product'],
   });
 
-  // Gom theo user
-  const userWishlistMap = new Map<number, Wishlist[]>();
+  // Gom theo user (userId là UUID string)
+  const userWishlistMap = new Map<string, Wishlist[]>();
   for (const w of wishlists) {
-    const userId = Number(w.user.id);
+    const userId = w.user.id; // giữ nguyên là string
     if (!userWishlistMap.has(userId)) userWishlistMap.set(userId, []);
-    userWishlistMap.get(Number(w.user.id))?.push(w);
+    userWishlistMap.get(userId)?.push(w);
   }
 
   for (const [userId, items] of userWishlistMap.entries()) {

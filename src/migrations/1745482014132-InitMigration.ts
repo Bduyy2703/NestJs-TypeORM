@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class InitMigration1745469607000 implements MigrationInterface {
-    name = 'InitMigration1745469607000'
+export class InitMigration1745482014132 implements MigrationInterface {
+    name = 'InitMigration1745482014132'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`CREATE TABLE "object_entity" ("id" SERIAL NOT NULL, "code" character varying(30), "name" character varying(30), "createdDate" TIMESTAMP, "createdBy" character varying(50), "updatedDate" TIMESTAMP, "updatedBy" character varying(50), "isActive" boolean NOT NULL DEFAULT true, CONSTRAINT "UQ_492d3c96261431a899e894a8088" UNIQUE ("code"), CONSTRAINT "PK_48c917693356ae868326dda8c47" PRIMARY KEY ("id"))`);
@@ -36,6 +36,7 @@ export class InitMigration1745469607000 implements MigrationInterface {
         await queryRunner.query(`CREATE TABLE "invoice_item" ("id" SERIAL NOT NULL, "invoiceId" integer NOT NULL, "productDetailId" integer NOT NULL, "quantity" integer NOT NULL, "price" integer NOT NULL, "subTotal" integer NOT NULL, CONSTRAINT "PK_621317346abdf61295516f3cb76" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "reviews" ("id" SERIAL NOT NULL, "userId" uuid NOT NULL, "productId" integer NOT NULL, "rating" integer NOT NULL, "comment" text NOT NULL, "createdAt" TIMESTAMP NOT NULL, "updatedAt" TIMESTAMP NOT NULL, "isHidden" boolean NOT NULL DEFAULT false, CONSTRAINT "PK_231ae565c273ee700b283f15c1d" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "wishlist" ("id" SERIAL NOT NULL, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "userId" uuid, "productDetailId" integer, CONSTRAINT "UQ_77ff450d2dbd7eff3bce74334ad" UNIQUE ("userId", "productDetailId"), CONSTRAINT "PK_620bff4a240d66c357b5d820eaa" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "sale_mail_log" ("id" SERIAL NOT NULL, "userId" character varying NOT NULL, "saleId" integer NOT NULL, "sentAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_62c22dc2f62186c1baea1d4a5d8" PRIMARY KEY ("id"))`);
         await queryRunner.query(`ALTER TABLE "right_object" ADD CONSTRAINT "FK_823b3940be0dcf3d94f7af9ebaa" FOREIGN KEY ("rightId") REFERENCES "right"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
         await queryRunner.query(`ALTER TABLE "right_object" ADD CONSTRAINT "FK_cf3620793a485b2edbe27810552" FOREIGN KEY ("objectId") REFERENCES "object_entity"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
         await queryRunner.query(`ALTER TABLE "role_right" ADD CONSTRAINT "FK_e23a99abf5e82f31facf7efc1a4" FOREIGN KEY ("roleId") REFERENCES "role"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
@@ -97,6 +98,7 @@ export class InitMigration1745469607000 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "role_right" DROP CONSTRAINT "FK_e23a99abf5e82f31facf7efc1a4"`);
         await queryRunner.query(`ALTER TABLE "right_object" DROP CONSTRAINT "FK_cf3620793a485b2edbe27810552"`);
         await queryRunner.query(`ALTER TABLE "right_object" DROP CONSTRAINT "FK_823b3940be0dcf3d94f7af9ebaa"`);
+        await queryRunner.query(`DROP TABLE "sale_mail_log"`);
         await queryRunner.query(`DROP TABLE "wishlist"`);
         await queryRunner.query(`DROP TABLE "reviews"`);
         await queryRunner.query(`DROP TABLE "invoice_item"`);

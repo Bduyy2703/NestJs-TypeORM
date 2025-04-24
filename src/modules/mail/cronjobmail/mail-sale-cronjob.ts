@@ -26,23 +26,22 @@ export class MailSaleCronjob {
   async handle(validSales: any[]) {
     for (const sale of validSales) {
       try {
-      
         const productIds = await this.saleService.getProductIdsOfSale(sale.id);
         if (!productIds.length) continue;
-
+  
         const wishlists = await this.wishlistRepo.find({
           where: { productDetail: { product: { id: In(productIds) } } },
           relations: ['user', 'productDetail', 'productDetail.product'],
         });
-
-        // Gom wishlist theo user
-        const userWishlistMap = new Map<number, Wishlist[]>();
+  
+        // Gom wishlist theo user (userId là UUID string)
+        const userWishlistMap = new Map<string, Wishlist[]>();
         for (const w of wishlists) {
-          const userId = Number(w.user.id);
+          const userId = w.user.id; // giữ nguyên là string
           if (!userWishlistMap.has(userId)) userWishlistMap.set(userId, []);
-          userWishlistMap.get(Number(w.user.id))?.push(w);
+          userWishlistMap.get(userId)?.push(w);
         }
-
+  
         for (const [userId, items] of userWishlistMap.entries()) {
           // Kiểm tra log đã gửi mail cho user-sale này chưa
           const sent = await this.saleMailLogRepo.findOne({ where: { userId, saleId: sale.id } });

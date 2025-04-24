@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Khuyến mãi đặc biệt cho bạn!</title>
+  </head>
+  <body style="font-family: Arial, sans-serif; background: #f6f8fa; margin: 0; padding: 0;">
+    <table width="100%" bgcolor="#f6f8fa" cellpadding="0" cellspacing="0" style="padding: 40px 0;">
+      <tr>
+        <td align="center">
+          <table width="480" bgcolor="#fff" cellpadding="32" cellspacing="0" style="border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <tr>
+              <td align="center">
+                <img src="https://cdn-icons-png.flaticon.com/512/1170/1170627.png" alt="Sale" width="72" style="margin-bottom: 16px;" />
+                <h2 style="color: #e53935; margin-bottom: 8px;">🎉 Sản phẩm bạn yêu thích đang giảm giá!</h2>
+                <p style="font-size: 16px; color: #333; margin-bottom: 24px;">
+                  Xin chào <b>{{name}}</b>,<br>
+                  Các sản phẩm bạn đã thêm vào danh sách yêu thích đang được giảm giá trong chương trình <b>{{saleName}}</b>!
+                </p>
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+                  {{#each products}}
+                  <tr>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                      <span style="font-size: 15px;">{{this.name}}</span>
+                    </td>
+                  </tr>
+                  {{/each}}
+                </table>
+                <a href="https://localhost:3000/list-product" style="display: inline-block; background: #e53935; color: #fff; text-decoration: none; padding: 12px 32px; border-radius: 4px; font-size: 16px; font-weight: bold;">
+                  Xem ngay ưu đãi
+                </a>
+                <p style="font-size: 13px; color: #888; margin-top: 32px;">
+                  Đừng bỏ lỡ cơ hội này!<br>
+                  <span style="font-size: 12px;">© {{year}} YourShop. All rights reserved.</span>
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

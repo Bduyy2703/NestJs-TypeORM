@@ -57,17 +57,21 @@ export class MailService {
     });
   }
 
-  async sendSaleMail(userId: number, products: Product[], saleId: number) {
+  async sendSaleMail(userId: string, products: Product[], saleId: number) {
     const user = await this.userRepo.findOne({ where: { id: String(userId) } });
+    console.log("userId", user)
     const sale = await this.saleRepo.findOne({ where: { id: saleId } });
     if (!user || !sale) return;
-    const productList = products.map(p => `- ${p.name}`).join('\n');
-    const subject = `Sản phẩm bạn yêu thích đang được giảm giá!`;
-    const body = `Xin chào,\n\nCác sản phẩm bạn yêu thích đang được giảm giá trong chương trình "${sale.name}":\n${productList}\n\nTruy cập ngay để không bỏ lỡ!`;
     await this.mailerService.sendMail({
       to: user.email,
-      subject,
-      text: body,
+      subject: `🎉 Sản phẩm bạn yêu thích đang được giảm giá!`,
+      template: './sale-notify',
+      context: {
+        name: user.username,
+        saleName: sale.name,
+        products,
+        year: new Date().getFullYear(),
+      },
     });
   }
 }
