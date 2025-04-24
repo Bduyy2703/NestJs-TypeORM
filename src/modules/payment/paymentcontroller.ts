@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Query, Put, ParseIntPipe, Param, Request, UnauthorizedException } from "@nestjs/common";
+import { Controller, Post, Body, Get, Query, Put, ParseIntPipe, Param, Request, UnauthorizedException, Res } from "@nestjs/common";
 import { ApiBody, ApiOperation, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { CreateInvoiceDto, InvoiceResponseDto } from "./dto/invoice.dto";
 import { RetryPaymentDto } from "./dto/retry-payment.dto";
@@ -7,7 +7,7 @@ import { Objectcode } from "src/cores/decorators/objectcode.decorator";
 import { Actions } from "src/cores/decorators/action.decorator";
 import { Public } from "src/cores/decorators/public.decorator";
 import { InvoiceStatus } from "../invoice/dto/invoice.dto";
-
+import { Response } from 'express';
 @ApiTags("payment")
 @Controller("payment")
 @ApiSecurity("JWT-auth")
@@ -47,8 +47,12 @@ export class PaymentController {
   @Public()
   @ApiOperation({ summary: "Xử lý callback từ VNPay" })
   @ApiResponse({ status: 200, description: "Callback processed" })
-  async handleVnpayIpn(@Query() params: any) {
-    return this.paymentService.processVnpayIpn(params);
+  async handleVnpayIpn(@Query() params: any, @Res() res: Response) {
+    const result = await this.paymentService.processVnpayIpn(params);
+    if (result.redirectUrl) {
+      return res.redirect(result.redirectUrl); // Chuyển hướng HTTP 302
+    }
+    return res.status(400).json({ rspCode: '99', message: 'Không có URL chuyển hướng' });
   }
 
   @Put('invoice/:invoiceId')
