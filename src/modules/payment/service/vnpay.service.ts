@@ -166,7 +166,7 @@ export class VnpayService {
                 case '24':
                     // Giao dịch bị hủy
                     message = "Giao dịch đã bị hủy";
-                    invoice.status = "CANCELLED";
+                    invoice.status = "PENDING";
                     redirectUrl = this.frontendFailUrl;
                     notificationMessage = `Người dùng ${invoice.userId} đã hủy thanh toán đơn hàng #${invoice.id} qua VNPay`;
                     break;
