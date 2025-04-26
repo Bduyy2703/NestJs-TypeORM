@@ -24,12 +24,13 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
   ) {}
 
   async handleConnection(@ConnectedSocket() client: Socket) {
-    const authHeaders = client.handshake.headers.authorization;
-    if (!authHeaders) {
+    // Lấy token từ handshake.auth thay vì headers
+    const token = client.handshake.auth?.token;
+    if (!token) {
       client.disconnect();
       return;
     }
-    const AccessToken = authHeaders.split(' ')[1];
+    const AccessToken = token.replace('Bearer ', '');
     const valid = await this.authService.validateAccessToken(AccessToken);
     if (!valid) {
       client.disconnect();
