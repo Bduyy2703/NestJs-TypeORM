@@ -38,11 +38,11 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
     }
     const decodeToken = await this.jwtService.verify(AccessToken);
     if (!decodeToken) client.disconnect();
-    const { userId, role } = decodeToken;
+    const { userId, roles} = decodeToken;
     client.data.userId = userId;
-    client.data.role = role;
+    client.data.role = roles;
     client.join(userId); // Join room userId
-    if (role === 'ADMIN') {
+    if (roles === 'ADMIN') {
       client.join('admin'); // Admin join channel admin
     }
     this.server.to(userId).emit('notification', { message: 'You are online' });
