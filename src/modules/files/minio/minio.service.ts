@@ -68,7 +68,7 @@ export class MinioService {
       for (const objectName of objectNames) {
         let fileExists = await this.checkFileExists(bucketName, objectName);
         if (fileExists) {
-          const url = `http://${this.minioHost}:9000/${bucketName}/${objectName}`;
+          const url = `https://${this.minioHost}:9000/${bucketName}/${objectName}`;
           urls.push(url);
         } else {
           console.warn(`File không tồn tại: ${objectName}`);

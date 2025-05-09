@@ -19,7 +19,7 @@ services:
       - MINIO_ACCESS_KEY=admin
       - MINIO_SECRET_KEY=password123
       - MINIO_BUCKET=public
-      - MINIO_HOST=35.247.185.8
+      - MINIO_HOST=minio
       - JWT_SECRET=94vFo1lmQQ
       - JWT_REFRESH_SECRET=94vFo1lmQQ
       - EXPIRE_AT=1d
@@ -33,7 +33,7 @@ services:
       - VNP_TMNCODE=AUBE83HC
       - VNP_HASHSECRET=ROSW2WG139LSWVWXS7YJMA6KJMLF77TY
       - VNP_URL=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
-      - VNP_RETURNURL=http://35.247.185.8/payment_return
+      - VNP_RETURNURL=http://34.143.128.5/payment_return
     depends_on:
       - postgres
       - minio
@@ -52,14 +52,13 @@ services:
   minio:
     image: minio/minio:latest
     command: server /data --console-address ":9001"
-    ports:
-      - "9000:9000"
-      - "9001:9001"
+    volumes:
+      - minio-data:/data
     environment:
       - MINIO_ROOT_USER=admin
       - MINIO_ROOT_PASSWORD=password123
-    volumes:
-      - minio-data:/data
+      - MINIO_DOMAIN=minio.dclux.store  
+
 
 volumes:
   pgdata:
