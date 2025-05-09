@@ -18,7 +18,8 @@ export class VnpayService {
     private readonly vnp_HashSecret = process.env.VNP_HASHSECRET;
     private readonly vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
     private readonly vnp_ReturnUrl = "http://35.247.185.8/api/v1/payment/vnpay-ipn"; // Cần thay đổi theo môi trường thực tế "http://35.247.185.8/api/v1/payment/vnpay-ipn"
-    private readonly frontendSuccessUrl = "http://localhost:3000/payment-success";
+    private readonly frontendSuccessUrl = "https://ui-luxora-client.vercel.app/payment-success";
+    // private readonly frontendSuccessUrl = "http://localhost:3000/payment-success";
     private readonly frontendFailUrl = "http://localhost:3000/payment-fail"
     constructor(
         @InjectRepository(Invoice)
@@ -82,7 +83,7 @@ export class VnpayService {
         const idinvoice = parseInt(orderId);
         this.logger.log(`idinvoice: ${idinvoice}, type: ${typeof idinvoice}`);
 
-        let invoice = await this.invoiceRepo.findOne({ where: { id: idinvoice }, relations: ["items","user"] });
+        let invoice = await this.invoiceRepo.findOne({ where: { id: idinvoice }, relations: ["items", "user"] });
         if (!invoice) {
             this.logger.error(`Invoice ${orderId} not found in VNPay IPN`);
             return { rspCode: '01', message: 'Hóa đơn không tồn tại', invoice: null, redirectUrl: null };
@@ -102,14 +103,14 @@ export class VnpayService {
             this.logger.error(`Amount mismatch in VNPay IPN for invoice ${orderId}. Expected: ${invoice.finalTotal}, Received: ${amount}`);
             return { rspCode: '04', message: 'Số tiền không khớp', invoice, redirectUrl: null };
         }
-         // Nếu không có user trong invoice, truy vấn bổ sung từ userRepo
-         let username = invoice.user?.username;
-         if (!username) {
-             const user = await this.userRepo.findOne({ where: { id: invoice.userId } });
-             username = user?.username || "Unknown";
-         }
+        // Nếu không có user trong invoice, truy vấn bổ sung từ userRepo
+        let username = invoice.user?.username;
+        if (!username) {
+            const user = await this.userRepo.findOne({ where: { id: invoice.userId } });
+            username = user?.username || "Unknown";
+        }
 
-         this.logger.log(`Amount mismatch in VNPay IPN  code neeee: ${rspCode}`);
+        this.logger.log(`Amount mismatch in VNPay IPN  code neeee: ${rspCode}`);
         return await this.invoiceRepo.manager.transaction(async transactionalEntityManager => {
             let message = '';
             let redirectUrl: string | null = null;
