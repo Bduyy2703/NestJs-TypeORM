@@ -58,8 +58,8 @@ services:
       - "9000:9000"  # Cổng web API
       - "9001:9001"  # Cổng quản trị
     environment:
-      - MINIO_ROOT_USER=admin
-      - MINIO_ROOT_PASSWORD=password123
+      - MINIO_ACCESS_KEY=admin
+      - MINIO_SECRET_KEY=password123
       - MINIO_DOMAIN=minio.dclux.store  
       - MINIO_SERVER_URL=https://minio.dclux.store:9000
   nginx:
