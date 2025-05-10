@@ -9,13 +9,13 @@ export class MinioService {
   // MINIO_ROOT_USER lCifeGDKAgw1hxrjIfJM
   // MINIO_ROOT_PASSWORD 4ssqZvLRLg3zDSGLglJmmq4m5ieyLmf9eHPnMlnN
   constructor() {
-    const endPoint = process.env.MINIO_ENDPOINT || '127.0.0.1';
+    const endPoint = process.env.MINIO_ENDPOINT || 'minio';// '127.0.0.1'
     const port = parseInt(process.env.MINIO_PORT, 10) || 9000;
     const useSSL = process.env.MINIO_USE_SSL === 'true' || false;
     const accessKey = process.env.MINIO_ACCESS_KEY || 'admin';
     const secretKey = process.env.MINIO_SECRET_KEY || 'password123';
 
-    this.minioHost = process.env.MINIO_HOST || '127.0.0.1';
+    this.minioHost = process.env.MINIO_HOST || endPoint;// '127.0.0.1'
     this.minioClient = new Minio.Client({
       endPoint: endPoint,
       port: port,
@@ -68,7 +68,7 @@ export class MinioService {
       for (const objectName of objectNames) {
         let fileExists = await this.checkFileExists(bucketName, objectName);
         if (fileExists) {
-          const url = `https://${this.minioHost}:9000/${bucketName}/${objectName}`;
+          const url = `https://${this.minioHost}/${bucketName}/${objectName}`;
           urls.push(url);
         } else {
           console.warn(`File không tồn tại: ${objectName}`);
