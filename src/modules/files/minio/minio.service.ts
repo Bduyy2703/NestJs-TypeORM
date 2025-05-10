@@ -11,7 +11,7 @@ export class MinioService {
   constructor() {
     const endPoint = process.env.MINIO_ENDPOINT || 'minio';// '127.0.0.1'
     const port = parseInt(process.env.MINIO_PORT, 10) || 9000;
-    const useSSL = process.env.MINIO_USE_SSL === 'true' || false;
+    const useSSL = process.env.MINIO_USE_SSL === 'false' || false;
     const accessKey = process.env.MINIO_ACCESS_KEY || 'admin';
     const secretKey = process.env.MINIO_SECRET_KEY || 'password123';
 
