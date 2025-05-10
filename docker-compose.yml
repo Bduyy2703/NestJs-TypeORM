@@ -62,6 +62,21 @@ services:
       - MINIO_ROOT_PASSWORD=password123
       - MINIO_DOMAIN=minio.dclux.store  
       - MINIO_USE_SSL=true
+  nginx:
+    image: nginx:stable-alpine
+    container_name: nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certbot/conf:/etc/letsencrypt  # nơi chứa certbot certs
+      - ./certbot/www:/var/www/certbot   # nơi certbot challenge lưu file
+    depends_on:
+      - app
+      - minio
+
 volumes:
   pgdata:
   minio-data:
