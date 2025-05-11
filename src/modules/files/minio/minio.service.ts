@@ -22,6 +22,7 @@ export class MinioService {
       useSSL: useSSL,
       accessKey: accessKey,
       secretKey: secretKey,
+      region: 'us-east-1',
     });
   }
 

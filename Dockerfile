@@ -14,6 +14,9 @@ COPY src/cores/database/seeds ./dist/cores/database/seeds
 RUN npm install --omit=dev
 CMD ["node", "dist/main.js"]
 
+# Bổ sung phần xử lý chứng chỉ tự ký của MinIO
+COPY minio/certs/public.crt /usr/local/share/ca-certificates/minio.crt
+RUN update-ca-certificates
 # ###
 # FROM node:18 AS builder
 # WORKDIR /app
