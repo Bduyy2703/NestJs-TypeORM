@@ -54,6 +54,7 @@ services:
     command: server /data --console-address ":9001" --address ":9000"
     volumes:
       - minio-data:/data
+      - ./minio/certs:/root/.minio/certs
     ports:
       - "9000:9000"  # Cổng web API
       - "9001:9001"  # Cổng quản trị

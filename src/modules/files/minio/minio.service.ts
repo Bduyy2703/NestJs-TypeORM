@@ -25,20 +25,20 @@ export class MinioService {
     });
   }
 
-  async uploadFileFromBuffer(
-    bucketName: string,
-    objectName: string,
-    buffer: Buffer,
-    mimeType: string,
-  ) {
+async uploadFileFromBuffer(bucketName: string, objectName: string, buffer: Buffer, mimeType: string) {
+  try {
     await this.minioClient.putObject(
       bucketName,
       objectName,
       buffer,
-      buffer.length, // Độ dài của buffer
-      { 'Content-Type': mimeType }, // Metadata của file
+      buffer.length,
+      { 'Content-Type': mimeType },
     );
+  } catch (error) {
+    console.error(`Upload failed: ${(error as any).message}`, error);
+    throw error;
   }
+}
 
   async downloadFile(bucketName: string, objectName: string) {
     return this.minioClient.getObject(bucketName, objectName);
