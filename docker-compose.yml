@@ -61,6 +61,8 @@ services:
       - MINIO_ROOT_USER=admin
       - MINIO_ROOT_PASSWORD=password123
       - MINIO_DOMAIN=minio.dclux.store  
+      - MINIO_SERVER_URL=https://minio.dclux.store:9000
+      - MINIO_CONSOLE_TLS=true  
 
   nginx:
     image: nginx:stable-alpine
