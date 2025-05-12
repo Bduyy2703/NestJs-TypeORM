@@ -5,6 +5,8 @@ services:
     ports:
       - "3000:3000"
     environment:
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
+      - NODE_EXTRA_CA_CERTS=/usr/local/share/ca-certificates/minio.crt
       - NODE_ENV=production
       - PORT=3000
       - DEV_DB_HOST=postgres

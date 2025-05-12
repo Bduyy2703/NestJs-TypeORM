@@ -8,7 +8,7 @@ export class MinioService {
 
   // MINIO_ROOT_USER lCifeGDKAgw1hxrjIfJM
   // MINIO_ROOT_PASSWORD 4ssqZvLRLg3zDSGLglJmmq4m5ieyLmf9eHPnMlnN
-  constructor() {
+constructor() {
     console.log('Initializing MinioService...');
     try {
       const endPoint = process.env.MINIO_ENDPOINT || 'minio';
@@ -17,7 +17,9 @@ export class MinioService {
       const accessKey = process.env.MINIO_ACCESS_KEY || 'admin';
       const secretKey = process.env.MINIO_SECRET_KEY || 'password123';
       console.log('MinIO Config:', { endPoint, port, useSSL, accessKey, secretKey });
+
       this.minioHost = process.env.MINIO_HOST || endPoint;
+
       this.minioClient = new Minio.Client({
         endPoint: endPoint,
         port: port,
@@ -37,13 +39,20 @@ export class MinioService {
     this.testConnection();
   }
   async testConnection() {
+    console.log('Testing Minio connection...');
     try {
       const buckets = await this.minioClient.listBuckets();
       console.log('MinIO Connection Successful, Buckets:', buckets.map(b => b.name));
     } catch (error) {
-      console.error('MinIO Connection Failed:', (error as any).message, error);
+      console.error('MinIO Connection Failed:', {
+        message: (error as any).message,
+        code: (error as any).code,
+        stack: (error as any).stack,
+        response: (error as any).response,
+      });
+      throw error;
     }
-  }
+  } 
   async uploadFileFromBuffer(bucketName: string, objectName: string, buffer: Buffer, mimeType: string) {
     try {
       console.log('Uploading:', { bucketName, objectName, mimeType, bufferLength: buffer.length });
