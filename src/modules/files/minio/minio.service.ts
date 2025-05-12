@@ -9,37 +9,62 @@ export class MinioService {
   // MINIO_ROOT_USER lCifeGDKAgw1hxrjIfJM
   // MINIO_ROOT_PASSWORD 4ssqZvLRLg3zDSGLglJmmq4m5ieyLmf9eHPnMlnN
   constructor() {
-    const endPoint = process.env.MINIO_ENDPOINT || 'minio';// '127.0.0.1'
-    const port = parseInt(process.env.MINIO_PORT, 10) || 9000;
-    const useSSL = process.env.MINIO_USE_SSL === 'false' || false;
-    const accessKey = process.env.MINIO_ACCESS_KEY || 'admin';
-    const secretKey = process.env.MINIO_SECRET_KEY || 'password123';
-
-    this.minioHost = process.env.MINIO_HOST || endPoint;// '127.0.0.1'
-    this.minioClient = new Minio.Client({
-      endPoint: endPoint,
-      port: port,
-      useSSL: useSSL,
-      accessKey: accessKey,
-      secretKey: secretKey,
-      region: 'us-east-1',
-    });
+    console.log('Initializing MinioService...');
+    try {
+      const endPoint = process.env.MINIO_ENDPOINT || 'minio';
+      const port = parseInt(process.env.MINIO_PORT, 10) || 9000;
+      const useSSL = process.env.MINIO_USE_SSL === 'true' ? true : false;
+      const accessKey = process.env.MINIO_ACCESS_KEY || 'admin';
+      const secretKey = process.env.MINIO_SECRET_KEY || 'password123';
+      console.log('MinIO Config:', { endPoint, port, useSSL, accessKey, secretKey });
+      this.minioHost = process.env.MINIO_HOST || endPoint;
+      this.minioClient = new Minio.Client({
+        endPoint: endPoint,
+        port: port,
+        useSSL: useSSL,
+        accessKey: accessKey,
+        secretKey: secretKey,
+        region: 'us-east-1',
+      });
+    } catch (error) {
+      console.error('Error initializing MinioClient:', {
+        message: (error as any).message,
+        code: (error as any).code,
+        stack: (error as any).stack,
+      });
+      throw error;
+    }
+    this.testConnection();
   }
-
-async uploadFileFromBuffer(bucketName: string, objectName: string, buffer: Buffer, mimeType: string) {
-  try {
-    await this.minioClient.putObject(
-      bucketName,
-      objectName,
-      buffer,
-      buffer.length,
-      { 'Content-Type': mimeType },
-    );
-  } catch (error) {
-    console.error(`Upload failed: ${(error as any).message}`, error);
-    throw error;
+  async testConnection() {
+    try {
+      const buckets = await this.minioClient.listBuckets();
+      console.log('MinIO Connection Successful, Buckets:', buckets.map(b => b.name));
+    } catch (error) {
+      console.error('MinIO Connection Failed:', (error as any).message, error);
+    }
   }
-}
+  async uploadFileFromBuffer(bucketName: string, objectName: string, buffer: Buffer, mimeType: string) {
+    try {
+      console.log('Uploading:', { bucketName, objectName, mimeType, bufferLength: buffer.length });
+      await this.minioClient.putObject(
+        bucketName,
+        objectName,
+        buffer,
+        buffer.length,
+        { 'Content-Type': mimeType },
+      );
+      console.log('Upload successful');
+    } catch (error) {
+      console.error('Upload failed:', {
+        message: (error as any).message,
+        code: (error as any).code,
+        stack: (error as any).stack,
+        response: (error as any).response,
+      });
+      throw error;
+    }
+  }
 
   async downloadFile(bucketName: string, objectName: string) {
     return this.minioClient.getObject(bucketName, objectName);

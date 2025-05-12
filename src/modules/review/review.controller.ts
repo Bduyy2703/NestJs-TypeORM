@@ -217,8 +217,7 @@ export class ReviewController {
     }
 
     @Get('product/:productId/statistics')
-    @Actions('read')
-    @Objectcode('REVIEW01')
+@Public()
     @ApiOperation({ summary: 'Lấy thống kê đánh giá của một sản phẩm' })
     async getProductReviewStatistics(@Param('productId') productId: number) {
         return this.reviewService.getProductReviewStatistics(productId);
