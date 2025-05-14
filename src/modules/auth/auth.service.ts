@@ -215,69 +215,64 @@ export class AuthService {
     return foundedToken ? true : false;
   }
 
-  async requestAccessToken(refreshToken: string) {
-    // 1. check exist refreshToken?
+async requestAccessToken(refreshToken: string) {
+    // 1. Kiểm tra refreshToken
     if (!refreshToken) {
-      throw new BadRequestException('refreshToken missing!');
+        throw new BadRequestException('refreshToken missing!');
     }
-    // 2. decode
+
+    // 2. Giải mã refreshToken
     const decodeToken = await this.jwtService
-      .verifyAsync(refreshToken, { secret: process.env.SECRET_KEY })
-      .catch(() => {
-        throw new UnauthorizedException(
-          'Timeout or invalid refreshToken. Please login again!',
-        );
-      });
+        .verifyAsync(refreshToken, { secret: process.env.REFRESH_TOKEN_SECRET })
+        .catch(() => {
+            throw new UnauthorizedException(
+                'Timeout or invalid refreshToken. Please login again!',
+            );
+        });
 
-    // 3. check refreshToken is used ? By Check refreshTokenUsed in db
-    const foundedTokenUsed =
-      await this.tokenService.findByRefreshTokenUsed(refreshToken);
-
-    // 3.1 available refreshToken
+    // 3. Kiểm tra refreshToken đã sử dụng chưa
+    const foundedTokenUsed = await this.tokenService.findByRefreshTokenUsed(refreshToken);
     if (foundedTokenUsed) {
-      const { userId } = decodeToken;
-
-      // 3.2 delete refreshToken store in db
-      const deletedToken = await this.tokenService.deleteByUserId(userId);
-
-      // 3.3 finally throw error
-      throw new UnauthorizedException(
-        'Something went wrong! please login again.',
-      );
+        const { userId } = decodeToken;
+        await this.tokenService.deleteByUserId(userId);
+        throw new UnauthorizedException('Something went wrong! Please login again.');
     }
 
-    // 4. check this refreshToken is truly using by this user
-    const holderToken =
-      await this.tokenService.findByRefreshToken(refreshToken);
+    // 4. Kiểm tra refreshToken thuộc về user
+    const holderToken = await this.tokenService.findByRefreshToken(refreshToken);
     if (!holderToken) {
-      throw new UnauthorizedException('Invalid token or not registered');
+        throw new UnauthorizedException('Invalid token or not registered');
     }
 
+    // 5. Lấy thông tin user
     const userWithRole = await this.userRepository.findOne({
-      where: { id: decodeToken.userId },
-      relations: ['role'],
+        where: { id: decodeToken.userId },
+        relations: ['role'],
     });
+    if (!userWithRole) {
+        throw new UnauthorizedException('User not found. Please login again.');
+    }
 
-    // generate access token and refresh token
+    // 6. Tạo token mới
     const payload = {
-      userId: userWithRole.id,
-      email: userWithRole.email,
-      roles: userWithRole.role.code,
+        userId: userWithRole.id,
+        email: userWithRole.email,
+        roles: userWithRole.role.code,
     };
-    const { expiredInAccessToken, ...tokens } =
-      await this.createTokenPair(payload);
+    const { expiredInAccessToken, ...tokens } = await this.createTokenPair(payload);
 
-    // 5. update old AT and push old AT to RefreshTokenUsed[]
-    holderToken.refreshToken = tokens.accessToken;
-    holderToken.refreshTokenUsed.push(refreshToken);
-
+    // 7. Cập nhật accessToken, refreshToken và lưu trữ
+    holderToken.accessToken = tokens.accessToken; // Lưu access token mới
+    holderToken.refreshToken = tokens.refreshToken; // Lưu refresh token mới
+    holderToken.refreshTokenUsed.push(refreshToken); // Thêm refresh token cũ vào danh sách đã sử dụng
     await this.tokenService.update(holderToken);
 
+    // 8. Trả về kết quả
     return {
-      ...tokens,
-      expiredInAccessToken,
+        ...tokens,
+        expiredInAccessToken,
     };
-  }
+}
 
   async createTokenPair(payload) {
     const accessToken = await this.jwtService.signAsync(payload, {
