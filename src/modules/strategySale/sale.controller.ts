@@ -51,8 +51,7 @@ export class SaleStrategyController {
   }
 
   @Get()
-  @Actions("read")
-  @Objectcode("SALE01")
+  @Public()
   @ApiOperation({ summary: "Lấy danh sách tất cả chương trình giảm giá" })
   @ApiResponse({ status: 200, description: "Lấy danh sách thành công." })
   async getAllSales(@Query() query: GetSaleDto) {
