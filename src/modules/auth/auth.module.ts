@@ -24,7 +24,7 @@ import { PermissionModule } from '../permission/permission.module';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'), // Lấy giá trị từ biến môi trường
-        signOptions: { expiresIn: '30m' },
+        signOptions: { expiresIn: '24h' },
       }),
     }),
     TypeOrmModule.forFeature([User, Role, Token]),

@@ -7,9 +7,10 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { JwtService } from '@nestjs/jwt';
+import { JwtService, TokenExpiredError } from '@nestjs/jwt';
 import { OnEvent } from '@nestjs/event-emitter';
 import { AuthService } from '../auth/auth.service';
+import { Logger } from '@nestjs/common';
 
 @WebSocketGateway({
   cors: { origin: '*' },
@@ -17,39 +18,55 @@ import { AuthService } from '../auth/auth.service';
 export class NotificationGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
-
+  private readonly logger = new Logger(NotificationGateway.name);
   constructor(
     private jwtService: JwtService,
     private authService: AuthService,
-  ) {}
+  ) { }
 
   async handleConnection(@ConnectedSocket() client: Socket) {
-    // Lấy token từ handshake.auth thay vì headers
-    const token = client.handshake.auth?.token;
-    if (!token) {
+    try {
+      const token = client.handshake.auth?.token;
+      if (!token) {
+        this.logger.warn('No token provided, disconnecting client');
+        client.disconnect();
+        return;
+      }
+      const AccessToken = token.replace('Bearer ', '');
+      const valid = await this.authService.validateAccessToken(AccessToken);
+      if (!valid) {
+        this.logger.warn('Invalid token, disconnecting client');
+        client.disconnect();
+        return;
+      }
+      const decodeToken = await this.jwtService.verify(AccessToken);
+      if (!decodeToken) {
+        this.logger.warn('Failed to decode token, disconnecting client');
+        client.disconnect();
+        return;
+      }
+      const { userId, roles } = decodeToken;
+      client.data.userId = userId;
+      client.data.role = roles;
+      client.join(userId);
+      if (roles === 'ADMIN') {
+        client.join('admin');
+      }
+      this.server.to(userId).emit('notification', { message: 'You are online' });
+    } catch (error) {
+      if (error instanceof TokenExpiredError) {
+        this.logger.warn(`Token expired for client ${client.id}: ${error.message}`);
+        client.emit('auth_error', { message: 'Token expired, please refresh your token' });
+      } else {
+        this.logger.error(`Connection error for client ${client.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        client.emit('auth_error', { message: 'Authentication failed' });
+      }
       client.disconnect();
-      return;
     }
-    const AccessToken = token.replace('Bearer ', '');
-    const valid = await this.authService.validateAccessToken(AccessToken);
-    if (!valid) {
-      client.disconnect();
-      return;
-    }
-    const decodeToken = await this.jwtService.verify(AccessToken);
-    if (!decodeToken) client.disconnect();
-    const { userId, roles} = decodeToken;
-    client.data.userId = userId;
-    client.data.role = roles;
-    client.join(userId); // Join room userId
-    if (roles === 'ADMIN') {
-      client.join('admin'); // Admin join channel admin
-    }
-    this.server.to(userId).emit('notification', { message: 'You are online' });
   }
 
   handleDisconnect(@ConnectedSocket() socket: Socket) {
-    console.log('Disconnected userId: ', socket.data.userId);
+    this.logger.log('Disconnected userId: ', socket.data.userId);
   }
 
   @OnEvent('notification')
