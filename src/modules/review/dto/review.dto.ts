@@ -67,4 +67,25 @@ export class ReviewResponseDto {
 
     @ApiProperty({ type: [File] })
     images: File[];
+    
+    @ApiProperty({ description: 'Số lượt Like' })
+    likeCount: number;
+
+    @ApiProperty({ description: 'Người dùng hiện tại đã Like hay chưa' })
+    isLikedByUser: boolean;
+
+    @ApiProperty({ description: 'Phản hồi của Admin', required: false })
+    reply?: {
+        id: number;
+        content: string;
+        adminId: string;
+        createdAt: Date;
+        updatedAt: Date;
+    }; 
+}
+export class CreateReviewReplyDto {
+    @ApiProperty({ description: 'Nội dung phản hồi của Admin' })
+    @IsNotEmpty()
+    @IsString()
+    content: string;
 }

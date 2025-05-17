@@ -1,6 +1,8 @@
 import { Product } from 'src/modules/product/entity/product.entity';
 import { User } from 'src/modules/users/entities/user.entity';
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToOne } from 'typeorm';
+import { ReviewReply } from './review-reply';
+
 @Entity('reviews')
 export class Review {
     @PrimaryGeneratedColumn()
@@ -21,10 +23,10 @@ export class Review {
     product: Product;
 
     @Column({ type: 'int' })
-    rating: number; // Điểm đánh giá (1-5)
+    rating: number;
 
     @Column({ type: 'text' })
-    comment: string; // Nội dung đánh giá
+    comment: string;
 
     @Column()
     createdAt: Date;
@@ -34,4 +36,7 @@ export class Review {
 
     @Column({ default: false })
     isHidden: boolean;
+
+    @OneToOne(() => ReviewReply, reply => reply.review)
+    reply: ReviewReply;
 }

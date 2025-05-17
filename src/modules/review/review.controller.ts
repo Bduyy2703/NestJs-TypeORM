@@ -2,7 +2,7 @@ import { Controller, Post, Body, UseInterceptors, UploadedFiles, Request, Get, Q
 import { FilesInterceptor } from '@nestjs/platform-express';
 import multer from 'multer';
 import { ReviewService } from './reveiew.service';
-import { CreateReviewDto, UpdateReviewDto, ReviewResponseDto } from './dto/review.dto';
+import { CreateReviewDto, UpdateReviewDto, ReviewResponseDto, CreateReviewReplyDto } from './dto/review.dto';
 import { ApiTags, ApiSecurity, ApiOperation, ApiConsumes, ApiBody, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { Actions } from 'src/cores/decorators/action.decorator';
 import { Objectcode } from 'src/cores/decorators/objectcode.decorator';
@@ -33,6 +33,44 @@ export class ReviewController {
         @Query('userId') userId?: number
     ) {
         return this.reviewService.getAllReviews(page, limit, isHidden, productId, userId);
+    }
+
+        // API mới: Toggle Like
+    @Post(':id/toggle-like')
+    @Actions('create')
+    @Objectcode('REVIEW01')
+    @ApiOperation({ summary: 'Toggle Like cho một đánh giá' })
+    @ApiResponse({ status: 200, description: 'Like toggled successfully', type: Object })
+    async toggleLike(@Param('id') id: number, @Request() req) {
+        const userId = req.user?.userId;
+        if (!userId) throw new BadRequestException('User ID is required');
+        const result = await this.reviewService.toggleLike(id, userId);
+        return {
+            message: result.liked ? 'Like added successfully' : 'Like removed successfully',
+            liked: result.liked,
+            likeCount: result.likeCount,
+        };
+    }
+
+        // API trả lời đánh giá (từ yêu cầu trước)
+    @Post(':id/reply')
+    @Actions('create')
+    @Objectcode('REVIEW01')
+    @ApiOperation({ summary: 'Admin trả lời đánh giá' })
+    @ApiBody({ type: CreateReviewReplyDto })
+    @ApiResponse({ status: 201, description: 'Reply created successfully', type: ReviewResponseDto })
+    async createReply(
+        @Param('id') reviewId: number,
+        @Body() createReviewReplyDto: CreateReviewReplyDto,
+        @Request() req,
+    ) {
+        const userId = req.user?.userId;
+        if (!userId) throw new BadRequestException('User ID is required');
+        const reply = await this.reviewService.createReply(reviewId, userId, createReviewReplyDto);
+        return {
+            message: 'Reply created successfully',
+            reply,
+        };
     }
 
     @Get('my-reviews')
@@ -217,7 +255,7 @@ export class ReviewController {
     }
 
     @Get('product/:productId/statistics')
-@Public()
+    @Public()
     @ApiOperation({ summary: 'Lấy thống kê đánh giá của một sản phẩm' })
     async getProductReviewStatistics(@Param('productId') productId: number) {
         return this.reviewService.getProductReviewStatistics(productId);

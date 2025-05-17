@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class InitMigration1745482014132 implements MigrationInterface {
-    name = 'InitMigration1745482014132'
+export class InitMigration1747474818275 implements MigrationInterface {
+    name = 'InitMigration1747474818275'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`CREATE TABLE "object_entity" ("id" SERIAL NOT NULL, "code" character varying(30), "name" character varying(30), "createdDate" TIMESTAMP, "createdBy" character varying(50), "updatedDate" TIMESTAMP, "updatedBy" character varying(50), "isActive" boolean NOT NULL DEFAULT true, CONSTRAINT "UQ_492d3c96261431a899e894a8088" UNIQUE ("code"), CONSTRAINT "PK_48c917693356ae868326dda8c47" PRIMARY KEY ("id"))`);
@@ -34,9 +34,11 @@ export class InitMigration1745482014132 implements MigrationInterface {
         await queryRunner.query(`CREATE TABLE "invoice_discount" ("id" SERIAL NOT NULL, "invoiceId" integer NOT NULL, "discountId" integer NOT NULL, CONSTRAINT "PK_6d752e7eacfba615f9e18f49c25" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "invoice" ("id" SERIAL NOT NULL, "userId" uuid NOT NULL, "addressId" integer NOT NULL, "paymentMethod" character varying NOT NULL, "totalProductAmount" integer NOT NULL, "shippingFee" integer NOT NULL, "shippingFeeDiscount" integer NOT NULL, "productDiscount" integer NOT NULL, "finalTotal" integer NOT NULL, "status" character varying NOT NULL, "createdAt" TIMESTAMP NOT NULL, "updatedAt" TIMESTAMP NOT NULL, CONSTRAINT "PK_15d25c200d9bcd8a33f698daf18" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "invoice_item" ("id" SERIAL NOT NULL, "invoiceId" integer NOT NULL, "productDetailId" integer NOT NULL, "quantity" integer NOT NULL, "price" integer NOT NULL, "subTotal" integer NOT NULL, CONSTRAINT "PK_621317346abdf61295516f3cb76" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "review_replies" ("id" SERIAL NOT NULL, "reviewId" integer NOT NULL, "adminId" uuid NOT NULL, "content" text NOT NULL, "createdAt" TIMESTAMP NOT NULL, "updatedAt" TIMESTAMP NOT NULL, CONSTRAINT "PK_ba79cc5b487adc14fc3fe8b484d" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "reviews" ("id" SERIAL NOT NULL, "userId" uuid NOT NULL, "productId" integer NOT NULL, "rating" integer NOT NULL, "comment" text NOT NULL, "createdAt" TIMESTAMP NOT NULL, "updatedAt" TIMESTAMP NOT NULL, "isHidden" boolean NOT NULL DEFAULT false, CONSTRAINT "PK_231ae565c273ee700b283f15c1d" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "wishlist" ("id" SERIAL NOT NULL, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "userId" uuid, "productDetailId" integer, CONSTRAINT "UQ_77ff450d2dbd7eff3bce74334ad" UNIQUE ("userId", "productDetailId"), CONSTRAINT "PK_620bff4a240d66c357b5d820eaa" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "sale_mail_log" ("id" SERIAL NOT NULL, "userId" character varying NOT NULL, "saleId" integer NOT NULL, "sentAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_62c22dc2f62186c1baea1d4a5d8" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "review_likes" ("id" SERIAL NOT NULL, "reviewId" integer NOT NULL, "userId" uuid NOT NULL, "createdAt" TIMESTAMP NOT NULL, CONSTRAINT "PK_927159e047aee5a52998ad31577" PRIMARY KEY ("id"))`);
         await queryRunner.query(`ALTER TABLE "right_object" ADD CONSTRAINT "FK_823b3940be0dcf3d94f7af9ebaa" FOREIGN KEY ("rightId") REFERENCES "right"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
         await queryRunner.query(`ALTER TABLE "right_object" ADD CONSTRAINT "FK_cf3620793a485b2edbe27810552" FOREIGN KEY ("objectId") REFERENCES "object_entity"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
         await queryRunner.query(`ALTER TABLE "role_right" ADD CONSTRAINT "FK_e23a99abf5e82f31facf7efc1a4" FOREIGN KEY ("roleId") REFERENCES "role"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
@@ -62,17 +64,25 @@ export class InitMigration1745482014132 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "invoice" ADD CONSTRAINT "FK_6aaa2def19d4a823e5b10cfb92a" FOREIGN KEY ("addressId") REFERENCES "address"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "invoice_item" ADD CONSTRAINT "FK_553d5aac210d22fdca5c8d48ead" FOREIGN KEY ("invoiceId") REFERENCES "invoice"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "invoice_item" ADD CONSTRAINT "FK_bb4dbf923e241f36e93b98c6947" FOREIGN KEY ("productDetailId") REFERENCES "product_details"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "review_replies" ADD CONSTRAINT "FK_385273ae9fd7dc7313e9933cf57" FOREIGN KEY ("reviewId") REFERENCES "reviews"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "review_replies" ADD CONSTRAINT "FK_2ea8d0c15924f39cb9b72e67c7f" FOREIGN KEY ("adminId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "reviews" ADD CONSTRAINT "FK_7ed5659e7139fc8bc039198cc1f" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "reviews" ADD CONSTRAINT "FK_a6b3c434392f5d10ec171043666" FOREIGN KEY ("productId") REFERENCES "product"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "wishlist" ADD CONSTRAINT "FK_f6eeb74a295e2aad03b76b0ba87" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "wishlist" ADD CONSTRAINT "FK_104650ef98105f454fc2214c506" FOREIGN KEY ("productDetailId") REFERENCES "product_details"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "review_likes" ADD CONSTRAINT "FK_9860c907f782adb487acfb2a539" FOREIGN KEY ("reviewId") REFERENCES "reviews"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "review_likes" ADD CONSTRAINT "FK_0d688be5d7def42d685de4d2c74" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`ALTER TABLE "review_likes" DROP CONSTRAINT "FK_0d688be5d7def42d685de4d2c74"`);
+        await queryRunner.query(`ALTER TABLE "review_likes" DROP CONSTRAINT "FK_9860c907f782adb487acfb2a539"`);
         await queryRunner.query(`ALTER TABLE "wishlist" DROP CONSTRAINT "FK_104650ef98105f454fc2214c506"`);
         await queryRunner.query(`ALTER TABLE "wishlist" DROP CONSTRAINT "FK_f6eeb74a295e2aad03b76b0ba87"`);
         await queryRunner.query(`ALTER TABLE "reviews" DROP CONSTRAINT "FK_a6b3c434392f5d10ec171043666"`);
         await queryRunner.query(`ALTER TABLE "reviews" DROP CONSTRAINT "FK_7ed5659e7139fc8bc039198cc1f"`);
+        await queryRunner.query(`ALTER TABLE "review_replies" DROP CONSTRAINT "FK_2ea8d0c15924f39cb9b72e67c7f"`);
+        await queryRunner.query(`ALTER TABLE "review_replies" DROP CONSTRAINT "FK_385273ae9fd7dc7313e9933cf57"`);
         await queryRunner.query(`ALTER TABLE "invoice_item" DROP CONSTRAINT "FK_bb4dbf923e241f36e93b98c6947"`);
         await queryRunner.query(`ALTER TABLE "invoice_item" DROP CONSTRAINT "FK_553d5aac210d22fdca5c8d48ead"`);
         await queryRunner.query(`ALTER TABLE "invoice" DROP CONSTRAINT "FK_6aaa2def19d4a823e5b10cfb92a"`);
@@ -98,9 +108,11 @@ export class InitMigration1745482014132 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "role_right" DROP CONSTRAINT "FK_e23a99abf5e82f31facf7efc1a4"`);
         await queryRunner.query(`ALTER TABLE "right_object" DROP CONSTRAINT "FK_cf3620793a485b2edbe27810552"`);
         await queryRunner.query(`ALTER TABLE "right_object" DROP CONSTRAINT "FK_823b3940be0dcf3d94f7af9ebaa"`);
+        await queryRunner.query(`DROP TABLE "review_likes"`);
         await queryRunner.query(`DROP TABLE "sale_mail_log"`);
         await queryRunner.query(`DROP TABLE "wishlist"`);
         await queryRunner.query(`DROP TABLE "reviews"`);
+        await queryRunner.query(`DROP TABLE "review_replies"`);
         await queryRunner.query(`DROP TABLE "invoice_item"`);
         await queryRunner.query(`DROP TABLE "invoice"`);
         await queryRunner.query(`DROP TABLE "invoice_discount"`);
