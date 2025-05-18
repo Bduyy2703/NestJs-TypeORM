@@ -77,7 +77,7 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
     source: 'ADMIN' | 'USER';
     notificationId: number;
   }) {
-    if (payload.source === 'ADMIN'|| payload.source === 'USER') {
+    if (payload.source === 'ADMIN') {
       // Gửi tới người dùng (chỉ thông báo từ ADMIN)
       this.server.to(payload.userId).emit('notification', payload);
     } else if (payload.source === 'USER') {
