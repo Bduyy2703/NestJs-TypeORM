@@ -111,6 +111,8 @@ export class ReviewService {
         // Bước 1: Lấy danh sách đánh giá
         const query = this.reviewRepo.createQueryBuilder('review')
             .leftJoinAndSelect('review.product', 'product')
+            .leftJoinAndSelect('review.reply', 'reply')  // lấy reply
+            .leftJoinAndSelect('reply.admin', 'admin')   // lấy thông tin admin của reply
             .skip((page - 1) * limit)
             .take(limit);
 
