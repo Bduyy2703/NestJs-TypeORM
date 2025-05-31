@@ -131,10 +131,10 @@ export class ShippingService {
                 items: items.map((item) => ({
                     name: `Sản phẩm ${item.productDetailId}`,
                     quantity: item.quantity,
-                    height: item.height,
-                    weight: item.weight,
-                    length: item.length,
-                    width: item.width,
+                    height: Math.round(item.height), 
+                    weight: Math.round(item.weight),
+                    length: Math.round(item.length), 
+                    width: Math.round(item.width),   
                 })),
             };
 
@@ -280,7 +280,7 @@ export class ShippingService {
         for (const discountCode of discountCodes) {
             const discount = await this.discountRepo.findOne({ where: { name: discountCode, isActive: true } });
             const currentDate = new Date(); // Ngày hiện tại
-    
+
             // Kiểm tra mã giảm giá có hợp lệ không
             if (!discount) {
                 throw new BadRequestException(`Mã giảm giá ${discountCode} không tồn tại`);
@@ -338,16 +338,16 @@ export class ShippingService {
             shippingFeeAfterDiscount,
             totalAmount,
             discountAmount,   // Số tiền giảm giá cho tổng hóa đơn
-            totalAfterDiscount,        
+            totalAfterDiscount,
             finalTotal,               // Tổng tiền cuối cùng
         };
     }
     async getAvailableDiscounts(totalAmount: number, shippingFee: number) {
         const now = new Date();
-    
+
         // Giới hạn giảm giá = 30% tổng tiền sản phẩm
         const maxDiscount = totalAmount * 0.3;
-    
+
         // Query lấy mã giảm giá sản phẩm (TOTAL)
         const totalDiscountsQuery = this.discountRepo.createQueryBuilder("discount")
             .where("discount.isActive = :active", { active: true })
@@ -355,14 +355,14 @@ export class ShippingService {
             .andWhere("discount.startDate <= :now", { now })
             .andWhere(new Brackets(qb => {
                 qb.where("discount.endDate >= :now", { now })
-                  .orWhere("discount.endDate IS NULL");
+                    .orWhere("discount.endDate IS NULL");
             }))
             .andWhere("discount.condition = 'TOTAL'") // Chỉ lấy mã áp dụng cho sản phẩm
             .andWhere(new Brackets(qb => {
                 qb.where("discount.discountType = 'FIXED' AND discount.discountValue <= :maxDiscount", { maxDiscount })
-                  .orWhere("discount.discountType = 'PERCENTAGE' AND (discount.discountValue / 100 * :totalAmount) <= :maxDiscount", { totalAmount, maxDiscount });
+                    .orWhere("discount.discountType = 'PERCENTAGE' AND (discount.discountValue / 100 * :totalAmount) <= :maxDiscount", { totalAmount, maxDiscount });
             }));
-    
+
         // Query lấy mã giảm giá phí ship (SHIPPING) nếu có phí ship
         let shippingDiscountsQuery;
         if (shippingFee > 0) {
@@ -372,18 +372,18 @@ export class ShippingService {
                 .andWhere("discount.startDate <= :now", { now })
                 .andWhere(new Brackets(qb => {
                     qb.where("discount.endDate >= :now", { now })
-                      .orWhere("discount.endDate IS NULL");
+                        .orWhere("discount.endDate IS NULL");
                 }))
                 .andWhere("discount.condition = 'SHIPPING'"); // Chỉ lấy mã áp dụng cho phí ship
         }
-    
+
         // Lấy danh sách mã giảm giá hợp lệ
         const totalDiscounts = await totalDiscountsQuery.getMany();
         const shippingDiscounts = shippingDiscountsQuery ? await shippingDiscountsQuery.getMany() : [];
-    
+
         return [...totalDiscounts, ...shippingDiscounts]; // Gộp cả 2 loại giảm giá
     }
-    
+
 }
 
 
