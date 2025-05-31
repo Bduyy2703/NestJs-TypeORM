@@ -24,7 +24,7 @@ export class MailService {
     // const url = `http://localhost:3000/confirm-success?tokenOTP=${tokenOTP}&accessToken=${accessToken}`;// sẽ sửa lại theo link của FE
     // https://ui-luxora-client.vercel.app/
     
-    const url = `https://ui-luxora-clientt-seven.vercel.app/confirm-success?tokenOTP=${tokenOTP}&accessToken=${accessToken}`;
+    const url = `https://dclux-store.vercel.app/confirm-success?tokenOTP=${tokenOTP}&accessToken=${accessToken}`;
     // dẫn link đến Fe kẹp theo các cái token như trên , xong Fe mới gọi api là cái link trên
     await this.mailerService.sendMail({
       to: user.email,
