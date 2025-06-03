@@ -10,10 +10,12 @@ import { Category } from '../category/entity/category.entity';
 import { ProductDetails } from '../product-details/entity/productDetail.entity';
 import { ProductStrategySale } from '../strategySale/entity/productSale.entity';
 import { StrategySale } from '../strategySale/entity/strategySale.entity';
+import { ElasticsearchModule } from 'src/elastic_search/elastic_search.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Product, File, Category, ProductStrategySale, StrategySale,  ProductDetails]),
+    ElasticsearchModule,
   ],
   controllers: [ProductsController],
   providers: [ProductService, MinioService, FileRepository],

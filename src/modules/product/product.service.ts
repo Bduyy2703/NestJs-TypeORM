@@ -11,6 +11,8 @@ import { FileRepository } from '../files/file.repository';
 import { MinioService } from "../files/minio/minio.service";
 import { ProductStrategySale } from "../strategySale/entity/productSale.entity";
 import { StrategySale } from "../strategySale/entity/strategySale.entity";
+import { ElasticsearchService } from "src/elastic_search/elasticsearch.service";
+import { SearchProductDto } from './dto/search-product.dto';
 
 @Injectable()
 export class ProductService {
@@ -21,7 +23,8 @@ export class ProductService {
     @InjectRepository(ProductStrategySale) private readonly strategyProductSaleRepository: Repository<ProductStrategySale>,
     @InjectRepository(ProductDetails) private readonly productDetailsRepository: Repository<ProductDetails>,
     private readonly minioService: MinioService,
-    private readonly fileService: FileRepository
+    private readonly fileService: FileRepository,
+    private readonly elasticsearchService: ElasticsearchService,
   ) { }
 
   async createProduct(createProductDto: CreateProductDto): Promise<Product> {
@@ -46,7 +49,7 @@ export class ProductService {
     // Nếu có chiến lược giảm giá, thêm vào bảng trung gian
     if (strategySaleIds && strategySaleIds.length > 0) {
       const strategySales = await this.strategySaleRepository.find({
-        where: { id: In(strategySaleIds) , isActive:false}, // Kiểm tra theo id của StrategySale
+        where: { id: In(strategySaleIds), isActive: false }, // Kiểm tra theo id của StrategySale
       });
 
       if (strategySales.length !== strategySaleIds.length) {
@@ -62,78 +65,144 @@ export class ProductService {
 
       await this.strategyProductSaleRepository.save(productStrategySales);
     }
+    await this.syncProductToElasticsearch(product);
     return product;
   }
+async searchProducts(searchDto: SearchProductDto) {
+  const { keyword, categoryIds, priceMin, priceMax, materials, sizes, sortBy, page = 1, limit = 10 } = searchDto;
 
-  // async getAllProducts(page: number, limit: number) {
-  //   const [products, total] = await this.productRepository.findAndCount({
-  //     skip: (page - 1) * limit,
-  //     take: limit,
-  //     relations: ["productDetails", "category"],
-  //   });
-
-  //   // ✅ Lấy hình ảnh cho từng sản phẩm
-  //   const productsWithImages = await Promise.all(
-  //     products.map(async (product) => {
-  //       const images = await this.fileService.findFilesByTarget(product.id, "product");
-  //       return {
-  //         id: product.id,
-  //         name: product.name,
-  //         originalPrice: product.originalPrice,
-  //         finalPrice: product.finalPrice,
-  //         category: product.category,
-  //         images: images.map((img) => img.fileUrl),
-  //       };
-  //     })
-  //   );
-
-  //   return {
-  //     data: productsWithImages,
-  //     total,
-  //     page,
-  //     totalPages: Math.ceil(total / limit),
-  //   };
-  // }
-  async getAllProducts(page: number, limit: number) {
-  const [products, total] = await this.productRepository.findAndCount({
-    skip: (page - 1) * limit,
-    take: limit,
-    relations: ["productDetails", "category"],
-  });
-
-  // ✅ Lấy hình ảnh và tính totalSold cho từng sản phẩm
-  const productsWithImages = await Promise.all(
-    products.map(async (product) => {
-      const images = await this.fileService.findFilesByTarget(product.id, "product");
-      const totalSold = product.productDetails.reduce((sum, detail) => sum + detail.sold, 0);
-
-      return {
-        id: product.id,
-        name: product.name,
-        originalPrice: product.originalPrice,
-        finalPrice: product.finalPrice,
-        category: product.category,
-        images: images.map((img) => img.fileUrl),
-        totalSold, // Thêm totalSold vào object trả về
-      };
-    })
-  );
-
-  // ✅ Sắp xếp sản phẩm theo totalSold giảm dần
-  productsWithImages.sort((a, b) => b.totalSold - a.totalSold);
-
-  return {
-    data: productsWithImages,
-    total,
-    page,
-    totalPages: Math.ceil(total / limit),
+  const query: any = {
+    bool: {
+      must: [],
+      filter: [],
+    },
   };
+
+  if (keyword) {
+    query.bool.must.push({
+      multi_match: {
+        query: keyword,
+        fields: ['name^2', 'categoryName'],
+        fuzziness: 'AUTO',
+      },
+    });
+  }
+
+  if (categoryIds && categoryIds.length > 0) {
+    query.bool.filter.push({ terms: { categoryId: categoryIds } });
+  }
+  if (priceMin !== undefined || priceMax !== undefined) {
+    query.bool.filter.push({
+      range: {
+        finalPrice: {
+          gte: priceMin,
+          lte: priceMax,
+        },
+      },
+    });
+  }
+  if (materials && materials.length > 0) {
+    query.bool.filter.push({ terms: { materials } });
+  }
+  if (sizes && sizes.length > 0) {
+    query.bool.filter.push({ terms: { sizes } });
+  }
+
+  const sort = [];
+  if (sortBy) {
+    const [field, order] = sortBy.split(':');
+    sort.push({ [field]: { order: order || 'desc' } });
+  } else {
+    sort.push({ totalSold: { order: 'desc' } });
+  }
+
+  try {
+    const result = await this.elasticsearchService.getClient().search({
+      index: 'products',
+      from: (page - 1) * limit,
+      size: limit,
+      query,
+      sort,
+    });
+
+    const productIds = result.hits.hits.map(hit => parseInt(hit._id));
+    const products = await this.productRepository.find({
+      where: { id: In(productIds) },
+      relations: ['productDetails', 'category'],
+    });
+
+    const productsWithImages = await Promise.all(
+      productIds.map(async id => {
+        const product = products.find(p => p.id === id);
+        if (!product) return null;
+        const images = await this.fileService.findFilesByTarget(product.id, 'product');
+        const totalSold = product.productDetails.reduce((sum, detail) => sum + (detail.sold || 0), 0);
+        return {
+          id: product.id,
+          name: product.name,
+          originalPrice: product.originalPrice,
+          finalPrice: product.finalPrice,
+          category: product.category,
+          images: images.map(img => img.fileUrl),
+          totalSold,
+        };
+      }),
+    );
+
+    // Xử lý result.hits.total
+    const totalHits = typeof result.hits.total === 'number' ? result.hits.total : result.hits.total?.value || 0;
+
+    return {
+      data: productsWithImages.filter(p => p !== null),
+      total: totalHits,
+      page,
+      totalPages: Math.ceil(totalHits / limit),
+    };
+  } catch (error) {
+    console.error('Lỗi khi tìm kiếm sản phẩm trên Elasticsearch:', error);
+    throw new BadRequestException('Không thể thực hiện tìm kiếm sản phẩm');
+  }
 }
+  async getAllProducts(page: number, limit: number) {
+    const [products, total] = await this.productRepository.findAndCount({
+      skip: (page - 1) * limit,
+      take: limit,
+      relations: ["productDetails", "category"],
+    });
+
+    // ✅ Lấy hình ảnh và tính totalSold cho từng sản phẩm
+    const productsWithImages = await Promise.all(
+      products.map(async (product) => {
+        const images = await this.fileService.findFilesByTarget(product.id, "product");
+        const totalSold = product.productDetails.reduce((sum, detail) => sum + detail.sold, 0);
+
+        return {
+          id: product.id,
+          name: product.name,
+          originalPrice: product.originalPrice,
+          finalPrice: product.finalPrice,
+          category: product.category,
+          images: images.map((img) => img.fileUrl),
+          totalSold, // Thêm totalSold vào object trả về
+        };
+      })
+    );
+
+    // ✅ Sắp xếp sản phẩm theo totalSold giảm dần
+    productsWithImages.sort((a, b) => b.totalSold - a.totalSold);
+
+    return {
+      data: productsWithImages,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
 
   async getProductById(id: number) {
     const product = await this.productRepository.findOne({
       where: { id },
-      relations: ["productDetails","category"]
+      relations: ["productDetails", "category"]
     });
 
     if (!product) {
@@ -163,7 +232,7 @@ export class ProductService {
 
     return {
       ...product,
-      images:formattedImages,
+      images: formattedImages,
       totalStock,
       totalSold,
     };
@@ -257,7 +326,7 @@ export class ProductService {
         newUploadedFiles.push(fileData.fileUrl);
       }
     }
-
+    await this.syncProductToElasticsearch(product);
     return {
       message: "Sản phẩm cập nhật thành công!",
       updatedImages: [...keepFiles.map((f) => f.fileName), ...newUploadedFiles],
@@ -284,8 +353,36 @@ export class ProductService {
     }
 
     await this.productRepository.remove(product);
-
+    await this.elasticsearchService.getClient().delete({
+      index: 'products',
+      id: id.toString(),
+    });
     return { message: "Sản phẩm đã được xóa thành công!" };
   }
+  async syncProductToElasticsearch(product: Product) {
+    const productDetails = await this.productDetailsRepository.find({ where: { product: { id: product.id } } });
+    const totalSold = productDetails.reduce((sum, detail) => sum + (detail.sold || 0), 0);
 
+    try {
+      await this.elasticsearchService.getClient().index({
+        index: 'products',
+        id: product.id.toString(),
+        document: { // Sử dụng `document` thay vì `body` cho phiên bản mới
+          id: product.id,
+          name: product.name || '',
+          originalPrice: product.originalPrice || 0,
+          finalPrice: product.finalPrice || 0,
+          categoryId: product.category?.id || null,
+          categoryName: product.category?.name || '',
+          totalSold,
+          materials: productDetails.map(detail => detail.material).filter(Boolean),
+          sizes: productDetails.map(detail => detail.size).filter(Boolean),
+        },
+      });
+      console.log(`Đã đồng bộ sản phẩm ${product.id} lên Elasticsearch`);
+    } catch (error) {
+      console.error(`Lỗi khi đồng bộ sản phẩm ${product.id} lên Elasticsearch:`, error);
+      throw new Error('Không thể đồng bộ sản phẩm lên Elasticsearch');
+    }
+  }
 }

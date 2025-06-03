@@ -25,6 +25,7 @@ import { Actions } from "src/cores/decorators/action.decorator";
 import { Objectcode } from "src/cores/decorators/objectcode.decorator";
 import { UpdateProductDto } from "./dto/update-product.dto";
 import { Public } from "src/cores/decorators/public.decorator";
+import { SearchProductDto } from "./dto/search-product.dto";
 
 @Controller("products")
 @ApiTags("Products")
@@ -183,5 +184,11 @@ export class ProductsController {
   @ApiOperation({ summary: "xóa sản phẩm" })
   async deleteProduct(@Param("id") id: number) {
     return this.productsService.deleteProduct(id);
+  }
+  @Post('search')
+  @Public()
+  @ApiOperation({ summary: 'Tìm kiếm sản phẩm với Elasticsearch' })
+  async searchProducts(@Body() searchDto: SearchProductDto) {
+    return this.productsService.searchProducts(searchDto);
   }
 }
