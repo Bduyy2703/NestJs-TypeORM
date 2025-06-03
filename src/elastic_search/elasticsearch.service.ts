@@ -15,7 +15,7 @@ export class ElasticsearchService implements OnModuleInit {
       requestTimeout: 60000,
       sniffOnStart: true,
       headers: {
-        Accept: 'application/vnd.elasticsearch+json;compatible-with=8', // Ép phiên bản 8
+        'Content-Type': 'application/json', // Đảm bảo Content-Type chuẩn
       },
     });
   }
@@ -24,8 +24,8 @@ export class ElasticsearchService implements OnModuleInit {
     let retries = 10;
     while (retries > 0) {
       try {
-        await this.client.ping();
-        console.log('Kết nối thành công với Elasticsearch');
+        const pingResult = await this.client.info(); // Thay ping bằng info để lấy thêm thông tin
+        console.log('Kết nối thành công với Elasticsearch:', pingResult);
         break;
       } catch (error) {
         retries--;
@@ -39,10 +39,11 @@ export class ElasticsearchService implements OnModuleInit {
 
     try {
       const indexExists = await this.client.indices.exists({ index: 'products' });
+      console.log('Kiểm tra index products:', indexExists);
       if (!indexExists) {
         await this.client.indices.create({
           index: 'products',
-          body: { // Thêm body để tương thích
+          body: {
             mappings: {
               properties: {
                 id: { type: 'integer' },
@@ -56,7 +57,7 @@ export class ElasticsearchService implements OnModuleInit {
                 sizes: { type: 'keyword' },
               },
             },
-          } as Record<string, any>,
+          } as any,
         });
         console.log('Đã tạo index products');
       } else {
