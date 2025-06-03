@@ -1,4 +1,4 @@
-// src/elasticsearch/elasticsearch.service.ts
+// src/elastic_search/elasticsearch.service.ts
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { Client } from '@elastic/elasticsearch';
 
@@ -35,7 +35,7 @@ export class ElasticsearchService implements OnModuleInit {
     }
 
     try {
-      // Xóa index cũ (chỉ để test, cẩn thận khi dùng ở production)
+      // Xóa index cũ để áp dụng mapping mới (chỉ dùng khi test)
       await this.client.indices.delete({ index: 'products', ignore_unavailable: true });
       console.log('Đã xóa index products nếu tồn tại');
 
@@ -52,7 +52,7 @@ export class ElasticsearchService implements OnModuleInit {
               categoryId: { type: 'integer', null_value: 0 },
               categoryName: { type: 'keyword' },
               totalSold: { type: 'integer' },
-              // Bỏ materials và sizes
+              images: { type: 'keyword' }, // Thêm trường images
             },
           },
         },

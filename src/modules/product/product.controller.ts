@@ -184,8 +184,7 @@ export class ProductsController {
   @ApiOperation({ summary: "xóa sản phẩm" })
   async deleteProduct(@Param("id") id: number) {
     return this.productsService.deleteProduct(id);
-  }
-@Post('search')
+  }@Post('search')
   @Public()
   @ApiOperation({ summary: 'Tìm kiếm sản phẩm với Elasticsearch' })
   @ApiBody({ type: SearchProductDto })
@@ -203,6 +202,7 @@ export class ProductsController {
             categoryId: 4,
             categoryName: 'Nhẫn bạc 925',
             totalSold: 22,
+            images: ['https://minio.dclux.store/public/product-1/e3221014-e635-4462-9d39-f563623b55e8-vun502-vun504-1704189251462.webp'],
           },
         ],
         total: 1,
@@ -225,7 +225,8 @@ export class ProductsController {
   async searchProducts(@Body() searchDto: SearchProductDto) {
     return this.productsService.searchProducts(searchDto);
   }
-@Post('sync')
+
+  @Post('sync')
   @Public()
   @ApiOperation({ summary: 'Đồng bộ sản phẩm từ database sang Elasticsearch' })
   @ApiResponse({

@@ -73,7 +73,6 @@ async onModuleInit() {
   } async searchProducts(searchDto: SearchProductDto) {
     const { keyword, categoryIds, priceMin, priceMax, sortBy, page = 1, limit = 10 } = searchDto;
 
-    // Xử lý sortBy
     let sort: any[] = [];
     if (sortBy) {
       const [field, direction] = sortBy.split('.');
@@ -86,7 +85,6 @@ async onModuleInit() {
       sort.push({ finalPrice: 'asc' });
     }
 
-    // Xây dựng query Elasticsearch
     const query: any = {
       bool: {
         must: [],
@@ -94,7 +92,6 @@ async onModuleInit() {
       },
     };
 
-    // Thêm từ khóa tìm kiếm
     if (keyword) {
       query.bool.must.push({
         multi_match: {
@@ -104,14 +101,12 @@ async onModuleInit() {
       });
     }
 
-    // Thêm bộ lọc danh mục
     if (categoryIds?.length) {
       query.bool.filter.push({
         terms: { categoryId: categoryIds },
       });
     }
 
-    // Thêm bộ lọc giá
     if (priceMin != null || priceMax != null) {
       query.bool.filter.push({
         range: {
@@ -128,7 +123,7 @@ async onModuleInit() {
       const result = await client.search({
         index: 'products',
         body: {
-          query, // Sửa từ query.body thành query
+          query,
           sort,
           from: (page - 1) * limit,
           size: limit,
@@ -349,24 +344,30 @@ async syncProductsToElasticsearch() {
     const products = await this.productRepository.find({ relations: ['category', 'productDetails'] });
     const client = this.elasticsearchService.getClient();
 
-    const body = products.flatMap(product => {
-      const totalSold = product.productDetails.reduce((sum, detail) => sum + detail.sold, 0);
-      return [
-        { index: { _index: 'products', _id: product.id.toString() } },
-        {
-          id: product.id,
-          name: product.name,
-          originalPrice: parseFloat(product.originalPrice.toString()),
-          finalPrice: parseFloat(product.finalPrice.toString()),
-          categoryId: product.category?.id || 0,
-          categoryName: product.category?.name || '',
-          totalSold: totalSold || 0,
-        },
-      ];
-    });
+    const body = await Promise.all(
+      products.map(async product => {
+        const totalSold = product.productDetails.reduce((sum, detail) => sum + detail.sold, 0);
+        const images = await this.fileService.findFilesByTarget(product.id, 'product');
+        return [
+          { index: { _index: 'products', _id: product.id.toString() } },
+          {
+            id: product.id,
+            name: product.name,
+            originalPrice: parseFloat(product.originalPrice.toString()),
+            finalPrice: parseFloat(product.finalPrice.toString()),
+            categoryId: product.category?.id || 0,
+            categoryName: product.category?.name || '',
+            totalSold: totalSold || 0,
+            images: images.map(img => img.fileUrl), // Thêm images
+          },
+        ];
+      }),
+    );
 
-    if (body.length > 0) {
-      const bulkResponse = await client.bulk({ body });
+    const flattenedBody = body.flat();
+
+    if (flattenedBody.length > 0) {
+      const bulkResponse = await client.bulk({ body: flattenedBody });
       if (bulkResponse.errors) {
         console.error('Lỗi khi đồng bộ sản phẩm:', JSON.stringify(bulkResponse.errors, null, 2));
         throw new Error('Không thể đồng bộ sản phẩm vào Elasticsearch');
@@ -389,6 +390,7 @@ async syncProductsToElasticsearch() {
     }
 
     const totalSold = productWithDetails.productDetails.reduce((sum, detail) => sum + detail.sold, 0);
+    const images = await this.fileService.findFilesByTarget(product.id, 'product');
 
     await client.index({
       index: 'products',
@@ -401,6 +403,7 @@ async syncProductsToElasticsearch() {
         categoryId: productWithDetails.category?.id || 0,
         categoryName: productWithDetails.category?.name || '',
         totalSold: totalSold || 0,
+        images: images.map(img => img.fileUrl), // Thêm images
       },
     });
 
