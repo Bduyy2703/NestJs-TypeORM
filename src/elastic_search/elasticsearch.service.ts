@@ -14,6 +14,9 @@ export class ElasticsearchService implements OnModuleInit {
       maxRetries: 10,
       requestTimeout: 60000,
       sniffOnStart: true,
+      headers: {
+        Accept: 'application/vnd.elasticsearch+json;compatible-with=8', // Ép phiên bản 8
+      },
     });
   }
 
@@ -26,11 +29,11 @@ export class ElasticsearchService implements OnModuleInit {
         break;
       } catch (error) {
         retries--;
-        console.error(`Lỗi kết nối Elasticsearch, thử lại (${retries} lần còn lại):`, (error as any).message);
+        console.error(`Lỗi kết nối Elasticsearch, thử lại (${retries} lần còn lại):`, error);
         if (retries === 0) {
           throw new Error('Không thể kết nối tới Elasticsearch sau nhiều lần thử');
         }
-        await new Promise(resolve => setTimeout(resolve, 10000)); // Chờ 10 giây
+        await new Promise(resolve => setTimeout(resolve, 30000)); // Chờ 30 giây
       }
     }
 
@@ -39,19 +42,21 @@ export class ElasticsearchService implements OnModuleInit {
       if (!indexExists) {
         await this.client.indices.create({
           index: 'products',
-          mappings: {
-            properties: {
-              id: { type: 'integer' },
-              name: { type: 'text', analyzer: 'standard' },
-              originalPrice: { type: 'float' },
-              finalPrice: { type: 'float' },
-              categoryId: { type: 'integer', null_value: 0 },
-              categoryName: { type: 'keyword' },
-              totalSold: { type: 'integer' },
-              materials: { type: 'keyword' },
-              sizes: { type: 'keyword' },
+          body: { // Thêm body để tương thích
+            mappings: {
+              properties: {
+                id: { type: 'integer' },
+                name: { type: 'text', analyzer: 'standard' },
+                originalPrice: { type: 'float' },
+                finalPrice: { type: 'float' },
+                categoryId: { type: 'integer', null_value: 0 },
+                categoryName: { type: 'keyword' },
+                totalSold: { type: 'integer' },
+                materials: { type: 'keyword' },
+                sizes: { type: 'keyword' },
+              },
             },
-          },
+          } as Record<string, any>,
         });
         console.log('Đã tạo index products');
       } else {
