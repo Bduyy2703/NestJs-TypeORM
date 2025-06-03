@@ -64,10 +64,10 @@ export class SearchProductDto {
   sizes?: string[];
 
   @ApiProperty({
-    description: 'Sắp xếp kết quả (ví dụ: priceAsc, priceDesc, totalSoldDesc)',
-    example: 'priceAsc',
+    description: 'Sắp xếp kết quả: finalPrice.asc, finalPrice.desc, totalSold.desc, name.asc',
+    example: 'finalPrice.asc',
     required: false,
-    enum: ['priceAsc', 'priceDesc', 'totalSoldDesc', 'nameAsc'],
+    enum: ['finalPrice.asc', 'finalPrice.desc', 'totalSold.desc', 'name.asc'],
   })
   @IsOptional()
   @IsString()

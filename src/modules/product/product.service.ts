@@ -67,102 +67,99 @@ export class ProductService {
     }
     await this.syncProductToElasticsearch(product);
     return product;
-  }
-async searchProducts(searchDto: SearchProductDto) {
-  const { keyword, categoryIds, priceMin, priceMax, materials, sizes, sortBy, page = 1, limit = 10 } = searchDto;
+  }async searchProducts(searchDto: SearchProductDto) {
+    const { keyword, categoryIds, priceMin, priceMax, materials, sizes, sortBy, page = 1, limit = 10 } = searchDto;
 
-  const query: any = {
-    bool: {
-      must: [],
-      filter: [],
-    },
-  };
+    // Xử lý sortBy
+    let sort: any[] = [];
+    if (sortBy) {
+      const [field, direction] = sortBy.split('.');
+      if (['finalPrice', 'finalPrice', 'totalSold', 'name'].includes(field) && ['asc', 'desc'].includes(direction)) {
+        sort.push({ [field]: direction });
+      } else {
+        sort.push({ finalPrice: 'asc' }); // Mặc định nếu sortBy không hợp lệ
+      }
+    } else {
+      sort.push({ finalPrice: 'asc' }); // Mặc định
+    }
 
-  if (keyword) {
-    query.bool.must.push({
-      multi_match: {
-        query: keyword,
-        fields: ['name^2', 'categoryName'],
-        fuzziness: 'AUTO',
+    // Xây dựng query Elasticsearch
+    const query: any = {
+      bool: {
+        must: [],
+        filter: [],
       },
-    });
-  }
-
-  if (categoryIds && categoryIds.length > 0) {
-    query.bool.filter.push({ terms: { categoryId: categoryIds } });
-  }
-  if (priceMin !== undefined || priceMax !== undefined) {
-    query.bool.filter.push({
-      range: {
-        finalPrice: {
-          gte: priceMin,
-          lte: priceMax,
-        },
-      },
-    });
-  }
-  if (materials && materials.length > 0) {
-    query.bool.filter.push({ terms: { materials } });
-  }
-  if (sizes && sizes.length > 0) {
-    query.bool.filter.push({ terms: { sizes } });
-  }
-
-  const sort = [];
-  if (sortBy) {
-    const [field, order] = sortBy.split(':');
-    sort.push({ [field]: { order: order || 'desc' } });
-  } else {
-    sort.push({ totalSold: { order: 'desc' } });
-  }
-
-  try {
-    const result = await this.elasticsearchService.getClient().search({
-      index: 'products',
-      from: (page - 1) * limit,
-      size: limit,
-      query,
-      sort,
-    });
-
-    const productIds = result.hits.hits.map(hit => parseInt(hit._id));
-    const products = await this.productRepository.find({
-      where: { id: In(productIds) },
-      relations: ['productDetails', 'category'],
-    });
-
-    const productsWithImages = await Promise.all(
-      productIds.map(async id => {
-        const product = products.find(p => p.id === id);
-        if (!product) return null;
-        const images = await this.fileService.findFilesByTarget(product.id, 'product');
-        const totalSold = product.productDetails.reduce((sum, detail) => sum + (detail.sold || 0), 0);
-        return {
-          id: product.id,
-          name: product.name,
-          originalPrice: product.originalPrice,
-          finalPrice: product.finalPrice,
-          category: product.category,
-          images: images.map(img => img.fileUrl),
-          totalSold,
-        };
-      }),
-    );
-
-    // Xử lý result.hits.total
-    const totalHits = typeof result.hits.total === 'number' ? result.hits.total : result.hits.total?.value || 0;
-
-    return {
-      data: productsWithImages.filter(p => p !== null),
-      total: totalHits,
-      page,
-      totalPages: Math.ceil(totalHits / limit),
     };
-  } catch (error) {
-    console.error('Lỗi khi tìm kiếm sản phẩm trên Elasticsearch:', error);
-    throw new BadRequestException('Không thể thực hiện tìm kiếm sản phẩm');
+
+    // Thêm từ khóa tìm kiếm
+    if (keyword) {
+      query.bool.must.push({
+        multi_match: {
+          query: keyword,
+          fields: ['name^2', 'content'],
+        },
+      });
+
+    // Thêm bộ lọc danh mục
+    if (categoryIds?.length) {
+      query.bool.filter.push({
+        terms: { categoryId: categoryIds },
+      });
+    }
+
+    // Thêm bộ lọc giá
+    if (priceMin || priceMax) {
+      query.bool.filter.push({
+        range: {
+          finalPrice: {
+            gte: priceMin,
+            lte: priceMax,
+          },
+    }});
+      }
+    }
+
+    // Thêm bộ lọc chất liệu
+    if (materials?.length) {
+      query.bool.filter.push({
+        terms: { materials: materials },
+      });
+    }
+
+    // Thêm bộ lọc kích thước
+    if (sizes?.length) {
+      query.bool.filter.push({
+        terms: { sizes: sizes },
+      });
+    }
+
+    try {
+      const client = this.elasticsearchService.getClient();
+      const result = await client.search({
+        index: 'products',
+        body: {
+          query: query.body,
+          sort: sort,
+          from: (page - 1) * limit,
+          size: limit,
+        },
+      });
+
+      // Xử lý kết quả
+      const hits = result.hits?.hits || [];
+      const total = typeof result.hits?.total === 'object' ? result.hits.total.value : result.hits.total;
+
+      return {
+        data: hits.map(hit => hit._source),
+        total,
+        page,
+        limit,
+      };
+    } catch (error) {
+      console.error('Lỗi khi tìm kiếm sản phẩm trên Elasticsearch:', error);
+      throw new Error('Không thể tìm kiếm sản phẩm');
+    }
   }
-}
   async getAllProducts(page: number, limit: number) {
     const [products, total] = await this.productRepository.findAndCount({
       skip: (page - 1) * limit,

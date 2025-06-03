@@ -185,7 +185,7 @@ export class ProductsController {
   async deleteProduct(@Param("id") id: number) {
     return this.productsService.deleteProduct(id);
   }
-  @Post('search')
+@Post('search')
   @Public()
   @ApiOperation({ summary: 'Tìm kiếm sản phẩm với Elasticsearch' })
   @ApiBody({ type: SearchProductDto })
@@ -219,7 +219,7 @@ export class ProductsController {
     schema: {
       example: {
         statusCode: 400,
-        message: ['keyword must be a string'],
+        message: ['sortBy must be one of the following values: finalPrice.asc, finalPrice.desc, totalSold.desc, name.asc'],
         error: 'Bad Request',
       },
     },
