@@ -7,18 +7,31 @@ export class ElasticsearchService implements OnModuleInit {
   private readonly client: Client;
 
   constructor() {
+    const elasticsearchUrl = process.env.ELASTICSEARCH_URL || 'http://elasticsearch:9200';
+    console.log(`Khởi tạo Elasticsearch client với URL: ${elasticsearchUrl}`);
     this.client = new Client({
-      node: process.env.ELASTICSEARCH_URL || 'http://elasticsearch:9200',
+      node: elasticsearchUrl,
+      maxRetries: 10,
+      requestTimeout: 60000,
+      sniffOnStart: true,
     });
   }
 
   async onModuleInit() {
-    try {
-      await this.client.ping();
-      console.log('Kết nối thành công với Elasticsearch');
-    } catch (error) {
-      console.error('Lỗi kết nối Elasticsearch:', error);
-      throw new Error('Không thể kết nối tới Elasticsearch');
+    let retries = 10;
+    while (retries > 0) {
+      try {
+        await this.client.ping();
+        console.log('Kết nối thành công với Elasticsearch');
+        break;
+      } catch (error) {
+        retries--;
+        console.error(`Lỗi kết nối Elasticsearch, thử lại (${retries} lần còn lại):`, (error as any).message);
+        if (retries === 0) {
+          throw new Error('Không thể kết nối tới Elasticsearch sau nhiều lần thử');
+        }
+        await new Promise(resolve => setTimeout(resolve, 10000)); // Chờ 10 giây
+      }
     }
 
     try {
@@ -41,6 +54,8 @@ export class ElasticsearchService implements OnModuleInit {
           },
         });
         console.log('Đã tạo index products');
+      } else {
+        console.log('Index products đã tồn tại');
       }
     } catch (error) {
       console.error('Lỗi khi tạo index products:', error);

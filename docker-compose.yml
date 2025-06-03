@@ -98,3 +98,6 @@ volumes:
   pgdata:
   minio-data:
   esdata:
+networks:
+  app-network:
+    driver: bridge
