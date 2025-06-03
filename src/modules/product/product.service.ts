@@ -65,35 +65,70 @@ export class ProductService {
     return product;
   }
 
+  // async getAllProducts(page: number, limit: number) {
+  //   const [products, total] = await this.productRepository.findAndCount({
+  //     skip: (page - 1) * limit,
+  //     take: limit,
+  //     relations: ["productDetails", "category"],
+  //   });
+
+  //   // ✅ Lấy hình ảnh cho từng sản phẩm
+  //   const productsWithImages = await Promise.all(
+  //     products.map(async (product) => {
+  //       const images = await this.fileService.findFilesByTarget(product.id, "product");
+  //       return {
+  //         id: product.id,
+  //         name: product.name,
+  //         originalPrice: product.originalPrice,
+  //         finalPrice: product.finalPrice,
+  //         category: product.category,
+  //         images: images.map((img) => img.fileUrl),
+  //       };
+  //     })
+  //   );
+
+  //   return {
+  //     data: productsWithImages,
+  //     total,
+  //     page,
+  //     totalPages: Math.ceil(total / limit),
+  //   };
+  // }
   async getAllProducts(page: number, limit: number) {
-    const [products, total] = await this.productRepository.findAndCount({
-      skip: (page - 1) * limit,
-      take: limit,
-      relations: ["productDetails", "category"],
-    });
+  const [products, total] = await this.productRepository.findAndCount({
+    skip: (page - 1) * limit,
+    take: limit,
+    relations: ["productDetails", "category"],
+  });
 
-    // ✅ Lấy hình ảnh cho từng sản phẩm
-    const productsWithImages = await Promise.all(
-      products.map(async (product) => {
-        const images = await this.fileService.findFilesByTarget(product.id, "product");
-        return {
-          id: product.id,
-          name: product.name,
-          originalPrice: product.originalPrice,
-          finalPrice: product.finalPrice,
-          category: product.category,
-          images: images.map((img) => img.fileUrl),
-        };
-      })
-    );
+  // ✅ Lấy hình ảnh và tính totalSold cho từng sản phẩm
+  const productsWithImages = await Promise.all(
+    products.map(async (product) => {
+      const images = await this.fileService.findFilesByTarget(product.id, "product");
+      const totalSold = product.productDetails.reduce((sum, detail) => sum + detail.sold, 0);
 
-    return {
-      data: productsWithImages,
-      total,
-      page,
-      totalPages: Math.ceil(total / limit),
-    };
-  }
+      return {
+        id: product.id,
+        name: product.name,
+        originalPrice: product.originalPrice,
+        finalPrice: product.finalPrice,
+        category: product.category,
+        images: images.map((img) => img.fileUrl),
+        totalSold, // Thêm totalSold vào object trả về
+      };
+    })
+  );
+
+  // ✅ Sắp xếp sản phẩm theo totalSold giảm dần
+  productsWithImages.sort((a, b) => b.totalSold - a.totalSold);
+
+  return {
+    data: productsWithImages,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+  };
+}
 
   async getProductById(id: number) {
     const product = await this.productRepository.findOne({
