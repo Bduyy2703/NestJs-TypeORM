@@ -26,7 +26,7 @@ export class ElasticsearchService implements OnModuleInit {
         break;
       } catch (error) {
         retries--;
-        console.error(`Lỗi kết nối Elasticsearch, thử lại (${retries} lần còn lại):`, error.message);
+        console.error(`Lỗi kết nối Elasticsearch, thử lại (${retries} lần còn lại):`, (error as any).message);
         if (retries === 0) {
           throw new Error('Không thể kết nối tới Elasticsearch sau nhiều lần thử');
         }
