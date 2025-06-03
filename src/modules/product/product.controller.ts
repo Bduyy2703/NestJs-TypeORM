@@ -18,7 +18,7 @@ import multer from "multer";
 import { v4 as uuidv4 } from "uuid";
 import { ProductService } from "./product.service";
 import { CreateProductDto } from "./dto/create-product.dto";
-import { ApiBody, ApiConsumes, ApiTags, ApiSecurity, ApiOperation } from "@nestjs/swagger";
+import { ApiBody, ApiConsumes, ApiTags, ApiSecurity, ApiOperation, ApiResponse } from "@nestjs/swagger";
 import { MinioService } from "../files/minio/minio.service";
 import { FileRepository } from "../files/file.repository";
 import { Actions } from "src/cores/decorators/action.decorator";
@@ -188,6 +188,42 @@ export class ProductsController {
   @Post('search')
   @Public()
   @ApiOperation({ summary: 'Tìm kiếm sản phẩm với Elasticsearch' })
+  @ApiBody({ type: SearchProductDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Danh sách sản phẩm tìm kiếm thành công',
+    schema: {
+      example: {
+        data: [
+          {
+            id: 1,
+            name: 'Nhẫn vàng 18K',
+            originalPrice: 5000000,
+            finalPrice: 4500000,
+            categoryId: 1,
+            categoryName: 'Nhẫn',
+            totalSold: 100,
+            materials: ['vàng'],
+            sizes: ['M'],
+          },
+        ],
+        total: 1,
+        page: 1,
+        limit: 10,
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Dữ liệu đầu vào không hợp lệ',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: ['keyword must be a string'],
+        error: 'Bad Request',
+      },
+    },
+  })
   async searchProducts(@Body() searchDto: SearchProductDto) {
     return this.productsService.searchProducts(searchDto);
   }

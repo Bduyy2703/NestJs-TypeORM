@@ -1,43 +1,93 @@
 // src/modules/product/dto/search-product.dto.ts
 import { IsOptional, IsString, IsNumber, IsArray } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class SearchProductDto {
+  @ApiProperty({
+    description: 'Từ khóa tìm kiếm (tên sản phẩm, mô tả, v.v.)',
+    example: 'vàng',
+    required: false,
+  })
   @IsOptional()
   @IsString()
   keyword?: string;
 
+  @ApiProperty({
+    description: 'Danh sách ID danh mục sản phẩm',
+    example: [1, 2],
+    required: false,
+    type: [Number],
+  })
   @IsOptional()
   @IsArray()
   @IsNumber({}, { each: true })
   categoryIds?: number[];
 
+  @ApiProperty({
+    description: 'Giá tối thiểu của sản phẩm',
+    example: 1000000,
+    required: false,
+  })
   @IsOptional()
   @IsNumber()
   priceMin?: number;
 
+  @ApiProperty({
+    description: 'Giá tối đa của sản phẩm',
+    example: 5000000,
+    required: false,
+  })
   @IsOptional()
   @IsNumber()
   priceMax?: number;
 
+  @ApiProperty({
+    description: 'Danh sách chất liệu của sản phẩm',
+    example: ['vàng', 'bạc'],
+    required: false,
+    type: [String],
+  })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   materials?: string[];
 
+  @ApiProperty({
+    description: 'Danh sách kích thước của sản phẩm',
+    example: ['S', 'M'],
+    required: false,
+    type: [String],
+  })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   sizes?: string[];
 
+  @ApiProperty({
+    description: 'Sắp xếp kết quả (ví dụ: priceAsc, priceDesc, totalSoldDesc)',
+    example: 'priceAsc',
+    required: false,
+    enum: ['priceAsc', 'priceDesc', 'totalSoldDesc', 'nameAsc'],
+  })
   @IsOptional()
   @IsString()
   sortBy?: string;
 
+  @ApiProperty({
+    description: 'Số trang (mặc định: 1)',
+    example: 1,
+    required: false,
+  })
   @IsOptional()
   @IsNumber()
-  page?: number = 1;
+  page: number = 1;
 
+  @ApiProperty({
+    description: 'Số sản phẩm mỗi trang (mặc định: 10)',
+    example: 10,
+    required: false,
+  })
   @IsOptional()
   @IsNumber()
-  limit?: number = 10;
+  limit: number = 10;
 }
