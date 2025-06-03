@@ -32,7 +32,7 @@
   },
   "dependencies": {
     "@elastic/elasticsearch": "8.14.0",
-    "@elastic/transport": "8.14.0",
+
     "@nestjs-modules/mailer": "^2.0.2",
     "@nestjs/cache-manager": "^2.3.0",
     "@nestjs/common": "^10.4.12",
