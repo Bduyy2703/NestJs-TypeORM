@@ -79,6 +79,8 @@ services:
         - "9300:9300"
       volumes:
         - esdata:/usr/share/elasticsearch/data
+      networks:
+      - app-network
 
   nginx:
     image: nginx:stable-alpine

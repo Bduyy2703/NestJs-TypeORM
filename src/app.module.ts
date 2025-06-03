@@ -39,6 +39,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './modules/users/entities/user.entity';
 import { StrategySale } from './modules/strategySale/entity/strategySale.entity';
 import { File } from './modules/files/file.entity';
+import { ElasticsearchModule } from './elastic_search/elastic_search.module';
 @Module({
   imports: [
     AuthModule,
@@ -71,6 +72,7 @@ import { File } from './modules/files/file.entity';
     ReviewModule,
     NotificationModule,
     WishlistModule,
+    ElasticsearchModule,
     TypeOrmModule.forFeature([User, StrategySale,File]),
   ],
   controllers: [AppController],
