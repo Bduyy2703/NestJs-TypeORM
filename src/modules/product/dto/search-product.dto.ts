@@ -4,8 +4,8 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class SearchProductDto {
   @ApiProperty({
-    description: 'Từ khóa tìm kiếm (tên sản phẩm, mô tả, v.v.)',
-    example: 'vàng',
+    description: 'Từ khóa tìm kiếm (tên sản phẩm)',
+    example: 'nhẫn bạc',
     required: false,
   })
   @IsOptional()
@@ -14,7 +14,7 @@ export class SearchProductDto {
 
   @ApiProperty({
     description: 'Danh sách ID danh mục sản phẩm',
-    example: [1, 2],
+    example: [4],
     required: false,
     type: [Number],
   })
@@ -25,7 +25,7 @@ export class SearchProductDto {
 
   @ApiProperty({
     description: 'Giá tối thiểu của sản phẩm',
-    example: 1000000,
+    example: 200000,
     required: false,
   })
   @IsOptional()
@@ -34,34 +34,12 @@ export class SearchProductDto {
 
   @ApiProperty({
     description: 'Giá tối đa của sản phẩm',
-    example: 5000000,
+    example: 500000,
     required: false,
   })
   @IsOptional()
   @IsNumber()
   priceMax?: number;
-
-  @ApiProperty({
-    description: 'Danh sách chất liệu của sản phẩm',
-    example: ['vàng', 'bạc'],
-    required: false,
-    type: [String],
-  })
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  materials?: string[];
-
-  @ApiProperty({
-    description: 'Danh sách kích thước của sản phẩm',
-    example: ['S', 'M'],
-    required: false,
-    type: [String],
-  })
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  sizes?: string[];
 
   @ApiProperty({
     description: 'Sắp xếp kết quả: finalPrice.asc, finalPrice.desc, totalSold.desc, name.asc',

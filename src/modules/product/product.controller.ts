@@ -197,14 +197,12 @@ export class ProductsController {
         data: [
           {
             id: 1,
-            name: 'Nhẫn vàng 18K',
-            originalPrice: 5000000,
-            finalPrice: 4500000,
-            categoryId: 1,
-            categoryName: 'Nhẫn',
-            totalSold: 100,
-            materials: ['vàng'],
-            sizes: ['M'],
+            name: 'Nhẫn bạc nam phong cách',
+            originalPrice: 260000,
+            finalPrice: 260000,
+            categoryId: 4,
+            categoryName: 'Nhẫn bạc 925',
+            totalSold: 22,
           },
         ],
         total: 1,
@@ -226,5 +224,22 @@ export class ProductsController {
   })
   async searchProducts(@Body() searchDto: SearchProductDto) {
     return this.productsService.searchProducts(searchDto);
+  }
+@Post('sync')
+  @Public()
+  @ApiOperation({ summary: 'Đồng bộ sản phẩm từ database sang Elasticsearch' })
+  @ApiResponse({
+    status: 200,
+    description: 'Đồng bộ thành công',
+    schema: { example: { message: 'Đồng bộ sản phẩm thành công' } },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Lỗi khi đồng bộ',
+    schema: { example: { message: 'Không thể đồng bộ sản phẩm vào Elasticsearch' } },
+  })
+  async syncProducts() {
+    await this.productsService.syncProductsToElasticsearch();
+    return { message: 'Đồng bộ sản phẩm thành công' };
   }
 }

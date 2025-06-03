@@ -14,7 +14,6 @@ export class ElasticsearchService implements OnModuleInit {
       maxRetries: 10,
       requestTimeout: 60000,
       sniffOnStart: true,
-      // Bỏ headers để thư viện tự quản lý
     });
   }
 
@@ -31,36 +30,34 @@ export class ElasticsearchService implements OnModuleInit {
         if (retries === 0) {
           throw new Error('Không thể kết nối tới Elasticsearch sau nhiều lần thử');
         }
-        await new Promise(resolve => setTimeout(resolve, 30000)); // Chờ 30 giây
+        await new Promise(resolve => setTimeout(resolve, 30000));
       }
     }
 
     try {
-      const indexExists = await this.client.indices.exists({ index: 'products' });
-      console.log('Kiểm tra index products:', indexExists);
-      if (!indexExists) {
-        await this.client.indices.create({
-          index: 'products',
-          body: {
-            mappings: {
-              properties: {
-                id: { type: 'integer' },
-                name: { type: 'text', analyzer: 'standard' },
-                originalPrice: { type: 'float' },
-                finalPrice: { type: 'float' },
-                categoryId: { type: 'integer', null_value: 0 },
-                categoryName: { type: 'keyword' },
-                totalSold: { type: 'integer' },
-                materials: { type: 'keyword' },
-                sizes: { type: 'keyword' },
-              },
+      // Xóa index cũ (chỉ để test, cẩn thận khi dùng ở production)
+      await this.client.indices.delete({ index: 'products', ignore_unavailable: true });
+      console.log('Đã xóa index products nếu tồn tại');
+
+      // Tạo index mới
+      await this.client.indices.create({
+        index: 'products',
+        body: {
+          mappings: {
+            properties: {
+              id: { type: 'integer' },
+              name: { type: 'text', analyzer: 'standard' },
+              originalPrice: { type: 'float' },
+              finalPrice: { type: 'float' },
+              categoryId: { type: 'integer', null_value: 0 },
+              categoryName: { type: 'keyword' },
+              totalSold: { type: 'integer' },
+              // Bỏ materials và sizes
             },
           },
-        });
-        console.log('Đã tạo index products');
-      } else {
-        console.log('Index products đã tồn tại');
-      }
+        },
+      });
+      console.log('Đã tạo index products');
     } catch (error) {
       console.error('Lỗi khi tạo index products:', JSON.stringify(error, null, 2));
       throw new Error('Không thể tạo index products');

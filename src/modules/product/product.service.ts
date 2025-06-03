@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException, OnModuleInit } from "@nestjs/common";
 import { v4 as uuidv4 } from 'uuid';
 import { InjectRepository } from "@nestjs/typeorm";
 import { In, Repository } from "typeorm";
@@ -15,7 +15,7 @@ import { ElasticsearchService } from "src/elastic_search/elasticsearch.service";
 import { SearchProductDto } from './dto/search-product.dto';
 
 @Injectable()
-export class ProductService {
+export class ProductService implements OnModuleInit {
   constructor(
     @InjectRepository(Product) private readonly productRepository: Repository<Product>,
     @InjectRepository(Category) private readonly categoryRepository: Repository<Category>,
@@ -26,6 +26,9 @@ export class ProductService {
     private readonly fileService: FileRepository,
     private readonly elasticsearchService: ElasticsearchService,
   ) { }
+async onModuleInit() {
+    await this.syncProductsToElasticsearch(); // Đồng bộ khi khởi động
+  }
 
   async createProduct(createProductDto: CreateProductDto): Promise<Product> {
     const { categoryId, strategySaleIds, ...productData } = createProductDto;
@@ -67,20 +70,20 @@ export class ProductService {
     }
     await this.syncProductToElasticsearch(product);
     return product;
-  }async searchProducts(searchDto: SearchProductDto) {
-    const { keyword, categoryIds, priceMin, priceMax, materials, sizes, sortBy, page = 1, limit = 10 } = searchDto;
+  } async searchProducts(searchDto: SearchProductDto) {
+    const { keyword, categoryIds, priceMin, priceMax, sortBy, page = 1, limit = 10 } = searchDto;
 
     // Xử lý sortBy
     let sort: any[] = [];
     if (sortBy) {
       const [field, direction] = sortBy.split('.');
-      if (['finalPrice', 'finalPrice', 'totalSold', 'name'].includes(field) && ['asc', 'desc'].includes(direction)) {
+      if (['finalPrice', 'totalSold', 'name'].includes(field) && ['asc', 'desc'].includes(direction)) {
         sort.push({ [field]: direction });
       } else {
-        sort.push({ finalPrice: 'asc' }); // Mặc định nếu sortBy không hợp lệ
+        sort.push({ finalPrice: 'asc' });
       }
     } else {
-      sort.push({ finalPrice: 'asc' }); // Mặc định
+      sort.push({ finalPrice: 'asc' });
     }
 
     // Xây dựng query Elasticsearch
@@ -96,9 +99,10 @@ export class ProductService {
       query.bool.must.push({
         multi_match: {
           query: keyword,
-          fields: ['name^2', 'content'],
+          fields: ['name^2'],
         },
       });
+    }
 
     // Thêm bộ lọc danh mục
     if (categoryIds?.length) {
@@ -108,28 +112,14 @@ export class ProductService {
     }
 
     // Thêm bộ lọc giá
-    if (priceMin || priceMax) {
+    if (priceMin != null || priceMax != null) {
       query.bool.filter.push({
         range: {
           finalPrice: {
-            gte: priceMin,
-            lte: priceMax,
+            gte: priceMin ?? 0,
+            lte: priceMax ?? Number.MAX_SAFE_INTEGER,
           },
-    }});
-      }
-    }
-
-    // Thêm bộ lọc chất liệu
-    if (materials?.length) {
-      query.bool.filter.push({
-        terms: { materials: materials },
-      });
-    }
-
-    // Thêm bộ lọc kích thước
-    if (sizes?.length) {
-      query.bool.filter.push({
-        terms: { sizes: sizes },
+        },
       });
     }
 
@@ -138,14 +128,13 @@ export class ProductService {
       const result = await client.search({
         index: 'products',
         body: {
-          query: query.body,
-          sort: sort,
+          query, // Sửa từ query.body thành query
+          sort,
           from: (page - 1) * limit,
           size: limit,
         },
       });
 
-      // Xử lý kết quả
       const hits = result.hits?.hits || [];
       const total = typeof result.hits?.total === 'object' ? result.hits.total.value : result.hits.total;
 
@@ -156,7 +145,7 @@ export class ProductService {
         limit,
       };
     } catch (error) {
-      console.error('Lỗi khi tìm kiếm sản phẩm trên Elasticsearch:', error);
+      console.error('Lỗi khi tìm kiếm sản phẩm trên Elasticsearch:', JSON.stringify(error, null, 2));
       throw new Error('Không thể tìm kiếm sản phẩm');
     }
   }
@@ -356,30 +345,65 @@ export class ProductService {
     });
     return { message: "Sản phẩm đã được xóa thành công!" };
   }
-  async syncProductToElasticsearch(product: Product) {
-    const productDetails = await this.productDetailsRepository.find({ where: { product: { id: product.id } } });
-    const totalSold = productDetails.reduce((sum, detail) => sum + (detail.sold || 0), 0);
+async syncProductsToElasticsearch() {
+    const products = await this.productRepository.find({ relations: ['category', 'productDetails'] });
+    const client = this.elasticsearchService.getClient();
 
-    try {
-      await this.elasticsearchService.getClient().index({
-        index: 'products',
-        id: product.id.toString(),
-        document: { // Sử dụng `document` thay vì `body` cho phiên bản mới
+    const body = products.flatMap(product => {
+      const totalSold = product.productDetails.reduce((sum, detail) => sum + detail.sold, 0);
+      return [
+        { index: { _index: 'products', _id: product.id.toString() } },
+        {
           id: product.id,
-          name: product.name || '',
-          originalPrice: product.originalPrice || 0,
-          finalPrice: product.finalPrice || 0,
-          categoryId: product.category?.id || null,
+          name: product.name,
+          originalPrice: parseFloat(product.originalPrice.toString()),
+          finalPrice: parseFloat(product.finalPrice.toString()),
+          categoryId: product.category?.id || 0,
           categoryName: product.category?.name || '',
-          totalSold,
-          materials: productDetails.map(detail => detail.material).filter(Boolean),
-          sizes: productDetails.map(detail => detail.size).filter(Boolean),
+          totalSold: totalSold || 0,
         },
-      });
-      console.log(`Đã đồng bộ sản phẩm ${product.id} lên Elasticsearch`);
-    } catch (error) {
-      console.error(`Lỗi khi đồng bộ sản phẩm ${product.id} lên Elasticsearch:`, error);
-      throw new Error('Không thể đồng bộ sản phẩm lên Elasticsearch');
+      ];
+    });
+
+    if (body.length > 0) {
+      const bulkResponse = await client.bulk({ body });
+      if (bulkResponse.errors) {
+        console.error('Lỗi khi đồng bộ sản phẩm:', JSON.stringify(bulkResponse.errors, null, 2));
+        throw new Error('Không thể đồng bộ sản phẩm vào Elasticsearch');
+      }
+      console.log(`Đã đồng bộ ${products.length} sản phẩm vào Elasticsearch`);
+    } else {
+      console.log('Không có sản phẩm để đồng bộ');
     }
+  }
+
+  async syncProductToElasticsearch(product: Product) {
+    const client = this.elasticsearchService.getClient();
+    const productWithDetails = await this.productRepository.findOne({
+      where: { id: product.id },
+      relations: ['category', 'productDetails'],
+    });
+
+    if (!productWithDetails) {
+      throw new NotFoundException('Sản phẩm không tồn tại!');
+    }
+
+    const totalSold = productWithDetails.productDetails.reduce((sum, detail) => sum + detail.sold, 0);
+
+    await client.index({
+      index: 'products',
+      id: product.id.toString(),
+      body: {
+        id: product.id,
+        name: product.name,
+        originalPrice: parseFloat(product.originalPrice.toString()),
+        finalPrice: parseFloat(product.finalPrice.toString()),
+        categoryId: productWithDetails.category?.id || 0,
+        categoryName: productWithDetails.category?.name || '',
+        totalSold: totalSold || 0,
+      },
+    });
+
+    console.log(`Đã đồng bộ sản phẩm ID ${product.id} vào Elasticsearch`);
   }
 }
