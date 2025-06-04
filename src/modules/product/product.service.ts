@@ -78,129 +78,142 @@ export class ProductService implements OnModuleInit {
     await this.syncProductToElasticsearch(product);
     return product;
   }
-  async searchProducts(searchDto: SearchProductDto) {
-    const { keyword, categoryIds, priceMin, priceMax, sortBy, page = 1, limit = 10 } = searchDto;
+ // src/elastic_search/elasticsearch.service.ts
+async searchProducts(searchDto: SearchProductDto) {
+  const { keyword, categoryIds, priceMin, priceMax, sortBy, page = 1, limit = 10 } = searchDto;
 
-    let sort: any[] = [];
-    if (sortBy) {
-      const [field, direction] = sortBy.split('.');
-      if (['finalPrice', 'totalSold', 'name'].includes(field) && ['asc', 'desc'].includes(direction)) {
-        sort.push({ [field]: direction });
-      } else {
-        sort.push({ finalPrice: 'asc' });
-      }
+  let sort: any[] = [];
+  if (sortBy) {
+    const [field, direction] = sortBy.split('.');
+    if (['finalPrice', 'totalSold', 'name'].includes(field) && ['asc', 'desc'].includes(direction)) {
+      sort.push({ [field]: direction });
     } else {
       sort.push({ finalPrice: 'asc' });
     }
+  } else {
+    sort.push({ finalPrice: 'asc' });
+  }
 
-    const query: any = {
-      bool: {
-        must: [],
-        should: [],
-        minimum_should_match: 0,
-        filter: [],
-      },
-    };
+  const query: any = {
+    bool: {
+      must: [],
+      should: [],
+      minimum_should_match: 0,
+      filter: [],
+    },
+  };
 
-    if (keyword) {
-      const keywords = keyword.trim().split(/\s+/);
-      const numKeywords = keywords.length;
+  if (keyword) {
+    const keywords = keyword.trim().split(/\s+/);
+    const numKeywords = keywords.length;
 
-      // Ưu tiên khớp cụm từ đầy đủ
-      query.bool.should.push({
-        match_phrase: {
-          name: {
-            query: keyword,
-            slop: 2, // Cho phép khoảng cách 2 từ để linh hoạt hơn
-            boost: 10, // Ưu tiên cao
-          },
-        },
-      });
-
-      // Khớp từng từ hoặc cụm từ với độ chính xác cao
-      query.bool.should.push({
-        multi_match: {
+    // Ưu tiên khớp cụm từ đầy đủ
+    query.bool.should.push({
+      match_phrase: {
+        name: {
           query: keyword,
-          fields: ['name^2', 'name.keyword'],
-          fuzziness: numKeywords === 1 ? '1' : '0', // Chỉ cho phép fuzziness với từ khóa đơn
-          type: 'best_fields',
-          boost: 5,
+          slop: 2,
+          boost: 10,
         },
-      });
+      },
+    });
 
-      // Tìm kiếm prefix cho gợi ý
+    // Yêu cầu tất cả từ khóa khớp
+    query.bool.should.push({
+      multi_match: {
+        query: keyword,
+        fields: ['name^2', 'name.keyword'],
+        operator: 'and', // Tất cả từ khóa phải khớp
+        fuzziness: numKeywords === 1 ? '2' : '0', // Fuzziness cho từ khóa đơn
+        type: 'best_fields',
+        boost: 5,
+      },
+    });
+
+    // Khớp từng từ khóa riêng lẻ
+    keywords.forEach((kw) => {
       query.bool.should.push({
         match: {
-          'name.edge_ngram': {
-            query: keyword,
-            boost: 1, // Trọng số thấp để hỗ trợ prefix
+          name: {
+            query: kw,
+            fuzziness: numKeywords === 1 ? '2' : '1',
+            boost: 2,
           },
         },
       });
+    });
 
-      // Yêu cầu tối thiểu số từ khớp dựa trên độ dài từ khóa
-      query.minimum_should_match = numKeywords > 2 ? Math.ceil(numKeywords * 0.7) : 1;
-    } else {
-      query.bool.must.push({ match_all: {} });
-    }
-
-    if (categoryIds?.length) {
-      query.bool.filter.push({
-        terms: { categoryId: categoryIds },
-      });
-    }
-
-    if (priceMin != null || priceMax != null) {
-      query.bool.filter.push({
-        range: {
-          finalPrice: {
-            gte: priceMin ?? 0,
-            lte: priceMax ?? Number.MAX_SAFE_INTEGER,
-          },
+    // Tìm kiếm prefix
+    query.bool.should.push({
+      match: {
+        'name.edge_ngram': {
+          query: keyword,
+          boost: 1,
         },
-      });
-    }
+      },
+    });
 
-    try {
-      const client =this.elasticsearchService.getClient();
-      const result = await client.search({
-        index: 'products',
-        body: {
-          query,
-          sort,
-          from: (page - 1) * limit,
-          size: limit,
-          highlight: {
-            fields: {
-              name: {},
-            },
-          },
-        },
-      });
-
-      const hits = result.hits?.hits || [];
-      const total = typeof result.hits?.total === 'object' ? result.hits.total.value : result.hits.total;
-
-      return {
-        data: hits.map((hit) => {
-          const source = hit._source as any;
-          // Loại bỏ field name_completion khỏi response
-          delete source.name_completion;
-          // Thêm highlight nếu có
-          if (hit.highlight?.name) {
-            source.highlightedName = hit.highlight.name[0];
-          }
-          return source;
-        }),
-        total,
-        page,
-        limit,
-      };
-    } catch (error) {
-      console.error('Lỗi khi tìm kiếm sản phẩm:', JSON.stringify(error, null, 4));
-      throw new Error(`Không thể tìm kiếm sản phẩm: ${(error as any).message}`);
-    }
+    // Điều chỉnh minimum_should_match
+    query.bool.minimum_should_match = numKeywords === 2 ? 2 : numKeywords > 2 ? Math.ceil(numKeywords * 0.7) : 1;
+  } else {
+    query.bool.must.push({ match_all: {} });
   }
+
+  if (categoryIds?.length) {
+    query.bool.filter.push({
+      terms: { categoryId: categoryIds },
+    });
+  }
+
+  if (priceMin != null || priceMax != null) {
+    query.bool.filter.push({
+      range: {
+        finalPrice: {
+          gte: priceMin ?? 0,
+          lte: priceMax ?? Number.MAX_SAFE_INTEGER,
+        },
+      },
+    });
+  }
+
+  try {
+    const client = this.elasticsearchService.getClient();
+    const result = await client.search({
+      index: 'products',
+      body: {
+        query,
+        sort,
+        from: (page - 1) * limit,
+        size: limit,
+        highlight: {
+          fields: {
+            name: {},
+          },
+        },
+      },
+    });
+
+    const hits = result.hits?.hits || [];
+    const total = typeof result.hits?.total === 'object' ? result.hits.total.value : result.hits.total;
+
+    return {
+      data: hits.map((hit) => {
+        const source = hit._source as Record<string, any>;
+        delete source.name_completion;
+        if (hit.highlight?.name) {
+          source.highlightedName = hit.highlight.name[0];
+        }
+        return source;
+      }),
+      total,
+      page,
+      limit,
+    };
+  } catch (error) {
+    console.error('Lỗi khi tìm kiếm sản phẩm:', JSON.stringify(error, null, 4));
+    throw new Error(`Không thể tìm kiếm sản phẩm: ${(error as any).message}`);
+  }
+}
   async getAllProducts(page: number, limit: number) {
     const [products, total] = await this.productRepository.findAndCount({
       skip: (page - 1) * limit,
