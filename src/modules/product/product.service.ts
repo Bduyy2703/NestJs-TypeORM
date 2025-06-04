@@ -95,83 +95,70 @@ async searchProducts(searchDto: SearchProductDto) {
 
   const query: any = {
     bool: {
-      must: [],
       should: [],
-      minimum_should_match: 0,
+      minimum_should_match: 1,
       filter: [],
     },
   };
 
   if (keyword) {
-    // Lọc từ khóa >= 3 ký tự, nhưng giữ nguyên keyword để match_phrase
     const keywords = keyword.trim().split(/\s+/).filter((kw) => kw.length >= 3);
     const numKeywords = keywords.length;
-    const originalKeywords = keyword.trim().split(/\s+/); // Giữ nguyên để xử lý cụm từ
 
-    // Ưu tiên khớp chính xác 100% (bao gồm dấu)
+    // 1. Khớp chính xác 100% (giữ nguyên dấu, sử dụng name.keyword)
     query.bool.should.push({
-      match: {
-        'name.keyword': {
-          query: keyword,
-          boost: 15, // Trọng số cao nhất cho khớp chính xác
-        },
+      bool: {
+        filter: [
+          {
+            match: {
+              'name.keyword': {
+                query: keyword,
+                boost: 100, // Trọng số cao nhất
+              },
+            },
+          },
+        ],
       },
     });
 
-    // Ưu tiên khớp cụm từ đầy đủ (cho phép khoảng cách)
-    query.bool.should.push({
-      match_phrase: {
-        name: {
-          query: keyword,
-          slop: 2,
-          boost: 10,
-        },
-      },
-    });
-
-    // Yêu cầu tất cả từ khóa khớp (bỏ dấu, chuẩn hóa tiếng Việt)
+    // 2. Khớp sai dấu (sử dụng name với vi_analyzer)
     if (numKeywords > 0) {
       query.bool.should.push({
-        multi_match: {
-          query: keyword,
-          fields: ['name^2'],
-          operator: 'and', // Tất cả từ khóa phải khớp
-          fuzziness: numKeywords === 1 ? '2' : numKeywords === 2 ? '2' : '1', // Fuzziness cho 1-2 từ
-          type: 'best_fields',
-          boost: 5,
-        },
-      });
-
-      // Khớp từng từ khóa riêng lẻ (cho phép sai chính tả nhẹ)
-      originalKeywords.forEach((kw) => {
-        if (kw.length >= 3) {
-          query.bool.should.push({
+        bool: {
+          must: keywords.map((kw) => ({
             match: {
               name: {
                 query: kw,
-                fuzziness: numKeywords <= 2 ? '2' : '1', // Fuzziness mạnh hơn cho 1-2 từ
-                boost: 2,
+                boost: 50, // Trọng số thấp hơn khớp chính xác
               },
             },
-          });
-        }
-      });
-
-      // Tìm kiếm prefix
-      query.bool.should.push({
-        match: {
-          'name.edge_ngram': {
-            query: keyword,
-            boost: 1, // Trọng số thấp cho prefix
-          },
+          })),
         },
       });
     }
 
-    // Điều chỉnh minimum_should_match
-    query.bool.minimum_should_match = numKeywords === 0 ? 1 : numKeywords === 1 ? 1 : numKeywords === 2 ? 2 : Math.ceil(numKeywords * 0.8);
+    // 3. Khớp sai chính tả (giới hạn fuzziness tối đa 20%)
+    if (numKeywords > 0) {
+      query.bool.should.push({
+        bool: {
+          must: keywords.map((kw) => {
+            // Tính số ký tự tối đa được phép sai (20% của độ dài từ)
+            const maxEditDistance = Math.max(1, Math.floor(kw.length * 0.2));
+            return {
+              match: {
+                name: {
+                  query: kw,
+                  fuzziness: maxEditDistance <= 2 ? maxEditDistance : 2, // Elasticsearch giới hạn fuzziness tối đa là 2
+                  boost: 10, // Trọng số thấp nhất
+                },
+              },
+            };
+          }),
+        },
+      });
+    }
   } else {
-    query.bool.must.push({ match_all: {} });
+    query.bool.must = [{ match_all: {} }];
   }
 
   if (categoryIds?.length) {
@@ -214,7 +201,7 @@ async searchProducts(searchDto: SearchProductDto) {
     return {
       data: hits.map((hit) => {
         const source = hit._source as Record<string, any>;
-        delete source.name_completion;
+        delete source.name_completion; // Xóa trường completion nếu tồn tại
         if (hit.highlight?.name) {
           source.highlightedName = hit.highlight.name[0];
         }
