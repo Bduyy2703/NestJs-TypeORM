@@ -78,8 +78,6 @@ export class ProductService implements OnModuleInit {
     await this.syncProductToElasticsearch(product);
     return product;
   }
- // src/elastic_search/elasticsearch.service.ts
-// src/elastic_search/elasticsearch.service.ts
 async searchProducts(searchDto: SearchProductDto) {
   const { keyword, categoryIds, priceMin, priceMax, sortBy, page = 1, limit = 10 } = searchDto;
 
@@ -105,11 +103,10 @@ async searchProducts(searchDto: SearchProductDto) {
   };
 
   if (keyword) {
-    const keywords = keyword
-      .trim()
-      .split(/\s+/)
-      .filter((kw) => kw.length >= 3); // Loại bỏ từ < 3 ký tự
+    // Lọc từ khóa >= 3 ký tự, nhưng giữ nguyên keyword để match_phrase
+    const keywords = keyword.trim().split(/\s+/).filter((kw) => kw.length >= 3);
     const numKeywords = keywords.length;
+    const originalKeywords = keyword.trim().split(/\s+/); // Giữ nguyên để xử lý cụm từ
 
     // Ưu tiên khớp chính xác 100% (bao gồm dấu)
     query.bool.should.push({
@@ -139,23 +136,25 @@ async searchProducts(searchDto: SearchProductDto) {
           query: keyword,
           fields: ['name^2'],
           operator: 'and', // Tất cả từ khóa phải khớp
-          fuzziness: numKeywords === 1 ? '2' : '0', // Fuzziness chỉ cho 1 từ
+          fuzziness: numKeywords === 1 ? '2' : numKeywords === 2 ? '2' : '1', // Fuzziness cho 1-2 từ
           type: 'best_fields',
           boost: 5,
         },
       });
 
       // Khớp từng từ khóa riêng lẻ (cho phép sai chính tả nhẹ)
-      keywords.forEach((kw) => {
-        query.bool.should.push({
-          match: {
-            name: {
-              query: kw,
-              fuzziness: numKeywords <= 2 ? '2' : '1', // Fuzziness mạnh hơn cho 1-2 từ
-              boost: 2,
+      originalKeywords.forEach((kw) => {
+        if (kw.length >= 3) {
+          query.bool.should.push({
+            match: {
+              name: {
+                query: kw,
+                fuzziness: numKeywords <= 2 ? '2' : '1', // Fuzziness mạnh hơn cho 1-2 từ
+                boost: 2,
+              },
             },
-          },
-        });
+          });
+        }
       });
 
       // Tìm kiếm prefix
@@ -170,7 +169,7 @@ async searchProducts(searchDto: SearchProductDto) {
     }
 
     // Điều chỉnh minimum_should_match
-    query.bool.minimum_should_match = numKeywords === 1 ? 1 : numKeywords === 2 ? 2 : Math.ceil(numKeywords * 0.8); // 80% cho >= 3 từ
+    query.bool.minimum_should_match = numKeywords === 0 ? 1 : numKeywords === 1 ? 1 : numKeywords === 2 ? 2 : Math.ceil(numKeywords * 0.8);
   } else {
     query.bool.must.push({ match_all: {} });
   }
