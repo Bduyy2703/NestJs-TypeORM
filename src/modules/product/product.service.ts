@@ -79,6 +79,7 @@ export class ProductService implements OnModuleInit {
     return product;
   }
  // src/elastic_search/elasticsearch.service.ts
+// src/elastic_search/elasticsearch.service.ts
 async searchProducts(searchDto: SearchProductDto) {
   const { keyword, categoryIds, priceMin, priceMax, sortBy, page = 1, limit = 10 } = searchDto;
 
@@ -104,10 +105,23 @@ async searchProducts(searchDto: SearchProductDto) {
   };
 
   if (keyword) {
-    const keywords = keyword.trim().split(/\s+/);
+    const keywords = keyword
+      .trim()
+      .split(/\s+/)
+      .filter((kw) => kw.length >= 3); // Loại bỏ từ < 3 ký tự
     const numKeywords = keywords.length;
 
-    // Ưu tiên khớp cụm từ đầy đủ
+    // Ưu tiên khớp chính xác 100% (bao gồm dấu)
+    query.bool.should.push({
+      match: {
+        'name.keyword': {
+          query: keyword,
+          boost: 15, // Trọng số cao nhất cho khớp chính xác
+        },
+      },
+    });
+
+    // Ưu tiên khớp cụm từ đầy đủ (cho phép khoảng cách)
     query.bool.should.push({
       match_phrase: {
         name: {
@@ -118,43 +132,45 @@ async searchProducts(searchDto: SearchProductDto) {
       },
     });
 
-    // Yêu cầu tất cả từ khóa khớp
-    query.bool.should.push({
-      multi_match: {
-        query: keyword,
-        fields: ['name^2', 'name.keyword'],
-        operator: 'and', // Tất cả từ khóa phải khớp
-        fuzziness: numKeywords === 1 ? '2' : '0', // Fuzziness cho từ khóa đơn
-        type: 'best_fields',
-        boost: 5,
-      },
-    });
+    // Yêu cầu tất cả từ khóa khớp (bỏ dấu, chuẩn hóa tiếng Việt)
+    if (numKeywords > 0) {
+      query.bool.should.push({
+        multi_match: {
+          query: keyword,
+          fields: ['name^2'],
+          operator: 'and', // Tất cả từ khóa phải khớp
+          fuzziness: numKeywords === 1 ? '2' : '0', // Fuzziness chỉ cho 1 từ
+          type: 'best_fields',
+          boost: 5,
+        },
+      });
 
-    // Khớp từng từ khóa riêng lẻ
-    keywords.forEach((kw) => {
+      // Khớp từng từ khóa riêng lẻ (cho phép sai chính tả nhẹ)
+      keywords.forEach((kw) => {
+        query.bool.should.push({
+          match: {
+            name: {
+              query: kw,
+              fuzziness: numKeywords <= 2 ? '2' : '1', // Fuzziness mạnh hơn cho 1-2 từ
+              boost: 2,
+            },
+          },
+        });
+      });
+
+      // Tìm kiếm prefix
       query.bool.should.push({
         match: {
-          name: {
-            query: kw,
-            fuzziness: numKeywords === 1 ? '2' : '1',
-            boost: 2,
+          'name.edge_ngram': {
+            query: keyword,
+            boost: 1, // Trọng số thấp cho prefix
           },
         },
       });
-    });
-
-    // Tìm kiếm prefix
-    query.bool.should.push({
-      match: {
-        'name.edge_ngram': {
-          query: keyword,
-          boost: 1,
-        },
-      },
-    });
+    }
 
     // Điều chỉnh minimum_should_match
-    query.bool.minimum_should_match = numKeywords === 2 ? 2 : numKeywords > 2 ? Math.ceil(numKeywords * 0.7) : 1;
+    query.bool.minimum_should_match = numKeywords === 1 ? 1 : numKeywords === 2 ? 2 : Math.ceil(numKeywords * 0.8); // 80% cho >= 3 từ
   } else {
     query.bool.must.push({ match_all: {} });
   }
