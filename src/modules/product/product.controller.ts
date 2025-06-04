@@ -26,6 +26,7 @@ import { Objectcode } from "src/cores/decorators/objectcode.decorator";
 import { UpdateProductDto } from "./dto/update-product.dto";
 import { Public } from "src/cores/decorators/public.decorator";
 import { SearchProductDto } from "./dto/search-product.dto";
+import { SuggestProductDto } from "./dto/suggestProducts.dto";
 
 @Controller("products")
 @ApiTags("Products")
@@ -184,7 +185,7 @@ export class ProductsController {
   @ApiOperation({ summary: "xóa sản phẩm" })
   async deleteProduct(@Param("id") id: number) {
     return this.productsService.deleteProduct(id);
-  }@Post('search')
+  } @Post('search')
   @Public()
   @ApiOperation({ summary: 'Tìm kiếm sản phẩm với Elasticsearch' })
   @ApiBody({ type: SearchProductDto })
@@ -242,5 +243,28 @@ export class ProductsController {
   async syncProducts() {
     await this.productsService.syncProductsToElasticsearch();
     return { message: 'Đồng bộ sản phẩm thành công' };
+  }
+@Post('suggest')
+  @Public()
+  @ApiOperation({ summary: 'Gợi ý sản phẩm dựa trên từ khóa' })
+  @ApiBody({ type: SuggestProductDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Danh sách gợi ý sản phẩm',
+    schema: {
+      example: {
+        suggestions: [
+          {
+            id: 1,
+            name: 'Nhẫn bạc nam phong cách',
+            image: 'https://minio.dclux.store/...',
+          },
+        ],
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào không hợp lệ' })
+  async suggestProducts(@Body() suggestDto: SuggestProductDto) {
+    return this.productsService.suggestProducts(suggestDto);
   }
 }

@@ -35,29 +35,81 @@ export class ElasticsearchService implements OnModuleInit {
     }
 
     try {
-      // Xóa index cũ để áp dụng mapping mới (chỉ dùng khi test)
+      // Xóa index cũ để áp dụng mapping mới
       await this.client.indices.delete({ index: 'products', ignore_unavailable: true });
       console.log('Đã xóa index products nếu tồn tại');
 
-      // Tạo index mới
+      // Tạo index mới với analyzer và mapping tối ưu
       await this.client.indices.create({
         index: 'products',
         body: {
+          settings: {
+            analysis: {
+              analyzer: {
+                vi_analyzer: {
+                  type: 'custom',
+                  tokenizer: 'standard',
+                  filter: ['lowercase', 'remove_diacritics'],
+                },
+                edge_ngram_analyzer: {
+                  type: 'custom',
+                  tokenizer: 'edge_ngram_tokenizer',
+                  filter: ['lowercase'],
+                },
+                completion_analyzer: {
+                  type: 'custom',
+                  tokenizer: 'keyword',
+                  filter: ['lowercase'],
+                },
+              },
+              tokenizer: {
+                edge_ngram_tokenizer: {
+                  type: 'edge_ngram',
+                  min_gram: 1,
+                  max_gram: 10,
+                  token_chars: ['letter', 'digit'],
+                },
+              },
+              filter: {
+                remove_diacritics: {
+                  type: 'icu_transform',
+                  id: 'Any-Latin; NFKD; [:Nonspacing Mark:] Remove; NFKC',
+                },
+              },
+            },
+          },
           mappings: {
             properties: {
               id: { type: 'integer' },
-              name: { type: 'text', analyzer: 'standard' },
+              name: {
+                type: 'text',
+                analyzer: 'vi_analyzer',
+                fields: {
+                  keyword: { type: 'keyword' },
+                  edge_ngram: {
+                    type: 'text',
+                    analyzer: 'edge_ngram_analyzer',
+                  },
+                  completion: {
+                    type: 'completion',
+                    analyzer: 'completion_analyzer',
+                    preserve_separators: true,
+                    preserve_position_increments: true,
+                    max_input_length: 100,
+                  },
+                },
+              },
               originalPrice: { type: 'float' },
               finalPrice: { type: 'float' },
               categoryId: { type: 'integer', null_value: 0 },
               categoryName: { type: 'keyword' },
               totalSold: { type: 'integer' },
-              images: { type: 'keyword' }, // Thêm trường images
+              images: { type: 'keyword' },
             },
           },
         },
       });
-      console.log('Đã tạo index products');
+      console.log('Đã tạo index products với mapping mới');
     } catch (error) {
       console.error('Lỗi khi tạo index products:', JSON.stringify(error, null, 2));
       throw new Error('Không thể tạo index products');

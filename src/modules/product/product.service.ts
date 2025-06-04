@@ -13,6 +13,8 @@ import { ProductStrategySale } from "../strategySale/entity/productSale.entity";
 import { StrategySale } from "../strategySale/entity/strategySale.entity";
 import { ElasticsearchService } from "src/elastic_search/elasticsearch.service";
 import { SearchProductDto } from './dto/search-product.dto';
+import { SuggestProductDto } from "./dto/suggestProducts.dto";
+import { SearchPhraseSuggestOption } from "@elastic/elasticsearch/lib/api/types";
 
 @Injectable()
 export class ProductService implements OnModuleInit {
@@ -26,8 +28,13 @@ export class ProductService implements OnModuleInit {
     private readonly fileService: FileRepository,
     private readonly elasticsearchService: ElasticsearchService,
   ) { }
-async onModuleInit() {
-    await this.syncProductsToElasticsearch(); // Đồng bộ khi khởi động
+  async onModuleInit() {
+    try {
+      await this.syncProductsToElasticsearch();
+      console.log('Đồng bộ sản phẩm khi khởi động hoàn tất');
+    } catch (error) {
+      console.error('Lỗi khi đồng bộ sản phẩm lúc khởi động:', error);
+    }
   }
 
   async createProduct(createProductDto: CreateProductDto): Promise<Product> {
@@ -87,18 +94,36 @@ async onModuleInit() {
 
     const query: any = {
       bool: {
-        must: [],
+        should: [],
+        minimum_should_match: 1,
         filter: [],
       },
     };
 
     if (keyword) {
-      query.bool.must.push({
-        multi_match: {
-          query: keyword,
-          fields: ['name^2'],
-        },
+      const keywords = keyword.trim().split(/\s+/);
+      keywords.forEach((kw) => {
+        query.bool.should.push(
+          {
+            multi_match: {
+              query: kw,
+              fields: ['name^2', 'name.keyword'],
+              fuzziness: 'AUTO',
+              slop: 2,
+            },
+          },
+          {
+            match: {
+              'name.edge_ngram': {
+                query: kw,
+                boost: 0.5,
+              },
+            },
+          },
+        );
       });
+    } else {
+      query.bool.must = [{ match_all: {} }];
     }
 
     if (categoryIds?.length) {
@@ -134,14 +159,14 @@ async onModuleInit() {
       const total = typeof result.hits?.total === 'object' ? result.hits.total.value : result.hits.total;
 
       return {
-        data: hits.map(hit => hit._source),
+        data: hits.map((hit) => hit._source),
         total,
         page,
         limit,
       };
     } catch (error) {
-      console.error('Lỗi khi tìm kiếm sản phẩm trên Elasticsearch:', JSON.stringify(error, null, 2));
-      throw new Error('Không thể tìm kiếm sản phẩm');
+      console.error('Lỗi khi tìm kiếm sản phẩm:', JSON.stringify(error, null, 4));
+      throw new Error(`Không thể tìm kiếm sản phẩm: ${(error as any).message}`);
     }
   }
   async getAllProducts(page: number, limit: number) {
@@ -340,12 +365,12 @@ async onModuleInit() {
     });
     return { message: "Sản phẩm đã được xóa thành công!" };
   }
-async syncProductsToElasticsearch() {
+  async syncProductsToElasticsearch() {
     const products = await this.productRepository.find({ relations: ['category', 'productDetails'] });
     const client = this.elasticsearchService.getClient();
 
     const body = await Promise.all(
-      products.map(async product => {
+      products.map(async (product) => {
         const totalSold = product.productDetails.reduce((sum, detail) => sum + detail.sold, 0);
         const images = await this.fileService.findFilesByTarget(product.id, 'product');
         return [
@@ -358,7 +383,8 @@ async syncProductsToElasticsearch() {
             categoryId: product.category?.id || 0,
             categoryName: product.category?.name || '',
             totalSold: totalSold || 0,
-            images: images.map(img => img.fileUrl), // Thêm images
+            images: images.map((img) => img.fileUrl),
+            name_completion: product.name, // Thêm cho completion suggester
           },
         ];
       }),
@@ -367,12 +393,17 @@ async syncProductsToElasticsearch() {
     const flattenedBody = body.flat();
 
     if (flattenedBody.length > 0) {
-      const bulkResponse = await client.bulk({ body: flattenedBody });
-      if (bulkResponse.errors) {
-        console.error('Lỗi khi đồng bộ sản phẩm:', JSON.stringify(bulkResponse.errors, null, 2));
+      try {
+        const bulkResponse = await client.bulk({ body: flattenedBody });
+        if (bulkResponse.errors) {
+          console.error('Lỗi khi đồng bộ sản phẩm:', JSON.stringify(bulkResponse.errors, null, 4));
+          throw new Error('Không thể đồng bộ sản phẩm vào Elasticsearch');
+        }
+        console.log(`Đã đồng bộ ${products.length} sản phẩm vào Elasticsearch`);
+      } catch (error) {
+        console.error('Lỗi khi đồng bộ sản phẩm:', JSON.stringify(error, null, 4));
         throw new Error('Không thể đồng bộ sản phẩm vào Elasticsearch');
       }
-      console.log(`Đã đồng bộ ${products.length} sản phẩm vào Elasticsearch`);
     } else {
       console.log('Không có sản phẩm để đồng bộ');
     }
@@ -392,21 +423,67 @@ async syncProductsToElasticsearch() {
     const totalSold = productWithDetails.productDetails.reduce((sum, detail) => sum + detail.sold, 0);
     const images = await this.fileService.findFilesByTarget(product.id, 'product');
 
-    await client.index({
-      index: 'products',
-      id: product.id.toString(),
-      body: {
-        id: product.id,
-        name: product.name,
-        originalPrice: parseFloat(product.originalPrice.toString()),
-        finalPrice: parseFloat(product.finalPrice.toString()),
-        categoryId: productWithDetails.category?.id || 0,
-        categoryName: productWithDetails.category?.name || '',
-        totalSold: totalSold || 0,
-        images: images.map(img => img.fileUrl), // Thêm images
-      },
-    });
+    try {
+      await client.index({
+        index: 'products',
+        id: product.id.toString(),
+        body: {
+          id: product.id,
+          name: product.name,
+          originalPrice: parseFloat(product.originalPrice.toString()),
+          finalPrice: parseFloat(product.finalPrice.toString()),
+          categoryId: productWithDetails.category?.id || 0,
+          categoryName: productWithDetails.category?.name || '',
+          totalSold: totalSold || 0,
+          images: images.map((img) => img.fileUrl),
+          name_completion: product.name, // Thêm cho completion suggester
+        },
+      });
+      console.log(`Đã đồng bộ sản phẩm ID ${product.id} vào Elasticsearch`);
+    } catch (error) {
+      console.error(`Lỗi khi đồng bộ sản phẩm ID ${product.id}:`, JSON.stringify(error, null, 4));
+      throw new Error(`Không thể đồng bộ sản phẩm ID ${product.id}`);
+    }
+  }
+  async suggestProducts(suggestDto: SuggestProductDto) {
+    const { keyword } = suggestDto;
 
-    console.log(`Đã đồng bộ sản phẩm ID ${product.id} vào Elasticsearch`);
+    if (!keyword) {
+      return { suggestions: [] };
+    }
+
+    try {
+      const client = this.elasticsearchService.getClient();
+      const result = await client.search({
+        index: 'products',
+        body: {
+          suggest: {
+            product_suggest: {
+              prefix: keyword,
+              completion: {
+                field: 'name.completion',
+                skip_duplicates: true,
+                size: 5,
+              },
+            },
+          },
+        },
+      });
+
+      const options = result.suggest.product_suggest[0].options;
+      const suggestions = Array.isArray(options)
+        ? options.map(option => ({
+          id: option._id,
+          name: option.text,
+          image: option._source?.images?.[0] || null,
+        }))
+        : [];
+
+
+      return { suggestions };
+    } catch (error) {
+      console.error('Lỗi khi gợi ý sản phẩm:', JSON.stringify(error, null, 4));
+      throw new Error(`Không thể gợi ý sản phẩm: ${(error as any).message}`);
+    }
   }
 }
