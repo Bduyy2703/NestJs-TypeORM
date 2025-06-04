@@ -77,7 +77,8 @@ export class ProductService implements OnModuleInit {
     }
     await this.syncProductToElasticsearch(product);
     return product;
-  } async searchProducts(searchDto: SearchProductDto) {
+  }
+  async searchProducts(searchDto: SearchProductDto) {
     const { keyword, categoryIds, priceMin, priceMax, sortBy, page = 1, limit = 10 } = searchDto;
 
     let sort: any[] = [];
@@ -94,36 +95,53 @@ export class ProductService implements OnModuleInit {
 
     const query: any = {
       bool: {
+        must: [],
         should: [],
-        minimum_should_match: 1,
+        minimum_should_match: 0,
         filter: [],
       },
     };
 
     if (keyword) {
       const keywords = keyword.trim().split(/\s+/);
-      keywords.forEach((kw) => {
-        query.bool.should.push(
-          {
-            multi_match: {
-              query: kw,
-              fields: ['name^2', 'name.keyword'],
-              fuzziness: 'AUTO',
-              slop: 2,
-            },
+      const numKeywords = keywords.length;
+
+      // Ưu tiên khớp cụm từ đầy đủ
+      query.bool.should.push({
+        match_phrase: {
+          name: {
+            query: keyword,
+            slop: 2, // Cho phép khoảng cách 2 từ để linh hoạt hơn
+            boost: 10, // Ưu tiên cao
           },
-          {
-            match: {
-              'name.edge_ngram': {
-                query: kw,
-                boost: 0.5,
-              },
-            },
-          },
-        );
+        },
       });
+
+      // Khớp từng từ hoặc cụm từ với độ chính xác cao
+      query.bool.should.push({
+        multi_match: {
+          query: keyword,
+          fields: ['name^2', 'name.keyword'],
+          fuzziness: numKeywords === 1 ? '1' : '0', // Chỉ cho phép fuzziness với từ khóa đơn
+          type: 'best_fields',
+          boost: 5,
+        },
+      });
+
+      // Tìm kiếm prefix cho gợi ý
+      query.bool.should.push({
+        match: {
+          'name.edge_ngram': {
+            query: keyword,
+            boost: 1, // Trọng số thấp để hỗ trợ prefix
+          },
+        },
+      });
+
+      // Yêu cầu tối thiểu số từ khớp dựa trên độ dài từ khóa
+      query.minimum_should_match = numKeywords > 2 ? Math.ceil(numKeywords * 0.7) : 1;
     } else {
-      query.bool.must = [{ match_all: {} }];
+      query.bool.must.push({ match_all: {} });
     }
 
     if (categoryIds?.length) {
@@ -144,7 +162,7 @@ export class ProductService implements OnModuleInit {
     }
 
     try {
-      const client = this.elasticsearchService.getClient();
+      const client =this.elasticsearchService.getClient();
       const result = await client.search({
         index: 'products',
         body: {
@@ -152,6 +170,11 @@ export class ProductService implements OnModuleInit {
           sort,
           from: (page - 1) * limit,
           size: limit,
+          highlight: {
+            fields: {
+              name: {},
+            },
+          },
         },
       });
 
@@ -159,7 +182,16 @@ export class ProductService implements OnModuleInit {
       const total = typeof result.hits?.total === 'object' ? result.hits.total.value : result.hits.total;
 
       return {
-        data: hits.map((hit) => hit._source),
+        data: hits.map((hit) => {
+          const source = hit._source as any;
+          // Loại bỏ field name_completion khỏi response
+          delete source.name_completion;
+          // Thêm highlight nếu có
+          if (hit.highlight?.name) {
+            source.highlightedName = hit.highlight.name[0];
+          }
+          return source;
+        }),
         total,
         page,
         limit,
