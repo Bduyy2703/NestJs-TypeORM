@@ -229,14 +229,14 @@ export class ProductService implements OnModuleInit {
   //     throw new Error(`Không thể tìm kiếm sản phẩm: ${(error as any).message}`);
   //   }
   // }
-async searchProducts(searchDto: SearchProductDto) {
+ async searchProducts(searchDto: SearchProductDto) {
   const { keyword, categoryIds, priceMin, priceMax, sortBy, page = 1, limit = 10 } = searchDto;
 
   let sort: any[] = [];
   if (sortBy) {
     const [field, direction] = sortBy.split('.');
     if (['finalPrice', 'finalprices', 'totalSold', 'name'].includes(field) && ['asc', 'desc'].includes(direction)) {
-      sort.push({ finalPrice: direction });
+      sort.push({ [field]: direction });
     } else {
       sort.push({ finalPrice: 'asc' });
     }
@@ -254,6 +254,7 @@ async searchProducts(searchDto: SearchProductDto) {
     const keywords = keyword.trim().split(/\s+/).filter((kw) => kw.length >= 2);
     const numKeywords = keywords.length;
 
+    query.bool.must = []; // Thêm must để bắt buộc khớp với keyword
     query.bool.should = [];
     query.bool.minimum_should_match = numKeywords > 1 ? Math.ceil(numKeywords * 0.8) : 1;
 
@@ -265,7 +266,7 @@ async searchProducts(searchDto: SearchProductDto) {
             match: {
               'name.keyword': {
                 query: keyword,
-                boost: 1000, // Tăng boost để ưu tiên cao nhất
+                boost: 1000,
               },
             },
           },
@@ -281,7 +282,7 @@ async searchProducts(searchDto: SearchProductDto) {
             match: {
               name: {
                 query: kw,
-                boost: 500, // Boost cao hơn fuzziness
+                boost: 500,
               },
             },
           })),
@@ -294,7 +295,7 @@ async searchProducts(searchDto: SearchProductDto) {
       query.bool.should.push({
         bool: {
           must: keywords
-            .filter((kw) => kw.length >= 3) // Tắt fuzziness cho từ ngắn
+            .filter((kw) => kw.length >= 3)
             .map((kw) => {
               const maxEditDistance = Math.max(1, Math.floor(kw.length * 0.2));
               return {
@@ -302,7 +303,7 @@ async searchProducts(searchDto: SearchProductDto) {
                   name: {
                     query: kw,
                     fuzziness: maxEditDistance <= 2 ? maxEditDistance : 2,
-                    boost: 100, // Boost thấp nhất
+                    boost: 100,
                   },
                 },
               };
@@ -316,20 +317,51 @@ async searchProducts(searchDto: SearchProductDto) {
       query.bool.should.push({
         bool: {
           must: keywords
-            .filter((kw) => kw.length === 2) // Chỉ áp dụng cho từ 2 ký tự
+            .filter((kw) => kw.length === 2)
             .map((kw) => ({
               prefix: {
                 name: {
                   value: kw.toLowerCase(),
-                  boost: 200, // Boost trung bình
+                  boost: 200,
                 },
               },
             })),
         },
       });
     }
+
+    // Bắt buộc ít nhất một từ khóa khớp với name hoặc name.keyword
+    if (numKeywords > 0) {
+      query.bool.must.push({
+        bool: {
+          should: keywords.map((kw) => ({
+            bool: {
+              should: [
+                { match: { name: kw } },
+                { match: { 'name.keyword': kw } },
+                ...(kw.length === 2 ? [{ prefix: { name: kw.toLowerCase() } }] : []),
+                ...(kw.length >= 3
+                  ? [
+                      {
+                        match: {
+                          name: {
+                            query: kw,
+                            fuzziness: Math.max(1, Math.floor(kw.length * 0.2)),
+                          },
+                        },
+                      },
+                    ]
+                  : []),
+              ],
+              minimum_should_match: 1,
+            },
+          })),
+          minimum_should_match: Math.ceil(numKeywords * 0.8),
+        },
+      });
+    }
   } else {
-    query.bool.must = [{ match_all: {} }];
+    query.bool.must = [{ match_all: {} }]; // Chỉ getlist khi không có keyword
   }
 
   if (categoryIds?.length) {
@@ -362,11 +394,11 @@ async searchProducts(searchDto: SearchProductDto) {
         query,
         sort: [
           { _score: 'desc' }, // Ưu tiên _score để xếp khớp chính xác lên đầu
-          ...sort, // Sau đó sắp xếp theo finalPrice
+          ...sort,
         ],
         from: (page - 1) * limit,
         size: limit,
-        ...(keyword ? { highlight: { fields: { name: {}, 'name.keyword': {} } } } : {}), // Highlight cả name và name.keyword
+        ...(keyword ? { highlight: { fields: { name: {}, 'name.keyword': {} } } } : {}),
       },
     });
 
